@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, X, FileText, Phone, Mail } from "lucide-react";
-import Logo from "@/assets/images/full-logo.png";
+import Logo from "@/assets/images/srm_logo.png";
 import { BarcodeGenerator } from "./BarcodeGenerator";
 import { QRCodeGenerator } from "./QRCodeGenerator";
 
@@ -55,6 +55,46 @@ export const PatientPrintPreviewModal: React.FC<PatientPrintPreviewModalProps> =
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
+      {/* Print-only fix: isolates #printable-patient-card and neutralizes
+          Radix Dialog's fixed/transform positioning so print output lands
+          top-left on the A4 page instead of floating in whitespace. */}
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #printable-patient-card,
+          #printable-patient-card * {
+            visibility: visible;
+          }
+          #printable-patient-card {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 12mm !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          [data-radix-dialog-overlay],
+          [data-radix-dialog-content] {
+            position: static !important;
+            transform: none !important;
+            inset: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            overflow: visible !important;
+            background: none !important;
+            box-shadow: none !important;
+          }
+          @page {
+            size: A4;
+            margin: 0;
+          }
+        }
+      `}</style>
+
       <DialogContent 
         className="p-0 rounded-xl border border-slate-200"
         style={{

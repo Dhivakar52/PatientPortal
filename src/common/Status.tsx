@@ -45,7 +45,7 @@ export const Status: React.FC<StatusProps> = ({
 
   return (
     <span className={cn(
-      'inline-flex rounded-lg items-center font-medium text-[12px]',
+      'inline-flex rounded-[4px] items-center font-medium text-[12px]',
       config.bg,
       config.text,
       sizeClasses[size],

@@ -1,12 +1,12 @@
 import {
   LayoutDashboard,
-  Users,
-  UsersRound,
-  Stethoscope,
-  CalendarClock,
-  Baby,
-  Building2,
-  UserCheck,
+  // Users,
+  // UsersRound,
+  // Stethoscope,
+  // CalendarClock,
+  // Baby,
+  // Building2,
+  // UserCheck,
   type LucideIcon,
 } from "lucide-react"
 import { lazy } from "react"
@@ -27,36 +27,17 @@ export interface MenuItem {
 
 // ✅ Menu data for sidebar
 export const menuConfig: MenuItem[] = [
-  { 
-    title: "Dashboard", 
-    url: "/dashboard", 
-    icon: LayoutDashboard 
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: LayoutDashboard
   },
   {
-    title: "OP",
-    url: "/op",
-    icon: Users,
-    items: [
-      { title: "Registration", url: "/registered-patients", icon: UsersRound },
-      { title: "Diagnosis Entry", url: "/op/diagnosisentry", icon: Stethoscope },
-      { title: "Revisit", url: "/revisit-records", icon: CalendarClock },
-    ],
+    title: "Appointment",
+    url: "/appointment",
+    icon: LayoutDashboard
   },
-  { 
-    title: "AntenatalRegistration", 
-    url: "/registered-anc-records", 
-    icon: Baby 
-  },
-  { 
-    title: "Hospital Master", 
-    url: "/hospital-master-records", 
-    icon: Building2 
-  },
-  { 
-    title: "Referral Master", 
-    url: "/referral-master-records", 
-    icon: UserCheck 
-  },
+
 
   //     { 
   //   title: "Referral Master", 
@@ -114,7 +95,119 @@ export const getRoutes = () => {
     {
       path: "/",
       name: "Login",
-      component: lazy(() => import("@/pages/Login")),
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/appointment",
+      name: "Appointment",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/login",
+      name: "Patient Login",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/register",
+      name: "Patient Registration",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/select",
+      name: "Patient Selection",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/dashboard",
+      name: "Patient Dashboard",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/home",
+      name: "Home",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/home",
+      name: "Patient Home",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/visit",
+      name: "Visit",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/visits",
+      name: "Visits",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/visits",
+      name: "Patient Visits",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/lab",
+      name: "Lab",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/lab",
+      name: "Patient Lab",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/bills",
+      name: "Bills",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/bills",
+      name: "Patient Bills",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/book",
+      name: "Book",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/book",
+      name: "Patient Book",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
       exact: true,
       protected: false,
     },
@@ -127,107 +220,9 @@ export const getRoutes = () => {
       exact: true,
       protected: true,
     },
-  // OP Screen
-     {
-      path: "/op/registration",
-      name: "Registration",
-      component: lazy(() => import("@/pages/OP/Registration/Registration")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/registered-patients",
-      name: "Registered Patients",
-      component: lazy(() => import("@/pages/OP/Registration/RegisteredPatientsPage")),
-      exact: true,
-      protected: true,
-    },
-     {
-      path: "/op/diagnosisentry",
-      name: "OP",
-      component: lazy(() => import("@/pages/OP/Diagnosisentry/DiagnoModule")),
-      exact: true,
-      protected: true,
-    },
-{
-      path: "/op/revisit",
-      name: "Revisit",
-      component: lazy(() => import("@/pages/OP/Revisit/RevisitModule")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/revisit-records",
-      name: "Revisit Records",
-      component: lazy(() => import("@/pages/OP/Revisit/RevisitRecordsPage")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/op/revisit-cancellation",
-      name: "Revisit Cancellation",
-      component: lazy(() => import("@/pages/OP/RevisitCancellation/RevisitCancelModule")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/op/revisit-cancellation/new",
-      name: "New Revisit Cancellation",
-      component: lazy(() => import("@/pages/OP/RevisitCancellation/RevisitCancelFormPage")),
-      exact: true,
-      protected: true,
-    },
 
+    // OP Screen
 
-     {
-      path: "/antenatal-registration",
-      name: "AntenatalRegistration",
-      component: lazy(() => import("@/pages/AntenatalRegistration/AthenaModule")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/registered-anc-records",
-      name: "Registered ANC Records",
-      component: lazy(() => import("@/pages/AntenatalRegistration/AncRecordsPage")),
-      exact: true,
-      protected: true,
-    },
-     {
-      path: "/hospital-master",
-      name: "Athena",
-      component: lazy(() => import("@/pages/HospitalMaster/HospitalModule")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/hospital-master-records",
-      name: "Hospital Master Records",
-      component: lazy(() => import("@/pages/HospitalMaster/HospitalMasterPage")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/referral-master",
-      name: "Referral Master",
-      component: lazy(() => import("@/pages/Referralmaster/ReferralModule")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/referral-master-records",
-      name: "Referral Master Records",
-      component: lazy(() => import("@/pages/Referralmaster/ReferralMasterPage")),
-      exact: true,
-      protected: true,
-    },
-    {
-      path: "/notifications",
-      name: "Notifications",
-      component: lazy(() => import("@/pages/Notifications/NotificationsPage")),
-      exact: true,
-      protected: true,
-    },
 
 
 

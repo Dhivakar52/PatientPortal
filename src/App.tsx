@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/context/ThemeContext"
 import { AuthProvider } from "./context/AuthContext"
 import { NotificationProvider } from "./context/NotificationContext"
 import { Toaster } from "@/components/ui/toast"
+import "./App.css"
 
 function App() {
   return (

@@ -1,0 +1,204 @@
+import React, { } from 'react'
+import { Button } from '@/components/ui/button'
+import { FieldLabel, TextField, DateField } from '@/components/FormPrimitives'
+import { PatientHeader } from '@/common/PatientHeader'
+import { calcAge, digitsOnly } from '@/utils/patient.utils'
+
+interface PatientRegistrationProps {
+  pendingMobile: string
+  regName: string
+  setRegName: (v: string) => void
+  regGender: 'Male' | 'Female' | 'Other'
+  setRegGender: (v: 'Male' | 'Female' | 'Other') => void
+  regDob: string
+  setRegDob: (v: string) => void
+  regAddress: string
+  setRegAddress: (v: string) => void
+  regCity: string
+  setRegCity: (v: string) => void
+  regState: string
+  setRegState: (v: string) => void
+  regPincode: string
+  setRegPincode: (v: string) => void
+  regErrors: Record<string, string>
+  onSubmit: () => void
+  onBack: () => void
+}
+
+const PatientRegistration: React.FC<PatientRegistrationProps> = ({
+  pendingMobile,
+  regName,
+  setRegName,
+  regGender,
+  setRegGender,
+  regDob,
+  setRegDob,
+  regAddress,
+  setRegAddress,
+  regCity,
+  setRegCity,
+  regState,
+  setRegState,
+  regPincode,
+  setRegPincode,
+  regErrors,
+  onSubmit,
+  onBack,
+}) => {
+  const calculatedAge = calcAge(regDob)
+
+  // Convert string date to Date object for DateField
+  const dobDate = regDob ? new Date(regDob) : undefined
+
+  // ✅ FIX: Use local date to avoid timezone issues
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      setRegDob(`${year}-${month}-${day}`)
+    } else {
+      setRegDob('')
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
+      <PatientHeader />
+
+      <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg max-w-2xl w-full shadow-lg overflow-hidden">
+          <div className="text-white p-6" style={{ background: "var( --blue-text-color)" }}>
+            <div className="font-bold text-xl">Register Patient</div>
+            <div className="text-xs text-blue-200 mt-1">New account setup</div>
+          </div>
+          <div className="p-8 space-y-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+              We couldn't find an account for this number. Please complete your details to continue.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Mobile Number - Readonly */}
+              <div className="sm:col-span-2">
+                <FieldLabel required>Mobile Number</FieldLabel>
+                <div className="border border-slate-200 dark:border-slate-800 rounded p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-sm">
+                  +91 {pendingMobile}
+                </div>
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <FieldLabel required>Full Name</FieldLabel>
+                <TextField
+                  value={regName}
+                  onChange={setRegName}
+                  placeholder="e.g. Priya Kumar"
+                />
+                {regErrors.name && <p className="text-xs text-rose-600 mt-1">{regErrors.name}</p>}
+              </div>
+
+              {/* Gender */}
+              <div>
+                <FieldLabel required>Gender</FieldLabel>
+                <div className="flex items-center gap-4 py-2">
+                  {(['Male', 'Female', 'Other'] as const).map((g) => (
+                    <label key={g} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                      <input
+                        type="radio"
+                        name="regGender"
+                        value={g}
+                        checked={regGender === g}
+                        onChange={() => setRegGender(g)}
+                        className="accent-blue-600"
+                      />
+                      {g}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Date of Birth using DateField */}
+              <div>
+                <FieldLabel required>Date of Birth</FieldLabel>
+                <DateField
+                  value={dobDate}
+                  onChange={handleDateSelect}
+                  placeholder="Select date"
+                  defaultLabel="Select date"
+                />
+                {regErrors.dob && <p className="text-xs text-rose-600 mt-1">{regErrors.dob}</p>}
+              </div>
+
+              {/* Age */}
+              <div>
+                <FieldLabel>Age</FieldLabel>
+                <div className="border border-slate-200 dark:border-slate-800 rounded p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm h-9 flex items-center">
+                  {calculatedAge === '' ? '—' : `${calculatedAge} Years`}
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <FieldLabel required>Address</FieldLabel>
+                <TextField
+                  value={regAddress}
+                  onChange={setRegAddress}
+                  placeholder="House no, street"
+                />
+                {regErrors.address && <p className="text-xs text-rose-600 mt-1">{regErrors.address}</p>}
+              </div>
+
+              {/* City */}
+              <div>
+                <FieldLabel required>City</FieldLabel>
+                <TextField
+                  value={regCity}
+                  onChange={setRegCity}
+                  placeholder="e.g. Chennai"
+                />
+                {regErrors.city && <p className="text-xs text-rose-600 mt-1">{regErrors.city}</p>}
+              </div>
+
+              {/* State */}
+              <div>
+                <FieldLabel required>State</FieldLabel>
+                <TextField
+                  value={regState}
+                  onChange={setRegState}
+                  placeholder="e.g. Tamil Nadu"
+                />
+                {regErrors.state && <p className="text-xs text-rose-600 mt-1">{regErrors.state}</p>}
+              </div>
+
+              {/* PIN Code */}
+              <div>
+                <FieldLabel required>PIN Code</FieldLabel>
+                <TextField
+                  value={regPincode}
+                  onChange={(v) => setRegPincode(digitsOnly(v, 6))}
+                  placeholder="6-digit PIN"
+                />
+                {regErrors.pincode && <p className="text-xs text-rose-600 mt-1">{regErrors.pincode}</p>}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button variant="outline" onClick={onBack} className="flex-1 cursor-pointer">
+                Back
+              </Button>
+              <Button
+                onClick={onSubmit}
+                className="flex-[2] text-white cursor-pointer font-semibold"
+                style={{ background: 'var(--blue-btn)' }}
+              >
+                Register &amp; Continue
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default PatientRegistration

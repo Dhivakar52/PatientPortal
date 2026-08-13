@@ -1,0 +1,2206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SRM Medical College Hospital and Research Centre — Patient Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/styles/SRM_Hospital_Appointment_v8.css" />
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body,
+    * {
+      font-family: "Geist", sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea,
+    option {
+      font-family: inherit;
+    }
+
+    .stix-two-text {
+      font-family: "STIX Two Text", serif;
+      font-optical-sizing: auto;
+    }
+
+    .geist {
+      font-family: "Geist", sans-serif;
+      font-optical-sizing: auto;
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Geist:ital,wght@0,100..900;1,100..900&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&display=swap');
+
+:root {
+  --blue-btn: linear-gradient(135deg, #2952CC 0%, #3E6EF5 100%);
+  --blue-text-color: #2952CC;
+  --side-menu: #E8F0FF;
+  --sidebar-top-bg: #14213D;
+  --medical-color: #147fc3;
+  --bg-white: white;
+  --layer-bg: #f8fafc;
+  --navy: #2952CC;
+  /* --navy-dark:#082a54; */
+  --navy-dark: #000000;
+  --blue: linear-gradient(135deg, #2952CC 0%, #3E6EF5 100%);
+  --blue-light: #e8f1fb;
+  --border: #d9e1ea;
+  --text: #2a3441;
+  --text-mute: #737373;
+  --bg: #f4f6f9;
+  --white: #ffffff;
+  --danger: #c0392b;
+  --success: #1f8a4c;
+  --radius: 4px;
+  --font: "Geist", sans-serif;
+}
+
+
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+button,
+input,
+select {
+  font-family: var(--font);
+}
+
+a {
+  color: var(--blue);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------- header ---------- */
+.topbar {
+  /* background:linear-gradient(180deg,var(--navy) 0%, var(--navy-dark) 100%); */
+  background: var(--sidebar-top-bg);
+  color: #fff;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+  position: relative;
+  z-index: 20;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo-wrap {
+  background: #fff;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+}
+
+.brand-logo {
+  object-fit: contain;
+  width: 53px;
+  height: auto;
+}
+
+.brand-text .name {
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.brand-text .tag {
+  font-size: 10.5px;
+  color: #c9d9ee;
+  letter-spacing: .4px;
+}
+
+.user-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .18);
+  padding: 5px 10px 5px 6px;
+  border-radius: 20px;
+  cursor: pointer;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  user-select: none;
+}
+
+.user-chip:hover {
+  background: rgba(255, 255, 255, .16);
+}
+
+.user-avatar-sm {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #c9d9ee;
+  color: var(--navy-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.caret {
+  font-size: 9px;
+  opacity: .8;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .15);
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.dropdown button {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dropdown button:hover {
+  background: var(--blue-light);
+}
+
+/* ---------- topbar left / greeting ---------- */
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.header-greeting {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #eaf1fb;
+  white-space: nowrap;
+  padding-left: 16px;
+  border-left: 1px solid rgba(255, 255, 255, .25);
+}
+
+.header-greeting b {
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ---------- profile drawer ---------- */
+.profile-drawer {
+  width: 320px;
+  padding: 10px 0 12px;
+}
+
+.profile-drawer .drawer-label {
+  padding: 12px 20px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  color: var(--navy-dark);
+}
+
+.profile-drawer .patient-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.patient-item {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 20px;
+  cursor: pointer;
+}
+
+.patient-item:hover {
+  background: var(--blue-light);
+}
+
+.patient-item.active {
+  background: var(--blue-light);
+}
+
+.patient-item .p-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #eef2f7;
+  border: 1px solid var(--border);
+  color: var(--navy-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14.5px;
+  flex-shrink: 0;
+}
+
+.patient-item.active .p-avatar {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+
+.patient-item .p-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.patient-item .p-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--navy-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.patient-item .p-meta {
+  font-size: 12.5px;
+  color: var(--text-mute);
+  margin-top: 2px;
+}
+
+.patient-item .p-check {
+  color: var(--blue);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.drawer-divider {
+  border-top: 1px solid var(--border);
+  margin: 8px 0;
+}
+
+.drawer-action {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.drawer-action .sub {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-mute);
+  margin-top: 1px;
+}
+
+.drawer-action:hover {
+  background: var(--blue-light);
+}
+
+.drawer-action.logout {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 14.5px;
+}
+
+.drawer-action .icon {
+  width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
+/* ---------- select patient screen ---------- */
+.sp-list {
+  max-height: 340px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+}
+
+.sp-list .patient-item {
+  padding: 14px 30px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ---------- layout shells ---------- */
+.center-shell {
+  min-height: calc(100vh - 54px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.app-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px 16px 60px;
+}
+
+.app-grid {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* ---------- left profile card (app shell) ---------- */
+.profile-side-card {
+  width: 230px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 16px;
+  text-align: center;
+}
+
+.profile-side-card .avatar-lg {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #eef2f7;
+  color: var(--navy-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 auto 10px;
+}
+
+.profile-side-card .p-name {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--navy-dark);
+}
+
+.profile-side-card .p-gender {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-mute);
+  letter-spacing: .5px;
+  margin-top: 3px;
+}
+
+.profile-side-card .p-dob {
+  font-size: 11.5px;
+  color: var(--text-mute);
+  margin-top: 5px;
+}
+
+.profile-side-card .side-divider {
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+.profile-side-card .p-phone {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.profile-side-card .side-signout {
+  margin-top: 14px;
+  width: 100%;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.profile-side-card .side-signout:hover {
+  background: var(--blue-light);
+}
+
+@media (max-width:640px) {
+  .profile-side-card {
+    width: 100%;
+  }
+}
+
+/* ---------- auth card (login/register) ---------- */
+.auth-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 2px 10px rgba(20, 40, 70, .06);
+  overflow: hidden;
+}
+
+.auth-card.wide {
+  max-width: 560px;
+}
+
+.auth-head {
+  background: var(--sidebar-top-bg);
+  color: #fff;
+  padding: 26px 30px;
+}
+
+.auth-head .name {
+  font-weight: 700;
+  font-size: 19px;
+}
+
+.auth-head .sub {
+  font-size: 13px;
+  color: #c9d9ee;
+  margin-top: 4px;
+}
+
+.auth-body {
+  padding: 32px 30px;
+}
+
+.auth-body h2 {
+  font-size: 18px;
+  margin: 0 0 4px;
+  color: var(--navy-dark);
+}
+
+.auth-body p.desc {
+  font-size: 13px;
+  color: var(--text-mute);
+  margin: 0 0 22px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-mute);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.field .input-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #fff;
+}
+
+.field .input-wrap:focus-within {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(26, 86, 168, .15);
+}
+
+.field .prefix {
+  background: #eef2f7;
+  color: var(--text-mute);
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  border-right: 1px solid var(--border);
+}
+
+.field input,
+.field select {
+  border: none;
+  outline: none;
+  padding: 9px 10px;
+  font-size: 13.5px;
+  flex: 1;
+  width: 100%;
+  color: var(--text);
+  background: #fff;
+}
+
+.field input.plain,
+.field select.plain {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.field input.plain:focus,
+.field select.plain:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(26, 86, 168, .15);
+}
+
+.field .err {
+  color: var(--danger);
+  font-size: 11.5px;
+  margin-top: 4px;
+}
+
+.field .readonly-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px 10px;
+  background: #f3f5f8;
+  color: var(--text-mute);
+  font-size: 13.5px;
+}
+
+.radio-row {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0 2px;
+}
+
+.radio-row label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.btn:hover {
+  background: var(--navy);
+}
+
+.btn.block {
+  width: 100%;
+}
+
+.btn.secondary {
+  background: #ffffff;
+  color: var(--blue);
+  border: 1px solid var(--blue-text-color);
+}
+
+.btn.secondary:hover {
+  background: var(--blue-light);
+}
+
+.btn.small {
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+
+.btn.teal {
+  background: #0e7c66;
+}
+
+.btn.teal:hover {
+  background: #0b6553;
+}
+
+.btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.otp-inline {
+  margin-top: 4px;
+  padding: 14px;
+  background: var(--blue-light);
+  border: 1px dashed #9fbde3;
+  border-radius: var(--radius);
+}
+
+.otp-inline .demo-msg {
+  font-size: 12px;
+  color: var(--navy-dark);
+  margin-bottom: 10px;
+}
+
+.otp-inline .demo-msg b {
+  font-family: monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.otp-inline input {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 9px;
+  outline: none;
+  color: var(--navy-dark);
+}
+
+.otp-inline input:focus {
+  border-color: var(--blue);
+}
+
+.resend-link {
+  background: none;
+  border: none;
+  color: var(--blue);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 8px 0 0;
+  text-decoration: underline;
+}
+
+.hint-note {
+  margin-top: 14px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  text-align: center;
+}
+
+.hint-note code {
+  background: #eef2f7;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* ---------- main panel / tabs ---------- */
+.main-panel {
+  flex: 1;
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.tabbar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #fbfcfd;
+}
+
+.tabbar .tab {
+  padding: 12px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mute);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tabbar .tab:hover {
+  color: var(--navy);
+}
+
+.tabbar .tab.active {
+  color: var(--navy);
+  border-bottom-color: var(--blue);
+}
+
+.tabbar .tab-book {
+  margin-left: auto;
+  background: var(--blue);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  margin-right: 12px;
+  border-bottom: none;
+}
+
+.tabbar .tab-book:hover {
+  background: var(--navy);
+  color: #fff;
+}
+
+.tabbar .tab-book.active {
+  color: #fff;
+  border-bottom-color: transparent;
+}
+
+.tab-content {
+  padding: 20px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.section-head h3 {
+  font-size: 14.5px;
+  margin: 0;
+  color: var(--navy-dark);
+}
+
+.appt-row {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.appt-row .datebadge {
+  flex-shrink: 0;
+  width: 64px;
+  text-align: center;
+  background: #f3f5f8;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--navy-dark);
+  line-height: 1.4;
+}
+
+.appt-row .info {
+  flex: 1;
+  min-width: 0;
+}
+
+.appt-row .doc {
+  font-weight: 700;
+  color: var(--navy-dark);
+  font-size: 13.5px;
+}
+
+.appt-row .dept {
+  font-size: 12.5px;
+  color: var(--text-mute);
+  margin-top: 2px;
+}
+
+.appt-row .hosp {
+  font-size: 12.5px;
+  color: var(--text-mute);
+}
+
+.appt-row .slot {
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-top: 3px;
+}
+
+.appt-row .apptno {
+  font-size: 11.5px;
+  color: var(--navy-dark);
+  font-family: monospace;
+  margin-top: 4px;
+}
+
+.appt-row .dl-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--blue);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 0 0;
+  text-decoration: underline;
+}
+
+.appt-row {
+  position: relative;
+}
+
+.appt-row .appt-download-btn {
+  align-self: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.appt-status {
+  flex-shrink: 0;
+  align-self: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .3px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--blue-light);
+  color: var(--navy);
+  text-transform: uppercase;
+}
+
+.appt-actions {
+  flex-shrink: 0;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.appt-actions .btn {
+  width: 100px;
+}
+
+.empty-box {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--text-mute);
+  font-size: 13px;
+  background: #fbfcfd;
+}
+
+.subhead {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy-dark);
+  margin: 18px 0 10px;
+}
+
+.subhead:first-child {
+  margin-top: 0;
+}
+
+.subtabbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.subtabbar .subtab {
+  padding: 7px 20px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-mute);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.subtabbar .subtab:hover {
+  color: var(--navy);
+}
+
+.subtabbar .subtab.active {
+  color: #fff;
+  background: var(--navy);
+  border-color: var(--navy);
+}
+
+/* booking form */
+.book-form {
+  max-width: 460px;
+}
+
+.book-form.wide {
+  max-width: 620px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 0px 30px;
+}
+
+/* ---------- time slot grid ---------- */
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.slot-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s, border-color .15s, color .15s;
+}
+
+.slot-card:hover {
+  border-color: var(--blue);
+  color: var(--navy);
+}
+
+.slot-card.selected {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+
+.slot-card.booked {
+  background: #eceff2;
+  border-color: var(--border);
+  color: #a3adb8;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.slot-card.booked:hover {
+  border-color: var(--border);
+  color: #a3adb8;
+}
+
+.slot-hint {
+  font-size: 11.5px;
+  color: var(--text-mute);
+  margin-top: 10px;
+}
+
+.slot-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+}
+
+.slot-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.slot-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+  border: 1px solid var(--border);
+}
+
+.slot-legend i.avail {
+  background: #fff;
+}
+
+.slot-legend i.sel {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.slot-legend i.full {
+  background: #eceff2;
+}
+
+/* modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 35, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+.modal-box {
+  background: #fff;
+  border-radius: 6px;
+  max-width: 380px;
+  width: 100%;
+  padding: 22px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
+  position: relative;
+}
+
+.modal-box .close-x {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+
+.modal-box h3 {
+  font-size: 15px;
+  margin: 6px 0 4px;
+  color: var(--navy-dark);
+}
+
+.modal-box p.msub {
+  font-size: 12.5px;
+  color: var(--text-mute);
+  margin: 0 0 14px;
+}
+
+.modal-box .icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--blue-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--navy);
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.modal-box .icon-circle.success {
+  background: #e6f4ea;
+  color: var(--success);
+}
+
+.success-instructions {
+  background: #f7f9fb;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-top: 12px;
+}
+
+.apptno-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--blue-light);
+  border: 1px solid #c9d9ee;
+  border-radius: var(--radius);
+  padding: 9px 12px;
+  margin-top: 12px;
+  font-size: 12.5px;
+}
+
+.apptno-box b {
+  font-family: monospace;
+  color: var(--navy-dark);
+}
+
+.modal-box.success-box {
+  max-width: 460px;
+  padding: 32px;
+}
+
+.modal-box.success-box .icon-circle {
+  width: 52px;
+  height: 52px;
+  font-size: 22px;
+}
+
+.modal-box h3.success-title {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 10px 0 6px;
+  color: var(--navy-dark);
+}
+
+footer.note {
+  font-size: 11px;
+  color: var(--text-mute);
+  text-align: center;
+  margin-top: 14px;
+}
+
+/* ---------- plain black & white receipt ---------- */
+.receipt-box {
+  background: #fff;
+  color: #000;
+  border: 1.5px solid #000;
+  max-width: 640px;
+  width: 100%;
+  padding: 26px 30px;
+  position: relative;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.receipt-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #000;
+  cursor: pointer;
+  font-family: var(--font);
+}
+
+.receipt-title {
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+
+.receipt-subtitle {
+  text-align: center;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.receipt-hr {
+  border-top: 1.5px solid #000;
+  margin: 14px 0;
+}
+
+.receipt-hr.thin {
+  border-top: 1px solid #000;
+  margin: 8px 0 12px;
+}
+
+.receipt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+}
+
+.receipt-section-label {
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.receipt-lines div {
+  margin-bottom: 2px;
+}
+
+@media (max-width:720px) {
+  .app-grid {
+    flex-direction: column;
+  }
+
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-card.wide {
+    max-width: 100%;
+  }
+
+  .tabbar {
+    overflow-x: auto;
+  }
+
+  .header-greeting {
+    display: none;
+  }
+
+  .profile-drawer {
+    width: 250px;
+  }
+
+  .brand-text .name {
+    font-size: 11px;
+  }
+}
+  </style>
+</head>
+
+<body>
+
+  <!-- ============ TOP BAR ============ -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="brand">
+
+        <div class="brand-logo-wrap">
+          <img class="brand-logo" src="./assets/images/srm_logo.png" />
+        </div>
+
+      </div>
+      <div class="brand-text">
+        <div class="name">SRM Medical College Hospital and Research Centre</div>
+        <div class="tag">Doctor Appointment</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ============ LOGIN SCREEN ============ -->
+  <div class="center-shell" id="loginScreen">
+    <div class="auth-card">
+      <div class="auth-head">
+        <div class="name">Login</div>
+        <div class="sub">Verify your mobile number to continue</div>
+      </div>
+      <div class="auth-body">
+        <h2>Enter your mobile number</h2>
+
+        <div class="field">
+          <div class="input-wrap">
+            <span class="prefix">+91</span>
+            <input type="text" id="loginMobile" placeholder="10-digit mobile number" maxlength="10" inputmode="numeric">
+          </div>
+          <div class="err hidden" id="loginMobileErr"></div>
+        </div>
+
+        <button class="btn block" id="genOtpBtn">Generate OTP</button>
+
+        <div class="otp-inline hidden" id="loginOtpBlock">
+          <label
+            style="display:block;font-size:11.5px;font-weight:600;color:var(--text-mute);margin-bottom:5px;text-transform:uppercase;">Enter
+            OTP</label>
+          <input type="text" id="loginOtpInput" maxlength="4" inputmode="numeric" placeholder="••••">
+          <div class="err hidden" id="loginOtpErr" style="margin-top:6px;"></div>
+          <button class="btn block" id="loginVerifyBtn" style="margin-top:10px;">Login</button>
+          <button class="resend-link" id="loginResendBtn">Resend OTP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ REGISTER SCREEN ============ -->
+  <div class="center-shell hidden" id="registerScreen">
+    <div class="auth-card wide">
+      <div class="auth-head">
+        <div class="name">Register Patient</div>
+        <div class="sub">New account setup</div>
+      </div>
+      <div class="auth-body">
+        <p class="desc">We couldn't find an account for this number. Please complete your details to continue.</p>
+
+        <div class="field">
+          <label>Mobile Number</label>
+          <div class="readonly-box"><span id="regMobileDisplay"></span></div>
+        </div>
+
+        <div class="grid-2" style="grid-template-columns:1fr 1fr;">
+          <div class="field">
+            <label>Full Name</label>
+            <input class="plain" type="text" id="regName" placeholder="e.g. Priya Kumar">
+            <div class="err hidden" id="regNameErr"></div>
+          </div>
+          <div class="field">
+            <label>Gender</label>
+            <div class="radio-row">
+              <label><input type="radio" name="regGender" value="Male" checked> Male</label>
+              <label><input type="radio" name="regGender" value="Female"> Female</label>
+              <label><input type="radio" name="regGender" value="Other"> Other</label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Date of Birth</label>
+            <input class="plain" type="date" id="regDob">
+            <div class="err hidden" id="regDobErr"></div>
+          </div>
+          <div class="field">
+            <label>Age</label>
+            <div class="readonly-box" id="regAgeDisplay">—</div>
+          </div>
+          <div class="field">
+            <label>Address</label>
+            <input class="plain" type="text" id="regAddress" placeholder="House no, street">
+            <div class="err hidden" id="regAddressErr"></div>
+          </div>
+          <div class="field">
+            <label>City</label>
+            <input class="plain" type="text" id="regCity" placeholder="e.g. Chennai">
+            <div class="err hidden" id="regCityErr"></div>
+          </div>
+          <div class="field">
+            <label>State</label>
+            <input class="plain" type="text" id="regState" placeholder="e.g. Tamil Nadu">
+            <div class="err hidden" id="regStateErr"></div>
+          </div>
+          <div class="field">
+            <label>PIN Code</label>
+            <input class="plain" type="text" id="regPincode" maxlength="6" inputmode="numeric"
+              placeholder="6-digit PIN">
+            <div class="err hidden" id="regPincodeErr"></div>
+          </div>
+        </div>
+
+        <div class="field-row-btns" style="display:flex;gap:10px;margin-top:6px;">
+          <button class="btn secondary" id="regBackBtn" style="flex:1;">Back</button>
+          <button class="btn" id="regSubmitBtn" style="flex:2;">Register &amp; Continue</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SELECT PATIENT SCREEN ============ -->
+  <div class="center-shell hidden" id="selectPatientScreen">
+    <div class="auth-card wide">
+      <div class="auth-head">
+        <div class="name">Select Patient</div>
+        <div class="sub">Choose a profile to continue</div>
+      </div>
+      <div class="sp-list" id="selectPatientList"></div>
+      <button class="drawer-action" id="selectAddPatientBtn"
+        style="padding:14px 30px;border-bottom:1px solid var(--border);">
+        <span class="icon">＋</span> <span>Add Patient<span class="sub">Register new patient</span></span>
+      </button>
+      <div style="padding:18px 30px 22px;">
+        <button class="btn block" id="selectContinueBtn" disabled>Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ APP SHELL ============ -->
+  <div class="app-shell hidden" id="appShell">
+    <div class="app-grid">
+
+      <!-- left profile card -->
+      <div class="profile-side-card">
+        <div class="avatar-lg" id="sideProfileInitial">?</div>
+        <div class="p-name" id="sideProfileName">—</div>
+        <div class="p-gender" id="sideProfileGender">—</div>
+        <div class="p-dob" id="sideProfileDob">—</div>
+        <div class="side-divider"></div>
+        <div class="p-phone" id="sideProfilePhone">—</div>
+        <button class="side-signout" id="appLogoutBtn"><span class="icon"><svg width="16" height="16"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg></span> Logout</button>
+      </div>
+
+      <!-- main panel -->
+      <div class="main-panel">
+        <div class="tabbar">
+          <div class="tab active" data-tab="home"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 10.5L12 3l9 7.5" />
+              <path d="M5 9.5V21h14V9.5" />
+            </svg> Home</div>
+          <div class="tab" data-tab="visits"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18M8 3v4M16 3v4" />
+            </svg> Visits</div>
+          <div class="tab" data-tab="lab"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 3h6M10 3v6.5L4.5 19a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9.5V3" />
+              <path d="M7.5 14h9" />
+            </svg> Lab</div>
+          <div class="tab" data-tab="bills"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2h9l5 5v15H6z" />
+              <path d="M15 2v5h5M9 13h6M9 17h6" />
+            </svg> OP/IP Bill</div>
+          <div class="tab tab-book" data-tab="book"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="17" rx="2" />
+              <path d="M3 9h18M8 2v4M16 2v4" />
+              <path d="M12 13v5M9.5 15.5h5" />
+            </svg> Book Appointment</div>
+        </div>
+
+        <div class="tab-content">
+
+          <!-- HOME TAB -->
+          <div id="tabHome">
+            <div class="section-head">
+              <h3>Upcoming Appointment</h3>
+            </div>
+            <div id="homeUpcomingWrap"></div>
+
+            <div class="subhead">Past Visits</div>
+            <div id="homePastWrap"></div>
+          </div>
+
+          <!-- VISITS TAB -->
+          <div id="tabVisits" class="hidden">
+            <div id="visitsListWrap"></div>
+          </div>
+
+          <!-- LAB TAB -->
+          <div id="tabLab" class="hidden">
+            <div class="empty-box">No lab reports available. Your lab test results will be published here once ready.
+            </div>
+          </div>
+
+          <!-- BILLS TAB -->
+          <div id="tabBills" class="hidden">
+            <div class="subtabbar">
+              <div class="subtab active" data-subtab="op">OP</div>
+              <div class="subtab" data-subtab="ip">IP</div>
+            </div>
+            <div id="billsOpPanel">
+              <div class="empty-box">No OP bills available. Your outpatient billing statements will appear here.</div>
+            </div>
+            <div id="billsIpPanel" class="hidden">
+              <div class="empty-box">No IP bills available. Your inpatient billing statements will appear here.</div>
+            </div>
+          </div>
+
+          <!-- BOOK TAB -->
+          <div id="tabBook" class="hidden">
+            <div class="section-head">
+              <h3>Book Appointment</h3>
+            </div>
+            <div class="book-form wide">
+              <div class="field">
+                <label>Appointment Date</label>
+                <input class="plain" type="date" id="bookDate">
+                <div class="err hidden" id="bookDateErr"></div>
+              </div>
+              <div class="field">
+                <label>Department</label>
+                <div class="readonly-box">Gynecology</div>
+              </div>
+              <div class="field">
+                <label>Select Doctor</label>
+                <select class="plain" id="bookDoctor">
+                  <option value="">Choose a doctor</option>
+                  <option>Dr. Madhumitha</option>
+                  <option>Dr. Ravi</option>
+                  <option>Dr. Ganesh</option>
+                  <option>Dr. Anu</option>
+                </select>
+                <div class="err hidden" id="bookDoctorErr"></div>
+              </div>
+              <div class="field">
+                <label>Unit</label>
+                <select class="plain" id="bookUnit">
+                  <option value="">Choose a unit</option>
+                  <option>Unit 1</option>
+                  <option>Unit 2</option>
+                  <option>Unit 3</option>
+                  <option>Unit 4</option>
+                </select>
+                <div class="err hidden" id="bookUnitErr"></div>
+              </div>
+              <div class="field hidden" id="bookSlotField">
+                <label>Available Time Slots</label>
+                <div class="slot-grid" id="bookSlotGrid"></div>
+                <div class="slot-legend">
+                  <span><i class="avail"></i> Available</span>
+                  <span><i class="sel"></i> Selected</span>
+                  <span><i class="full"></i> Booked/Full</span>
+                </div>
+                <div class="err hidden" id="bookSlotErr"></div>
+              </div>
+              <button class="btn block" id="bookConfirmBtn" style="margin-top:6px;">Confirm Appointment</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BOOKING OTP MODAL (popup) ============ -->
+  <div class="modal-overlay hidden" id="bookOtpModal">
+    <div class="modal-box">
+      <button class="close-x" id="bookOtpClose">✕</button>
+      <div class="icon-circle">🔒</div>
+      <h3>Confirm your appointment</h3>
+      <p class="msub">Enter the OTP sent to <b id="bookOtpPhone"></b></p>
+      <div class="otp-inline" style="margin-top:0;">
+        <input type="text" id="bookOtpInput" maxlength="4" inputmode="numeric" placeholder="••••">
+        <div class="err hidden" id="bookOtpErr" style="margin-top:6px;"></div>
+      </div>
+      <button class="btn block" id="bookOtpVerifyBtn" style="margin-top:12px;">Verify &amp; Continue</button>
+      <button class="resend-link" id="bookOtpResendBtn">Resend OTP</button>
+    </div>
+  </div>
+
+  <!-- ============ SUCCESS MODAL ============ -->
+  <div class="modal-overlay hidden" id="successModal">
+    <div class="modal-box success-box">
+      <div class="icon-circle success">✔</div>
+      <h3 class="success-title">Appointment booked successfully</h3>
+      <div class="success-instructions">
+        Please arrive at least <b>15 minutes</b> before your scheduled time. Arrive within your selected slot — if you
+        miss it, you'll need to book a new appointment.
+      </div>
+      <div class="apptno-box">
+        <span>Appointment Number</span>
+        <b id="successApptNo"></b>
+      </div>
+      <p class="msub" style="margin-top:10px;">A confirmation message has been sent to your registered mobile number via
+        SMS.</p>
+      <button class="btn block" id="successCloseBtn" style="margin-top:6px;">Go to Home</button>
+    </div>
+  </div>
+
+  <!-- ============ RECEIPT VIEW MODAL (plain, black & white) ============ -->
+  <div class="modal-overlay hidden" id="receiptModal">
+    <div class="receipt-box">
+      <button class="receipt-close" id="receiptCloseBtn">✕</button>
+      <div class="receipt-title">SRM Medical College Hospital and Research Centre</div>
+      <div class="receipt-subtitle">Doctor Appointment</div>
+      <div class="receipt-hr"></div>
+      <div class="receipt-row">
+        <span><b>Patient Name :</b> <span id="rcName"></span></span>
+        <span><b>Gender :</b> <span id="rcGender"></span></span>
+        <span><b>Age :</b> <span id="rcAge"></span></span>
+        <span><b>Mobile :</b> <span id="rcMobile"></span></span>
+      </div>
+      <div class="receipt-hr"></div>
+      <div class="receipt-section-label">Appointment Information</div>
+      <div class="receipt-hr thin"></div>
+      <div class="receipt-lines">
+        <div><b>Appointment No</b> : <span id="rcApptNo"></span></div>
+        <div><b>Status</b> : <span id="rcStatus"></span></div>
+        <div><b>Booked On</b> : <span id="rcBookedOn"></span></div>
+        <div><b>Appointment Date</b> : <span id="rcDate"></span></div>
+        <div><b>Appointment Time</b> : <span id="rcSlot"></span></div>
+      </div>
+      <div class="receipt-hr"></div>
+      <div class="receipt-row">
+        <span><b>Doctor Name :</b> <span id="rcDoctor"></span></span>
+        <span><b>Department :</b> <span id="rcDept"></span></span>
+        <span><b>Room No :</b> <span id="rcRoom"></span></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      /* ---------------- constants ---------------- */
+      var DOCTORS = ['Dr. Madhumitha', 'Dr. Ravi', 'Dr. Ganesh', 'Dr. Anu'];
+      var HOSPITAL_NAME = 'SRM Medical College Hospital and Research Centre';
+
+      var UNIT_SLOTS = {
+        'Unit 1': ['08:00-08:10', '08:10-08:20', '08:20-08:30', '08:30-08:40', '08:40-08:50', '08:50-09:00', '09:00-09:10', '09:10-09:20', '09:20-09:30'],
+        'Unit 2': ['09:00-09:10', '09:10-09:20', '09:20-09:30', '09:30-09:40', '09:40-09:50', '09:50-10:00', '10:00-10:10', '10:10-10:20', '10:20-10:30'],
+        'Unit 3': ['10:00-10:10', '10:10-10:20', '10:20-10:30', '10:30-10:40', '10:40-10:50', '10:50-11:00', '11:00-11:10', '11:10-11:20', '11:20-11:30'],
+        'Unit 4': ['11:00-11:10', '11:10-11:20', '11:20-11:30', '11:30-11:40', '11:40-11:50', '11:50-12:00', '12:00-12:10', '12:10-12:20', '12:20-12:30']
+      };
+      var UNIT_BOOKED = {
+        'Unit 1': ['08:10-08:20', '08:40-08:50'],
+        'Unit 2': ['09:20-09:30', '10:00-10:10', '10:10-10:20'],
+        'Unit 3': ['10:30-10:40'],
+        'Unit 4': ['11:10-11:20', '11:40-11:50', '12:10-12:20']
+      };
+
+      var usersDB = {};       // mobile -> { mobile, patients:[patient...], activePatientId }
+      var appointmentsDB = {}; // patientId -> [appt]
+      var patientIdSeq = 1;
+      function genPatientId() { return 'p' + (patientIdSeq++); }
+
+      var state = {
+        currentUser: null,     // the currently ACTIVE patient object (mirrors selection in drawer)
+        currentMobile: '',     // mobile number of the logged-in account
+        pendingMobile: '',
+        loginOtp: '',
+        bookOtp: '',
+        activeTab: 'home',
+        selectedSlot: ''
+      };
+
+      /* ---------------- helpers ---------------- */
+      function genOtp() { return String(Math.floor(1000 + Math.random() * 9000)); }
+      function genApptNo() {
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = String(now.getMonth() + 1).padStart(2, '0');
+        var d = String(now.getDate()).padStart(2, '0');
+        var rand = String(Math.floor(100000 + Math.random() * 900000));
+        return 'APT-' + y + m + d + '-' + rand;
+      }
+      function calcAge(dobStr) {
+        if (!dobStr) return '';
+        var dob = new Date(dobStr);
+        if (isNaN(dob.getTime())) return '';
+        var today = new Date();
+        var age = today.getFullYear() - dob.getFullYear();
+        var mm = today.getMonth() - dob.getMonth();
+        if (mm < 0 || (mm === 0 && today.getDate() < dob.getDate())) age--;
+        return age >= 0 ? age : '';
+      }
+      function formatDateLong(dateStr) {
+        if (!dateStr) return '';
+        var d = new Date(dateStr + 'T00:00:00');
+        if (isNaN(d.getTime())) return dateStr;
+        var day = String(d.getDate()).padStart(2, '0');
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return day + '-' + months[d.getMonth()] + '-' + String(d.getFullYear()).slice(2);
+      }
+      function formatDateBadge(dateStr) {
+        if (!dateStr) return { d: '--', m: '---', y: '----' };
+        var d = new Date(dateStr + 'T00:00:00');
+        var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        return { d: String(d.getDate()).padStart(2, '0'), m: months[d.getMonth()], y: d.getFullYear() };
+      }
+      function formatDateFull(dateStr) {
+        if (!dateStr) return '';
+        var d = new Date(dateStr + 'T00:00:00');
+        if (isNaN(d.getTime())) return dateStr;
+        var day = String(d.getDate()).padStart(2, '0');
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return day + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+      }
+      function formatDateTime(isoStr) {
+        if (!isoStr) return '';
+        var d = new Date(isoStr);
+        if (isNaN(d.getTime())) return '';
+        var day = String(d.getDate()).padStart(2, '0');
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        var hrs = d.getHours();
+        var ampm = hrs >= 12 ? 'PM' : 'AM';
+        var hrs12 = hrs % 12; if (hrs12 === 0) hrs12 = 12;
+        var mins = String(d.getMinutes()).padStart(2, '0');
+        return day + '-' + months[d.getMonth()] + '-' + d.getFullYear() + ' ' + String(hrs12).padStart(2, '0') + ':' + mins + ' ' + ampm;
+      }
+      function todayStr() {
+        var d = new Date();
+        return d.toISOString().slice(0, 10);
+      }
+      function initials(name) {
+        if (!name) return '?';
+        return name.trim().charAt(0).toUpperCase();
+      }
+      function capitalizeName(name) {
+        if (!name) return '';
+        return name.trim().split(/\s+/).map(function (w) {
+          return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+        }).join(' ');
+      }
+      function digitsOnly(v, max) {
+        return v.replace(/\D/g, '').slice(0, max);
+      }
+      function el(id) { return document.getElementById(id); }
+      function show(elem) { elem.classList.remove('hidden'); }
+      function hide(elem) { elem.classList.add('hidden'); }
+      function showErr(elem, msg) { elem.textContent = msg; show(elem); }
+      function clearErr(elem) { elem.textContent = ''; hide(elem); }
+
+      /* ---------------- screen switching ---------------- */
+      function showScreen(name) {
+        hide(el('loginScreen')); hide(el('registerScreen')); hide(el('selectPatientScreen')); hide(el('appShell'));
+        if (name === 'login') show(el('loginScreen'));
+        if (name === 'register') show(el('registerScreen'));
+        if (name === 'select') show(el('selectPatientScreen'));
+        if (name === 'app') show(el('appShell'));
+      }
+
+      /* ---------------- LOGIN ---------------- */
+      el('loginMobile').addEventListener('input', function (e) {
+        e.target.value = digitsOnly(e.target.value, 10);
+      });
+      el('loginMobile').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') el('genOtpBtn').click();
+      });
+
+      el('genOtpBtn').addEventListener('click', function () {
+        var mobile = el('loginMobile').value;
+        clearErr(el('loginMobileErr'));
+        if (!/^[6-9]\d{9}$/.test(mobile)) {
+          showErr(el('loginMobileErr'), 'Enter a valid 10-digit mobile number.');
+          return;
+        }
+        state.pendingMobile = mobile;
+        state.loginOtp = genOtp();
+        el('loginOtpInput').value = state.loginOtp;
+        clearErr(el('loginOtpErr'));
+        show(el('loginOtpBlock'));
+        el('loginOtpInput').focus();
+      });
+
+      el('loginOtpInput').addEventListener('input', function (e) {
+        e.target.value = digitsOnly(e.target.value, 4);
+      });
+      el('loginOtpInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') el('loginVerifyBtn').click();
+      });
+
+      el('loginResendBtn').addEventListener('click', function () {
+        state.loginOtp = genOtp();
+        el('loginOtpInput').value = state.loginOtp;
+        clearErr(el('loginOtpErr'));
+      });
+
+      el('loginVerifyBtn').addEventListener('click', function () {
+        var val = el('loginOtpInput').value;
+        if (val.length !== 4) {
+          showErr(el('loginOtpErr'), 'Enter the 4-digit OTP to continue.');
+          return;
+        }
+        if (val !== state.loginOtp) {
+          showErr(el('loginOtpErr'), 'Incorrect OTP. Please try again.');
+          el('loginOtpInput').value = '';
+          return;
+        }
+        clearErr(el('loginOtpErr'));
+        var existing = usersDB[state.pendingMobile];
+        if (existing) {
+          state.currentMobile = existing.mobile;
+          el('loginMobile').value = ''; hide(el('loginOtpBlock'));
+          goToSelectPatient();
+        } else {
+          openRegisterForm(state.pendingMobile, 'newAccount');
+        }
+      });
+
+      /* ---------------- REGISTER ---------------- */
+      function openRegisterForm(mobile, context) {
+        state.registerContext = context || 'newAccount';
+        el('regMobileDisplay').textContent = '+91 ' + mobile;
+        el('regName').value = '';
+        el('regAddress').value = '';
+        el('regCity').value = '';
+        el('regState').value = '';
+        el('regPincode').value = '';
+        el('regDob').value = '';
+        el('regAgeDisplay').textContent = '—';
+        document.querySelector('input[name="regGender"][value="Male"]').checked = true;
+        ['regNameErr', 'regDobErr', 'regAddressErr', 'regCityErr', 'regStateErr', 'regPincodeErr'].forEach(function (id) { clearErr(el(id)); });
+        showScreen('register');
+      }
+
+      el('regDob').addEventListener('change', function () {
+        var age = calcAge(el('regDob').value);
+        el('regAgeDisplay').textContent = age === '' ? '—' : age;
+      });
+      el('regPincode').addEventListener('input', function (e) {
+        e.target.value = digitsOnly(e.target.value, 6);
+      });
+
+      el('regSubmitBtn').addEventListener('click', function () {
+        var name = el('regName').value.trim();
+        var dob = el('regDob').value;
+        var address = el('regAddress').value.trim();
+        var city = el('regCity').value.trim();
+        var stateVal = el('regState').value.trim();
+        var pincode = el('regPincode').value;
+        var gender = document.querySelector('input[name="regGender"]:checked').value;
+
+        var ok = true;
+        if (!name) { showErr(el('regNameErr'), 'Name is required.'); ok = false; } else clearErr(el('regNameErr'));
+        if (!dob) { showErr(el('regDobErr'), 'Date of birth is required.'); ok = false; } else clearErr(el('regDobErr'));
+        if (!address) { showErr(el('regAddressErr'), 'Address is required.'); ok = false; } else clearErr(el('regAddressErr'));
+        if (!city) { showErr(el('regCityErr'), 'City is required.'); ok = false; } else clearErr(el('regCityErr'));
+        if (!stateVal) { showErr(el('regStateErr'), 'State is required.'); ok = false; } else clearErr(el('regStateErr'));
+        if (!/^\d{6}$/.test(pincode)) { showErr(el('regPincodeErr'), 'Enter a valid 6-digit PIN code.'); ok = false; } else clearErr(el('regPincodeErr'));
+        if (!ok) return;
+
+        var newPatient = { id: genPatientId(), mobile: state.pendingMobile, name: name, gender: gender, dob: dob, address: address, city: city, state: stateVal, pincode: pincode };
+        var rec = usersDB[state.pendingMobile];
+        if (!rec) {
+          rec = { mobile: state.pendingMobile, patients: [], activePatientId: null };
+          usersDB[state.pendingMobile] = rec;
+        }
+        rec.patients.push(newPatient);
+        rec.activePatientId = newPatient.id;
+        state.currentMobile = rec.mobile;
+        el('loginMobile').value = ''; hide(el('loginOtpBlock'));
+        enterApp();
+      });
+
+      el('regBackBtn').addEventListener('click', function () {
+        if (state.registerContext === 'addPatient') {
+          goToSelectPatient();
+        } else {
+          showScreen('login');
+        }
+      });
+
+      /* ---------------- SELECT PATIENT SCREEN ---------------- */
+      function getActiveRecord() { return usersDB[state.currentMobile] || null; }
+      function getActivePatient() {
+        var rec = getActiveRecord();
+        if (!rec || !rec.patients.length) return null;
+        return rec.patients.filter(function (p) { return p.id === rec.activePatientId; })[0] || rec.patients[0];
+      }
+
+      var spSelectedId = null;
+
+      function goToSelectPatient() {
+        var rec = getActiveRecord();
+        spSelectedId = rec ? (rec.activePatientId || null) : null;
+        renderSelectPatientList();
+        el('selectContinueBtn').disabled = !spSelectedId;
+        showScreen('select');
+      }
+
+      function renderSelectPatientList() {
+        var rec = getActiveRecord();
+        if (!rec) return;
+        var html = rec.patients.map(function (p) {
+          var age = calcAge(p.dob);
+          var isActive = p.id === spSelectedId;
+          return (
+            '<div class="patient-item' + (isActive ? ' active' : '') + '" data-pid="' + p.id + '">' +
+            '<div class="p-avatar">' + initials(p.name) + '</div>' +
+            '<div class="p-info">' +
+            '<div class="p-name">' + capitalizeName(p.name) + '</div>' +
+            '<div class="p-meta">' + (age !== '' ? age + 'Y' : '—') + ' / ' + (p.gender || '—') + '</div>' +
+            '</div>' +
+            '</div>'
+          );
+        }).join('');
+        el('selectPatientList').innerHTML = html;
+      }
+
+      el('selectPatientList').addEventListener('click', function (e) {
+        var item = e.target.closest('.patient-item');
+        if (!item) return;
+        spSelectedId = item.getAttribute('data-pid');
+        renderSelectPatientList();
+        el('selectContinueBtn').disabled = !spSelectedId;
+      });
+
+      el('selectAddPatientBtn').addEventListener('click', function () {
+        state.pendingMobile = state.currentMobile;
+        openRegisterForm(state.currentMobile, 'addPatient');
+      });
+
+      el('selectContinueBtn').addEventListener('click', function () {
+        var rec = getActiveRecord();
+        if (!rec || !spSelectedId) return;
+        rec.activePatientId = spSelectedId;
+        enterApp();
+      });
+
+      /* ---------------- APP ENTRY / LEFT PROFILE CARD ---------------- */
+      function enterApp() {
+        state.currentUser = getActivePatient();
+        var u = state.currentUser;
+        el('sideProfileInitial').textContent = u ? initials(u.name) : '?';
+        var salutation = u && u.gender === 'Female' ? 'Ms.' : 'Mr.';
+        el('sideProfileName').textContent = u ? (salutation + ' ' + capitalizeName((u.name || '').trim().split(/\s+/)[0] || u.name)) : '—';
+        el('sideProfileGender').textContent = u ? (u.gender || '—').toUpperCase() : '—';
+        var age = u ? calcAge(u.dob) : '';
+        el('sideProfileDob').textContent = u ? ('DOB: ' + formatDateLong(u.dob) + (age !== '' ? (' • ' + age + 'Y') : '')) : '—';
+        el('sideProfilePhone').textContent = u ? ('+91 ' + u.mobile) : '—';
+        renderAppointments();
+        setActiveTab('home');
+        showScreen('app');
+      }
+
+      el('appLogoutBtn').addEventListener('click', function () {
+        logout();
+      });
+
+      function logout() {
+        state.currentUser = null;
+        state.currentMobile = '';
+        state.pendingMobile = '';
+        spSelectedId = null;
+        el('loginMobile').value = '';
+        hide(el('loginOtpBlock'));
+        clearErr(el('loginMobileErr'));
+        showScreen('login');
+      }
+
+      /* ---------------- TABS ---------------- */
+      var tabEls = document.querySelectorAll('.tab');
+      tabEls.forEach(function (t) {
+        t.addEventListener('click', function () { setActiveTab(t.getAttribute('data-tab')); });
+      });
+
+      /* ---------------- OP/IP SUB-TABS ---------------- */
+      var subtabEls = document.querySelectorAll('.subtab');
+      subtabEls.forEach(function (t) {
+        t.addEventListener('click', function () {
+          var name = t.getAttribute('data-subtab');
+          subtabEls.forEach(function (s) { s.classList.toggle('active', s.getAttribute('data-subtab') === name); });
+          if (name === 'op') { show(el('billsOpPanel')); hide(el('billsIpPanel')); }
+          if (name === 'ip') { hide(el('billsOpPanel')); show(el('billsIpPanel')); }
+        });
+      });
+
+      function setActiveTab(name) {
+        state.activeTab = name;
+        tabEls.forEach(function (t) {
+          t.classList.toggle('active', t.getAttribute('data-tab') === name);
+        });
+        ['tabHome', 'tabVisits', 'tabLab', 'tabBills', 'tabBook'].forEach(function (id) { hide(el(id)); });
+        if (name === 'home') show(el('tabHome'));
+        if (name === 'visits') show(el('tabVisits'));
+        if (name === 'lab') show(el('tabLab'));
+        if (name === 'bills') show(el('tabBills'));
+        if (name === 'book') {
+          show(el('tabBook'));
+          el('bookDate').min = todayStr();
+        }
+      }
+
+      /* ---------------- APPOINTMENTS RENDER ---------------- */
+      function apptRowHTML(appt, isPast, forVisits) {
+        var b = formatDateBadge(appt.date);
+        var dlLink = (isPast && !forVisits) ? '<button class="dl-link">⬇ Download Visit Summary</button>' : '';
+        var statusLabel = forVisits ? '<div class="appt-status">' + (isPast ? 'Visited' : 'Upcoming') + '</div>' : '';
+        var visitsActions = forVisits
+          ? '<div class="appt-actions"><button class="btn small secondary appt-view-btn">View</button><button class="btn small secondary appt-download-btn">Download</button></div>'
+          : '';
+        return (
+          '<div class="appt-row" data-apptno="' + appt.apptNo + '">' +
+          '<div class="datebadge">' + b.d + '<br>' + b.m + '<br>' + b.y + '</div>' +
+          '<div class="info">' +
+          '<div class="doc">' + appt.doctor + '</div>' +
+          '<div class="dept">' + appt.department + ' &middot; ' + HOSPITAL_NAME + '</div>' +
+          '<div class="slot">' + appt.slot + '</div>' +
+          '<div class="apptno"><b>' + appt.apptNo + '</b></div>' +
+          dlLink +
+          '</div>' +
+          statusLabel +
+          visitsActions +
+          '</div>'
+        );
+      }
+
+      function renderAppointments() {
+        if (!state.currentUser) return;
+        var list = appointmentsDB[state.currentUser.id] || [];
+        var today = todayStr();
+        var upcoming = list.filter(function (a) { return a.date >= today; }).sort(function (a, b) { return a.date.localeCompare(b.date); });
+        var past = list.filter(function (a) { return a.date < today; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+
+        var upcomingHtml = upcoming.length
+          ? upcoming.map(function (a) { return apptRowHTML(a, false, false); }).join('')
+          : '<div class="empty-box">No Upcoming Appointment Found!</div>';
+        var pastHtml = past.length
+          ? past.map(function (a) { return apptRowHTML(a, true, false); }).join('')
+          : '<div class="empty-box">No past visits yet.</div>';
+
+        var visitsHtml = list.length
+          ? upcoming.map(function (a) { return apptRowHTML(a, false, true); }).join('') +
+          past.map(function (a) { return apptRowHTML(a, true, true); }).join('')
+          : '<div class="empty-box">No visits yet.</div>';
+
+        el('homeUpcomingWrap').innerHTML = upcomingHtml;
+        el('homePastWrap').innerHTML = pastHtml;
+        el('visitsListWrap').innerHTML = visitsHtml;
+      }
+
+      /* ---------------- RECEIPT VIEW (Visits tab) ---------------- */
+      el('visitsListWrap').addEventListener('click', function (e) {
+        var btn = e.target.closest('.appt-view-btn');
+        if (!btn) return;
+        var row = e.target.closest('.appt-row');
+        var apptNo = row ? row.getAttribute('data-apptno') : '';
+        var list = appointmentsDB[state.currentUser.id] || [];
+        var appt = list.filter(function (a) { return a.apptNo === apptNo; })[0];
+        if (!appt) return;
+
+        var user = state.currentUser;
+        var isPast = appt.date < todayStr();
+
+        el('rcName').textContent = user.name || '';
+        el('rcGender').textContent = user.gender || '';
+        el('rcAge').textContent = (calcAge(user.dob) || '—') + ' Years';
+        el('rcMobile').textContent = '+91 ' + user.mobile;
+
+        el('rcApptNo').textContent = appt.apptNo;
+        el('rcStatus').textContent = isPast ? 'Visited' : 'Upcoming';
+        el('rcBookedOn').textContent = formatDateTime(appt.bookedOn);
+        el('rcDate').textContent = formatDateFull(appt.date);
+        el('rcSlot').textContent = appt.slot;
+
+        el('rcDoctor').textContent = appt.doctor;
+        el('rcDept').textContent = appt.department;
+        el('rcRoom').textContent = appt.room || '—';
+
+        show(el('receiptModal'));
+      });
+      el('receiptCloseBtn').addEventListener('click', function () { hide(el('receiptModal')); });
+
+      /* ---------------- BOOKING: UNIT & TIME SLOT GRID ---------------- */
+      function renderSlotGrid(unit) {
+        var grid = el('bookSlotGrid');
+        grid.innerHTML = '';
+        state.selectedSlot = '';
+        var times = UNIT_SLOTS[unit] || [];
+        var booked = UNIT_BOOKED[unit] || [];
+        times.forEach(function (t) {
+          var card = document.createElement('div');
+          var isBooked = booked.indexOf(t) !== -1;
+          card.className = 'slot-card' + (isBooked ? ' booked' : '');
+          card.textContent = t;
+          if (!isBooked) {
+            card.addEventListener('click', function () {
+              grid.querySelectorAll('.slot-card').forEach(function (c) { c.classList.remove('selected'); });
+              card.classList.add('selected');
+              state.selectedSlot = t;
+              clearErr(el('bookSlotErr'));
+            });
+          }
+          grid.appendChild(card);
+        });
+      }
+
+      el('bookUnit').addEventListener('change', function () {
+        var unit = el('bookUnit').value;
+        if (unit) {
+          show(el('bookSlotField'));
+          renderSlotGrid(unit);
+        } else {
+          hide(el('bookSlotField'));
+          el('bookSlotGrid').innerHTML = '';
+          state.selectedSlot = '';
+        }
+        clearErr(el('bookUnitErr'));
+      });
+
+      /* ---------------- BOOKING ---------------- */
+      el('bookConfirmBtn').addEventListener('click', function () {
+        var date = el('bookDate').value;
+        var doctor = el('bookDoctor').value;
+        var unit = el('bookUnit').value;
+        var slot = state.selectedSlot;
+
+        var ok = true;
+        if (!date) { showErr(el('bookDateErr'), 'Please select an appointment date.'); ok = false; } else clearErr(el('bookDateErr'));
+        if (!doctor) { showErr(el('bookDoctorErr'), 'Please select a doctor.'); ok = false; } else clearErr(el('bookDoctorErr'));
+        if (!unit) { showErr(el('bookUnitErr'), 'Please select a unit.'); ok = false; } else clearErr(el('bookUnitErr'));
+        if (!slot) { showErr(el('bookSlotErr'), 'Please select a time slot.'); ok = false; } else clearErr(el('bookSlotErr'));
+        if (!ok) return;
+
+        state.bookOtp = genOtp();
+        el('bookOtpInput').value = state.bookOtp;
+        el('bookOtpPhone').textContent = '+91 ' + state.currentUser.mobile;
+        clearErr(el('bookOtpErr'));
+        show(el('bookOtpModal'));
+        el('bookOtpInput').focus();
+      });
+
+      el('bookOtpInput').addEventListener('input', function (e) {
+        e.target.value = digitsOnly(e.target.value, 4);
+      });
+      el('bookOtpInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') el('bookOtpVerifyBtn').click();
+      });
+      el('bookOtpResendBtn').addEventListener('click', function () {
+        state.bookOtp = genOtp();
+        el('bookOtpInput').value = state.bookOtp;
+        clearErr(el('bookOtpErr'));
+      });
+      el('bookOtpClose').addEventListener('click', function () { hide(el('bookOtpModal')); });
+
+      el('bookOtpVerifyBtn').addEventListener('click', function () {
+        var val = el('bookOtpInput').value;
+        if (val.length !== 4) {
+          showErr(el('bookOtpErr'), 'Enter the 4-digit OTP to continue.');
+          return;
+        }
+        if (val !== state.bookOtp) {
+          showErr(el('bookOtpErr'), 'Incorrect OTP. Please try again.');
+          el('bookOtpInput').value = '';
+          return;
+        }
+        clearErr(el('bookOtpErr'));
+        hide(el('bookOtpModal'));
+
+        var appt = {
+          apptNo: genApptNo(),
+          date: el('bookDate').value,
+          doctor: el('bookDoctor').value,
+          department: 'Gynecology',
+          slot: state.selectedSlot,
+          unit: el('bookUnit').value,
+          bookedOn: new Date().toISOString(),
+          room: 'GYN-' + (200 + DOCTORS.indexOf(el('bookDoctor').value) + 1)
+        };
+        var pid = state.currentUser.id;
+        if (!appointmentsDB[pid]) appointmentsDB[pid] = [];
+        appointmentsDB[pid].push(appt);
+
+        el('successApptNo').textContent = appt.apptNo;
+        show(el('successModal'));
+        renderAppointments();
+      });
+
+      el('successCloseBtn').addEventListener('click', function () {
+        hide(el('successModal'));
+        el('bookDate').value = '';
+        el('bookDoctor').value = '';
+        el('bookUnit').value = '';
+        el('bookSlotGrid').innerHTML = '';
+        hide(el('bookSlotField'));
+        state.selectedSlot = '';
+        setActiveTab('home');
+      });
+
+      /* ---------------- init ---------------- */
+      showScreen('login');
+    })();
+  </script>
+</body>
+
+</html>
