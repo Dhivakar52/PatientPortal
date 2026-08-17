@@ -207,7 +207,7 @@ export function StandardModuleTable<TData extends Record<string, any>>({
     // From Date -> To Date Filtering
     if (fromDate || toDate) {
       result = result.filter((item) => {
-        const dateStr = item.registrationDate || item.ancDate || item.cancelledDate || item.date || item.createdDate;
+        const dateStr = item.registrationDate || item.ancDate || item.cancelledDate || item.date || item.createdDate || item.orderDate || item.billDate || item.admissionDate;
         if (!dateStr) return true;
         const itemDate = new Date(dateStr);
         if (isNaN(itemDate.getTime())) return true;

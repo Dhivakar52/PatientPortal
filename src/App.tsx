@@ -3,6 +3,7 @@ import { AppRoutes } from "@/routes"
 import { ThemeProvider } from "@/context/ThemeContext"
 import { AuthProvider } from "./context/AuthContext"
 import { NotificationProvider } from "./context/NotificationContext"
+import { LabBillingProvider } from "@/context/LabBillingContext"
 import { Toaster } from "@/components/ui/toast"
 import "./App.css"
 
@@ -11,10 +12,12 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <NotificationProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-          <Toaster />
+          <LabBillingProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+            <Toaster />
+          </LabBillingProvider>
         </NotificationProvider>
       </AuthProvider>
     </ThemeProvider>

@@ -185,3 +185,12 @@ button[role="combobox"] {
   z-index: 9999 !important;
   position: relative;
 }
+
+/* Blue brand button & text utilities */
+.bg-blue-btn {
+  background: var(--blue-btn) !important;
+}
+
+.text-blue-brand {
+  color: var(--blue-text-color) !important;
+}
