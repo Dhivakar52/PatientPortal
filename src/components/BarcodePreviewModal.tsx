@@ -42,13 +42,51 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-barcode-card,
+          #printable-barcode-card * {
+            visibility: visible !important;
+          }
+          #printable-barcode-card {
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: 80mm !important;
+            margin: 0 !important;
+            padding: 5mm !important;
+            box-shadow: none !important;
+            border: 1px solid #000 !important;
+          }
+          [data-radix-dialog-overlay],
+          [data-radix-dialog-content],
+          [role="dialog"] {
+            position: static !important;
+            transform: none !important;
+            inset: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            overflow: visible !important;
+            background: none !important;
+            box-shadow: none !important;
+          }
+          @page {
+            size: auto;
+            margin: 0;
+          }
+        }
+      `}</style>
       <DialogContent 
         className="p-0 w-full rounded-xl border border-slate-200"
         style={{
           maxWidth: "35%",
         }}
       >
-        <DialogHeader className="bg-slate-50 px-6 py-4 border-b border-slate-100">
+        <DialogHeader className="bg-slate-50 px-6 py-4 border-b border-slate-100 print:hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-slate-900">
               <Barcode className="h-5 w-5 text-blue-600" />
@@ -63,7 +101,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
         </DialogHeader>
 
         {/* Printable Card Area */}
-        <div ref={barcodeCardRef} className="p-6 space-y-4 bg-white text-center">
+        <div ref={barcodeCardRef} id="printable-barcode-card" className="p-6 space-y-4 bg-white text-center">
           <div className="border border-slate-200 rounded-xl p-5 bg-slate-50/50 space-y-4 shadow-sm">
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
@@ -103,7 +141,7 @@ export const BarcodePreviewModal: React.FC<BarcodePreviewModalProps> = ({
         </div>
 
         {/* Actions Footer */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between print:hidden">
           <Button variant="outline" size="sm" onClick={onClose} className="text-[12.5px]">
             <X className="h-3.5 w-3.5 mr-1" /> Close
           </Button>

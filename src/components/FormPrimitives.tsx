@@ -7,6 +7,7 @@ import { Label as ShadLabel } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DatePickerDob } from "@/components/ui/date-picker-dob";
 import { cn } from "@/lib/utils";
 
 export function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
@@ -97,11 +98,13 @@ export function DateField({
   defaultLabel,
   value,
   onChange,
+  disabled,
 }: {
   placeholder?: string;
   defaultLabel?: string;
   value?: Date;
   onChange?: (date: Date | undefined) => void;
+  disabled?: React.ComponentProps<typeof Calendar>["disabled"];
 }) {
   const [internalDate, setInternalDate] = React.useState<Date | undefined>();
   const date = value !== undefined ? value : internalDate;
@@ -129,8 +132,50 @@ export function DateField({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
-        <Calendar mode="single" selected={date} onSelect={handleSelect} />
+        <Calendar mode="single" selected={date} onSelect={handleSelect} disabled={disabled} />
       </PopoverContent>
     </Popover>
+  );
+}
+
+// ✅ Controlled DobDateField - Date of Birth picker with dropdown caption layout (Month & Year selection)
+export function DobDateField({
+  placeholder = "Select Date of Birth",
+  defaultLabel,
+  value,
+  onChange,
+  fromYear = 1900,
+  toYear,
+  disabled,
+}: {
+  placeholder?: string;
+  defaultLabel?: string;
+  value?: Date;
+  onChange?: (date: Date | undefined) => void;
+  fromYear?: number;
+  toYear?: number;
+  disabled?: boolean;
+}) {
+  const [internalDate, setInternalDate] = React.useState<Date | undefined>();
+  const date = value !== undefined ? value : internalDate;
+
+  const handleSelect = (d: Date | undefined) => {
+    if (onChange) {
+      onChange(d);
+    } else {
+      setInternalDate(d);
+    }
+  };
+
+  return (
+    <DatePickerDob
+      value={date}
+      onChange={handleSelect}
+      placeholder={placeholder}
+      defaultLabel={defaultLabel}
+      fromYear={fromYear}
+      toYear={toYear}
+      disabled={disabled}
+    />
   );
 }

@@ -1,4 +1,15 @@
-import React from 'react'
+import React from "react";
+import { createPortal } from "react-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Printer, X, Receipt as ReceiptIcon } from "lucide-react";
+import { ReceiptDocument } from "./ReceiptDocument";
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { capitalizeName, calcAge, formatDateTime, formatDateFull, todayStr } from '@/utils/patient.utils'
 
@@ -15,77 +26,170 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   appt,
   patient,
 }) => {
-  if (!isOpen || !appt || !patient) return null
+  React.useEffect(() => {
+    if (isOpen) {
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+      }
+      setTimeout(() => {
+        const modalContent = document.querySelector('[role="dialog"]');
+        if (modalContent) {
+          modalContent.scrollTop = 0;
+          modalContent.scrollLeft = 0;
+        }
+        const printContainers = document.querySelectorAll(
+          '.print-receipt-standalone, .receipt-print, #printable-receipt'
+        );
+        printContainers.forEach((el) => {
+          el.scrollTop = 0;
+          el.scrollLeft = 0;
+        });
+      }, 0);
+    }
+  }, [isOpen]);
 
-  const today = todayStr()
+  if (!isOpen || !appt || !patient) return null;
+
+  const today = todayStr();
+
+  const handlePrint = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    }
+    const modalContent = document.querySelector('[role="dialog"]');
+    if (modalContent) {
+      modalContent.scrollTop = 0;
+      modalContent.scrollLeft = 0;
+    }
+    const printContainers = document.querySelectorAll(
+      '.print-receipt-standalone, .receipt-print, #printable-receipt'
+    );
+    printContainers.forEach((el) => {
+      el.scrollTop = 0;
+      el.scrollLeft = 0;
+    });
+    setTimeout(() => {
+      window.print();
+    }, 50);
+  };
+
+  const receiptData = {
+    apptNo: appt.apptNo,
+    patientName: capitalizeName(patient.name),
+    gender: patient.gender,
+    age: calcAge(patient.dob) || '—',
+    mobile: patient.mobile,
+    status: appt.date < today ? 'Visited' : 'Upcoming',
+    bookedOn: formatDateTime(appt.bookedOn),
+    appointmentDate: formatDateFull(appt.date),
+    appointmentTime: appt.slot,
+    doctor: appt.doctor,
+    department: appt.department,
+    room: appt.room,
+  };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white text-black border-2 border-black max-w-2xl w-full p-7 shadow-2xl relative font-mono text-xs leading-relaxed my-8">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-4 font-sans text-base font-bold text-black hover:opacity-70 cursor-pointer"
+    <>
+      {/* Print CSS isolation: ensures only .print-receipt-standalone renders on print */}
+      <style>{`
+        @media screen {
+          .print-receipt-standalone {
+            display: none !important;
+          }
+        }
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          .print-receipt-standalone,
+          .print-receipt-standalone * {
+            visibility: visible !important;
+          }
+          .print-receipt-standalone {
+            display: block !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 8mm 12mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: #ffffff !important;
+          }
+          [data-radix-dialog-overlay],
+          [data-radix-dialog-content],
+          [role="dialog"] {
+            position: static !important;
+            transform: none !important;
+            inset: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            overflow: visible !important;
+            background: none !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+        }
+      `}</style>
+
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent
+          className="p-0 rounded-xl border border-slate-200 overflow-y-auto max-h-[90vh] print:hidden"
+          style={{
+            maxWidth: "850px",
+          }}
         >
-          ✕
-        </button>
+          <DialogHeader className="bg-slate-50 px-6 py-4 border-b border-slate-100 print:hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-slate-900">
+                <ReceiptIcon className="h-5 w-5 text-blue-600" />
+                <DialogTitle className="text-base font-semibold">
+                  Appointment Receipt Preview
+                </DialogTitle>
+              </div>
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+              Formatted for standard A4 document printing
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="text-center font-bold text-sm tracking-tight uppercase">
-          SRM Medical College Hospital and Research Centre
-        </div>
-        <div className="text-center text-xs mt-0.5">Doctor Appointment Receipt</div>
-        <div className="border-t-2 border-black my-3" />
+          {/* Screen Preview Container */}
+          <div className="p-6 bg-slate-100 flex justify-center print:hidden">
+            <ReceiptDocument data={receiptData} />
+          </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 py-1">
-          <div>
-            <b>Patient Name :</b> {capitalizeName(patient.name)}
-          </div>
-          <div>
-            <b>Gender :</b> {patient.gender}
-          </div>
-          <div>
-            <b>Age :</b> {calcAge(patient.dob) || '—'} Yrs
-          </div>
-          <div>
-            <b>Mobile :</b> +91 {patient.mobile}
-          </div>
-        </div>
+          {/* Action Buttons */}
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between print:hidden">
+            <Button variant="outline" size="sm" onClick={onClose} className="text-[12.5px] cursor-pointer">
+              <X className="h-3.5 w-3.5 mr-1" /> Close
+            </Button>
 
-        <div className="border-t-2 border-black my-3" />
-        <div className="font-bold uppercase tracking-wider mb-1">Appointment Information</div>
-        <div className="border-t border-black mb-3" />
+            <Button
+              size="sm"
+              onClick={handlePrint}
+              className="text-[12.5px] gap-1.5 text-white cursor-pointer"
+              style={{ background: "var(--blue-btn)" }}
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Print Receipt
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-        <div className="space-y-1">
-          <div>
-            <b>Appointment No :</b> {appt.apptNo}
-          </div>
-          <div>
-            <b>Status :</b> {appt.date < today ? 'Visited' : 'Upcoming'}
-          </div>
-          <div>
-            <b>Booked On :</b> {formatDateTime(appt.bookedOn)}
-          </div>
-          <div>
-            <b>Appointment Date :</b> {formatDateFull(appt.date)}
-          </div>
-          <div>
-            <b>Appointment Time :</b> {appt.slot}
-          </div>
-        </div>
-
-        <div className="border-t-2 border-black my-3" />
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <div>
-            <b>Doctor Name :</b> {appt.doctor}
-          </div>
-          <div>
-            <b>Department :</b> {appt.department}
-          </div>
-          <div>
-            <b>Room No :</b> {appt.room}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+      {/* Standalone Print-Only Portal attached directly to document.body */}
+      {isOpen &&
+        createPortal(
+          <div className="print-receipt-standalone">
+            <ReceiptDocument data={receiptData} />
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};

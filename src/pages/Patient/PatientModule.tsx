@@ -92,8 +92,21 @@ const PatientModule: React.FC = () => {
             {auth.screen === 'app' && (
                 <PatientDashboard
                     currentPatient={auth.currentPatient}
+                    patients={auth.currentUserRecord?.patients || []}
+                    onSelectPatient={(id) => {
+                      auth.setActivePatientId(id)
+                      auth.setSpSelectedId(id)
+                      auth.setUsersDB((prev) => ({
+                        ...prev,
+                        [auth.currentMobile]: {
+                          ...prev[auth.currentMobile],
+                          activePatientId: id,
+                        },
+                      }))
+                    }}
                     patientAppointments={patientAppointments}
                     onSelectPatientClick={() => auth.setScreen('select')}
+                    onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
                     onLogout={auth.handleLogout}
                     bookDate={booking.bookDate}
                     setBookDate={booking.setBookDate}

@@ -21,8 +21,11 @@ import { initials, capitalizeName, formatDateLong, calcAge, todayStr } from '@/u
 
 interface PatientDashboardProps {
   currentPatient: Patient | null
-  patientAppointments: Appointment[]
+  patients?: Patient[]
+  onSelectPatient?: (patientId: string) => void
   onSelectPatientClick: () => void
+  onAddPatient?: () => void
+  patientAppointments: Appointment[]
   onLogout: () => void
 
   // Booking props
@@ -41,8 +44,11 @@ interface PatientDashboardProps {
 
 export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   currentPatient,
-  patientAppointments,
+  patients = [],
+  onSelectPatient,
   onSelectPatientClick,
+  onAddPatient,
+  patientAppointments,
   onLogout,
   bookDate,
   setBookDate,
@@ -101,7 +107,13 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
-      <PatientHeader currentPatient={currentPatient} onSelectPatientClick={onSelectPatientClick} />
+      <PatientHeader
+        currentPatient={currentPatient}
+        patients={patients}
+        onSelectPatient={onSelectPatient}
+        onSelectPatientClick={onSelectPatientClick}
+        onAddPatient={onAddPatient}
+      />
 
       <div className="px-4 py-6">
         <div className="flex flex-col md:flex-row gap-5 items-start">
