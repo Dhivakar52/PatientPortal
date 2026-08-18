@@ -78,10 +78,10 @@ const Pagination: React.FC<PaginationProps> = ({ table, totalCount }) => {
               table.setPageSize(newSize);
               table.setPageIndex(0);
             }}
-            className="border border-border bg-background text-foreground px-2 py-1 rounded text-xs cursor-pointer hover:border-slate-400 focus:outline-none"
+            className="border border-border bg-background text-foreground dark:bg-slate-900 dark:text-slate-100 px-2 py-1 rounded text-xs cursor-pointer hover:border-slate-400 focus:outline-none"
           >
             {[10, 25, 50, 100].map((size) => (
-              <option key={size} value={size}>
+              <option key={size} value={size} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
                 {size}
               </option>
             ))}

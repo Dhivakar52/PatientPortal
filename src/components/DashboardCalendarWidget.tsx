@@ -3,10 +3,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar as CalendarIcon,
-  Clock,
-  UserCheck,
-  CalendarClock,
-  Baby,
 } from "lucide-react";
 import {
   Card,
@@ -257,7 +253,7 @@ export const DashboardCalendarWidget: React.FC = () => {
           {/* Calendar Grid (7 cols) */}
           <div className="lg:col-span-7 space-y-3">
             {/* Header Row */}
-            <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-500 pb-2 border-b border-slate-100">
+            <div className="grid grid-cols-7 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 pb-2 border-b border-slate-100 dark:border-slate-800">
               <span>Sun</span>
               <span>Mon</span>
               <span>Tue</span>
@@ -270,7 +266,7 @@ export const DashboardCalendarWidget: React.FC = () => {
             {/* Days Grid */}
             <div className="grid grid-cols-7 gap-1">
               {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-                <div key={`empty-${i}`} className="h-12 rounded-xl bg-slate-50/40" />
+                <div key={`empty-${i}`} className="h-12 rounded-xl bg-slate-50/40 dark:bg-slate-800/40" />
               ))}
 
               {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -291,8 +287,8 @@ export const DashboardCalendarWidget: React.FC = () => {
                       isSelected
                         ? "border border-blue-500 font-bold"
                         : isToday
-                        ? "border-blue-300 font-bold text-blue-800"
-                        : "border-slate-100 bg-white hover:bg-slate-50 text-slate-700"
+                        ? "border-blue-300 font-bold text-blue-800 dark:text-blue-300"
+                        : "border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                     }`}
                     style={
                       isSelected || isToday
@@ -317,161 +313,105 @@ export const DashboardCalendarWidget: React.FC = () => {
                         />
                       ))}
                       {dayEvents.length > 3 && (
-                        <span className="text-[9px] font-extrabold text-slate-600">+</span>
+                        <span className="text-[9px] font-extrabold text-slate-600 dark:text-slate-400">+</span>
                       )}
                     </div>
                   </button>
                 );
               })}
             </div>
-
-            {/* Color Legend using theme tokens */}
-            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-4 text-[11px]">
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-blue-600" />
-                <span className="text-slate-600 font-medium">OP / ANC</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-slate-600" />
-                <span className="text-slate-600 font-medium">Revisit / Referral</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-600" />
-                <span className="text-slate-600 font-medium">Appointment</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-red-600" />
-                <span className="text-slate-600 font-medium">Cancellation</span>
-              </div>
-            </div>
           </div>
 
-          {/* Today's Schedule & Quick Stats (5 cols) */}
-          <div className="lg:col-span-5 space-y-4">
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-                <span className="text-slate-500 flex items-center gap-1 text-[11px]">
-                  <UserCheck className="h-3.5 w-3.5" style={{ color: "var(--blue-text-color)" }} /> OP Registrations
-                </span>
-                <span className="text-lg font-bold text-slate-900 block mt-0.5">142 Today</span>
-              </div>
-
-              <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-                <span className="text-slate-500 flex items-center gap-1 text-[11px]">
-                  <CalendarClock className="h-3.5 w-3.5" style={{ color: "var(--blue-text-color)" }} /> Revisits Today
-                </span>
-                <span className="text-lg font-bold text-slate-900 block mt-0.5">385 Patients</span>
-              </div>
-
-              <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-                <span className="text-slate-500 flex items-center gap-1 text-[11px]">
-                  <Baby className="h-3.5 w-3.5" style={{ color: "var(--blue-text-color)" }} /> ANC Care
-                </span>
-                <span className="text-lg font-bold text-slate-900 block mt-0.5">64 Clinics</span>
-              </div>
-
-              <div className="p-3 rounded-xl border border-slate-200 bg-slate-50/50">
-                <span className="text-slate-500 flex items-center gap-1 text-[11px]">
-                  <Clock className="h-3.5 w-3.5" style={{ color: "var(--blue-text-color)" }} /> Appointments
-                </span>
-                <span className="text-lg font-bold text-slate-900 block mt-0.5">312 Slots</span>
-              </div>
-            </div>
-
-            {/* Scheduled Events List */}
-            <div className="space-y-2">
+          {/* Right Details Panel */}
+          <div className="lg:col-span-5 bg-slate-50/60 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 flex flex-col justify-between">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                   Schedule for {selectedDateStr}
-                </h4>
-                <Badge variant="secondary" className="text-[10.5px]">
+                </span>
+                <Badge variant="outline" className="text-[10px] font-bold">
                   {selectedDateEvents.length} Events
                 </Badge>
               </div>
 
-              <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                {selectedDateEvents.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                    No hospital events scheduled for this date.
-                  </div>
-                ) : (
-                  selectedDateEvents.map((evt) => {
-                    const styleMeta = EVENT_TYPE_STYLES[evt.eventType];
-                    return (
-                      <div
-                        key={evt.id}
-                        onClick={() => setSelectedEvent(evt)}
-                        className="p-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition cursor-pointer space-y-1"
-                      >
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-900">{evt.title}</span>
-                          <Badge variant="outline" className={`text-[10px] font-semibold ${styleMeta.text}`}>
-                            {styleMeta.label}
-                          </Badge>
+              {selectedDateEvents.length === 0 ? (
+                <div className="h-44 flex flex-col items-center justify-center text-slate-400 text-xs">
+                  <CalendarIcon className="h-8 w-8 mb-2 opacity-50" />
+                  No hospital events scheduled for this date
+                </div>
+              ) : (
+                selectedDateEvents.map((evt) => {
+                  const style = EVENT_TYPE_STYLES[evt.eventType];
+                  return (
+                    <div
+                      key={evt.id}
+                      onClick={() => setSelectedEvent(evt)}
+                      className={`p-3 rounded-xl border transition-all cursor-pointer hover:shadow-xs bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-bold text-slate-900 dark:text-slate-100">{evt.title}</p>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
+                            {evt.patientName} • <span className="font-mono text-slate-500 dark:text-slate-400">{evt.uhid}</span>
+                          </p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            {evt.department} • {evt.doctor}
+                          </p>
                         </div>
-
-                        <div className="flex items-center justify-between text-[11.5px] text-slate-600">
-                          <span className="font-medium text-slate-800">{evt.patientName} (UHID: {evt.uhid})</span>
-                          <span className="flex items-center gap-1 text-slate-500">
-                            <Clock className="h-3 w-3" /> {evt.time}
-                          </span>
-                        </div>
+                        <Badge className={`text-[10px] font-semibold border ${style.bg} dark:bg-slate-800 ${style.text}`}>
+                          {style.label}
+                        </Badge>
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
       </CardContent>
 
-      {/* Details Dialog */}
+      {/* Event Details Dialog */}
       <Dialog open={Boolean(selectedEvent)} onOpenChange={() => setSelectedEvent(null)}>
-        <DialogContent className="max-w-md p-0 overflow-hidden rounded-xl border border-slate-200 shadow-xl">
-          <DialogHeader className="bg-slate-50 px-6 py-4 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" style={{ color: "var(--blue-text-color)" }} />
-              <DialogTitle className="text-base font-bold text-slate-900">
-                Hospital Event Details
-              </DialogTitle>
-            </div>
-            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-              Scheduled clinical activity details
+        <DialogContent className="max-w-md rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-900 dark:text-slate-100">Event Details</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
+              Detailed breakdown of the selected hospital appointment or registration
             </DialogDescription>
           </DialogHeader>
 
           {selectedEvent && (
-            <div className="p-6 space-y-4 text-xs text-slate-700 bg-white">
+            <div className="space-y-4 pt-2 text-xs text-slate-700 dark:text-slate-200">
               <div className="space-y-1">
-                <span className="text-[11px] text-slate-500 font-medium">Event Title</span>
-                <p className="text-sm font-bold text-slate-900">{selectedEvent.title}</p>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Event Title</span>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{selectedEvent.title}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div>
-                  <span className="text-[11px] text-slate-500 block">Patient Name</span>
-                  <span className="font-bold text-slate-900 text-sm">{selectedEvent.patientName}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Patient Name</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">{selectedEvent.patientName}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block">UHID / OP No</span>
-                  <span className="font-bold text-slate-900 text-sm font-mono">{selectedEvent.uhid}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">UHID / OP No</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-sm font-mono">{selectedEvent.uhid}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block">Department</span>
-                  <span className="font-semibold text-slate-800">{selectedEvent.department}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Department</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedEvent.department}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block">Attending Doctor</span>
-                  <span className="font-semibold text-slate-800">{selectedEvent.doctor}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Attending Doctor</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedEvent.doctor}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block">Date & Time</span>
-                  <span className="font-medium text-slate-700">{selectedEvent.date} - {selectedEvent.time}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Date & Time</span>
+                  <span className="font-medium text-slate-700 dark:text-slate-300">{selectedEvent.date} - {selectedEvent.time}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block">Status</span>
-                  <Badge variant="outline" className="mt-0.5 bg-blue-50 text-blue-700 border-blue-200 text-[10.5px]">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Status</span>
+                  <Badge variant="outline" className="mt-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 text-[10.5px]">
                     {selectedEvent.status}
                   </Badge>
                 </div>

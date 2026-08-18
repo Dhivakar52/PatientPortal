@@ -1,14 +1,15 @@
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { VisitsTable } from './VisitsTable'
-import { type Appointment } from '@/types/patient.types'
+import { type Appointment, type Patient } from '@/types/patient.types'
 
 interface VisitsTabProps {
   appointments: Appointment[]
   onViewReceipt: (appt: Appointment) => void
+  currentPatient?: Patient | null
 }
 
-export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments, onViewReceipt }) => {
+export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments, onViewReceipt, currentPatient }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
@@ -18,7 +19,7 @@ export const VisitsTab: React.FC<VisitsTabProps> = ({ appointments, onViewReceip
         </Badge>
       </div>
 
-      <VisitsTable appointments={appointments} onViewReceipt={onViewReceipt} />
+      <VisitsTable appointments={appointments} onViewReceipt={onViewReceipt} currentPatient={currentPatient} />
     </div>
   )
 }

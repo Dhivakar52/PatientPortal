@@ -120,10 +120,10 @@ export function DatePickerDob({
               <select
                 value={displayMonth.getMonth()}
                 onChange={handleMonthSelect}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               >
                 {MONTHS_SHORT.map((m, idx) => (
-                  <option key={m} value={idx}>
+                  <option key={m} value={idx} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
                     {m}
                   </option>
                 ))}
@@ -137,10 +137,10 @@ export function DatePickerDob({
               <select
                 value={displayMonth.getFullYear()}
                 onChange={handleYearSelect}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               >
                 {years.map((y) => (
-                  <option key={y} value={y}>
+                  <option key={y} value={y} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
                     {y}
                   </option>
                 ))}

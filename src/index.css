@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
-* {
+body {
   font-size: 14px;
 }
 
@@ -143,10 +143,19 @@ button[role="combobox"] {
   font-size: 12px;
 }
 
+select option {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+}
+
+.dark select option {
+  background-color: oklch(0.205 0 0);
+  color: oklch(0.985 0 0);
+}
+
 .theme-color {
   background-color: var(--side-menu);
   color: var(--blue-text-color);
-
 }
 
 
@@ -193,4 +202,4 @@ button[role="combobox"] {
 
 .text-blue-brand {
   color: var(--blue-text-color) !important;
-}
+}

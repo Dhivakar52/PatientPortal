@@ -202,7 +202,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
               )}
 
               {activeTab === 'visits' && (
-                <VisitsTab appointments={patientAppointments} onViewReceipt={onViewReceipt} />
+                <VisitsTab appointments={patientAppointments} onViewReceipt={onViewReceipt} currentPatient={currentPatient} />
               )}
 
               {activeTab === 'lab' && <LaboratoryTab />}

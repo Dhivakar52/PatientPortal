@@ -1,8 +1,9 @@
 import React from 'react'
-import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid } from 'lucide-react'
+import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon } from 'lucide-react'
 import srmLogo from '@/assets/images/srm_logo.png'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
+import { useTheme } from '@/context/ThemeContext'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   onSelectPatientClick,
   onAddPatient,
 }) => {
+  const { theme, toggleTheme } = useTheme()
   const salutation = currentPatient?.gender === 'Female' ? 'Ms.' : 'Mr.'
   const displayName = currentPatient
     ? `${salutation} ${capitalizeName((currentPatient.name || '').trim().split(/\s+/)[0] || currentPatient.name)}`
@@ -40,29 +42,38 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   const displayedPatients = showMoreCardView ? patientList.slice(0, 5) : patientList
 
   return (
-    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-40" style={{ background: "var(--blue-text-color)" }}>
+    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-40 sticky top-0" style={{ background: "var(--blue-text-color)" }}>
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex items-center gap-3 shrink-0">
           <div className="bg-white rounded p-1 w-12 h-12 flex items-center justify-center overflow-hidden shrink-0">
             <img src={srmLogo} alt="SRM Logo" className="w-10 h-auto object-contain" />
           </div>
           <div>
-            <div className="font-bold md:text-sm sm:text-[10px] leading-snug">
+            <div className="font-bold md:text-sm sm:text-[10px] leading-snug md:block hidden ">
               SRM Medical College Hospital and Research Centre
             </div>
-            <div className="text-xs text-blue-200">Doctor Appointment</div>
+            <div className="text-xs text-blue-200 md:block hidden">Doctor Appointment</div>
           </div>
         </div>
-
-        {/* {currentPatient && (
-          <div className="hidden md:block pl-4 border-l border-white/20 text-xs font-semibold text-blue-100 truncate">
-            Welcome, <b className="text-white font-bold">{capitalizeName(currentPatient.name || '')}</b>
-          </div>
-        )} */}
       </div>
 
-      {currentPatient && (
-        <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Theme Toggle Button */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors cursor-pointer outline-none"
+          aria-label="Toggle theme"
+          title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+        >
+          {theme === "light" ? (
+            <Moon className="h-4 w-4" />
+          ) : (
+            <Sun className="h-4 w-4 text-amber-300" />
+          )}
+        </button>
+
+        {currentPatient && (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -161,8 +172,8 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      )}
+        )}
+      </div>
     </header>
   )
 }
