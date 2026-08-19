@@ -59,7 +59,7 @@ export function TextField({
       value={value}
       defaultValue={defaultValue}
       onChange={(e) => onChange?.(e.target.value)}
-      className="h-9 text-[13px] rounded-[4px]"
+      className="h-9 text-[13px] rounded-[4px]"  // ✅ Already 4px
     />
   );
 }
@@ -80,11 +80,16 @@ export function SelectField({
     <NativeSelect
       value={value ?? ""}
       onChange={(e) => onChange?.(e.target.value)}
-      className="h-9 text-[13px] w-full "
+      className="h-9 text-[13px] w-full rounded-[4px]"
+      style={{
+        borderRadius: "4px !important"
+      }}
     >
-      <option value="">{placeholder}</option>
+      <option value="" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+        {placeholder}
+      </option>
       {options.map((opt) => (
-        <option key={opt} value={opt}>
+        <option key={opt} value={opt} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
           {opt}
         </option>
       ))}
@@ -123,15 +128,15 @@ export function DateField({
         <Button
           variant="outline"
           className={cn(
-            "h-9 w-full justify-start px-3 text-left text-[13px] font-normal text-slate-700 rounded-[4px]", // ✅ Added rounded-[4px]
-            !date && !defaultLabel && "text-slate-400"
+            "h-9 w-full justify-start px-3 text-left text-[13px] font-normal text-slate-700 dark:text-slate-200 rounded-[4px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",  // ✅ Already 4px
+            !date && !defaultLabel && "text-slate-400 dark:text-slate-500"
           )}
         >
-          <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0" />
+          <CalendarIcon className="mr-2 h-3.5 w-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
           {date ? format(date, "dd-MM-yyyy") : defaultLabel ?? placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl" align="start">
         <Calendar mode="single" selected={date} onSelect={handleSelect} disabled={disabled} />
       </PopoverContent>
     </Popover>
@@ -176,6 +181,7 @@ export function DobDateField({
       fromYear={fromYear}
       toYear={toYear}
       disabled={disabled}
+      className="rounded-[4px]"  // ✅ Added rounded-[4px] prop if DatePickerDob accepts it
     />
   );
 }

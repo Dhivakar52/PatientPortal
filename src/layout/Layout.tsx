@@ -18,8 +18,8 @@ interface LayoutProps {
   }[]
 }
 
-export function Layout({ 
-  children, 
+export function Layout({
+  children,
   // user, 
   // notificationCount = 3,
   breadcrumbItems = []
@@ -30,13 +30,13 @@ export function Layout({
         <AppSidebar />
 
         <SidebarInset className="flex-1 flex flex-col min-h-screen w-0">
-          <Header 
+          <Header
             // user={user}
             // notificationCount={notificationCount}
             breadcrumbItems={breadcrumbItems}
           />
 
-          <main className="flex-1 p-6 layerBg">{children || <Outlet/>}</main>
+          <main className="flex-1 p-6 layerBg">{children || <Outlet />}</main>
 
           {/* <footer className="border-t py-4 px-6 text-center text-sm text-muted-foreground bg-background">
             <p>© 2026 MyApp. All rights reserved.</p>

@@ -58,7 +58,7 @@ export const BookingOtpModal: React.FC<BookingOtpModalProps> = ({
           <Button
             onClick={onVerify}
             className="w-full text-white font-semibold cursor-pointer"
-            style={{ background: 'var(--blue-btn)' }}
+            style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
           >
             Verify &amp; Continue
           </Button>

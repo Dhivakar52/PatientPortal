@@ -232,7 +232,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           <Button
             onClick={onConfirm}
             className="text-white cursor-pointer font-semibold px-6 flex items-center gap-2"
-            style={{ background: 'var(--blue-btn)' }}
+            style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
           >
             <CalendarCheck className="w-4 h-4" />
             Confirm Appointment

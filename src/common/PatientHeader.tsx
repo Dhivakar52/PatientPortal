@@ -1,8 +1,9 @@
 import React from 'react'
-import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid } from 'lucide-react'
+import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon, LogOut } from 'lucide-react'
 import srmLogo from '@/assets/images/srm_logo.png'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
+import { useTheme } from '@/context/ThemeContext'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ interface PatientHeaderProps {
   onSelectPatient?: (patientId: string) => void
   onSelectPatientClick?: () => void
   onAddPatient?: () => void
+  onLogout?: () => void
 }
 
 export const PatientHeader: React.FC<PatientHeaderProps> = ({
@@ -27,7 +29,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   onSelectPatient,
   onSelectPatientClick,
   onAddPatient,
+  onLogout,
 }) => {
+  const { theme, toggleTheme } = useTheme()
   const salutation = currentPatient?.gender === 'Female' ? 'Ms.' : 'Mr.'
   const displayName = currentPatient
     ? `${salutation} ${capitalizeName((currentPatient.name || '').trim().split(/\s+/)[0] || currentPatient.name)}`
@@ -40,35 +44,46 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   const displayedPatients = showMoreCardView ? patientList.slice(0, 5) : patientList
 
   return (
-    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-40" style={{ background: "var(--blue-text-color)" }}>
+    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-40 sticky top-0" style={{ background: "var(--blue-text-color)" }}>
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex items-center gap-3 shrink-0">
           <div className="bg-white rounded p-1 w-12 h-12 flex items-center justify-center overflow-hidden shrink-0">
             <img src={srmLogo} alt="SRM Logo" className="w-10 h-auto object-contain" />
           </div>
           <div>
-            <div className="font-bold md:text-sm sm:text-[10px] leading-snug">
-              SRM Medical College Hospital and Research Centre
+            <div className="font-bold md:text-sm sm:text-[10px] leading-snug  ">
+              {/* SRM Medical College Hospital and Research Centre */}
+              Patient Portal
             </div>
-            <div className="text-xs text-blue-200">Doctor Appointment</div>
+            <div className="text-xs text-blue-200 ">Doctor Appointment</div>
           </div>
         </div>
-
-        {/* {currentPatient && (
-          <div className="hidden md:block pl-4 border-l border-white/20 text-xs font-semibold text-blue-100 truncate">
-            Welcome, <b className="text-white font-bold">{capitalizeName(currentPatient.name || '')}</b>
-          </div>
-        )} */}
       </div>
 
-      {currentPatient && (
-        <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Theme Toggle Button */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors cursor-pointer outline-none"
+          aria-label="Toggle theme"
+          title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+        >
+          {theme === "light" ? (
+            <Moon className="h-4 w-4" />
+          ) : (
+            <Sun className="h-4 w-4 text-amber-300" />
+          )}
+        </button>
+
+        {currentPatient && (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
                 <button
                   type="button"
-                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer text-white transition-colors outline-none"
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5  text-xs font-semibold cursor-pointer text-white transition-colors outline-none"
+                  style={{ borderRadius: '4px' }}
                 >
                   <div className="w-6 h-6 rounded-full bg-blue-200 text-[#14213D] flex items-center justify-center font-bold text-xs">
                     {initials(currentPatient.name || '')}
@@ -159,10 +174,37 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                   </DropdownMenuItem>
                 </>
               )}
+
+              {/* Logout Action in Dropdown */}
+              {onLogout && (
+                <>
+                  <DropdownMenuSeparator className="my-1.5" />
+                  <DropdownMenuItem
+                    onClick={onLogout}
+                    className="flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      )}
+        )}
+
+        {/* Header Logout Button */}
+        {/* {onLogout && (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="inline-flex h-8 items-center gap-1.5 px-3 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 text-white text-xs font-semibold transition-colors cursor-pointer outline-none ml-1"
+            title="Logout"
+          >
+            <LogOut className="h-3.5 w-3.5 text-rose-100" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        )} */}
+      </div>
     </header>
   )
 }
