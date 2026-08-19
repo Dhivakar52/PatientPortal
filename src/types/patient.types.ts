@@ -25,6 +25,7 @@ export interface Appointment {
   unit: string
   bookedOn: string
   room: string
+  status?: string
 }
 
 export type FlowScreen = 'login' | 'register' | 'select' | 'app'

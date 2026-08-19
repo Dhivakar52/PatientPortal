@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
-import { Search, Filter, CalendarX, Download, Eye, RotateCcw } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { Search, Filter, CalendarX, RotateCcw, X, Download, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import Pagination from '@/common/Pagination'
@@ -15,15 +15,34 @@ import { todayStr } from '@/utils/patient.utils'
 interface VisitsTableProps {
   appointments: Appointment[]
   onViewReceipt: (appt: Appointment) => void
+  onCancelAppointment?: (appt: Appointment) => void
   currentPatient?: Patient | null
   isLoading?: boolean
   error?: string | null
   onRetry?: () => void
 }
 
+// Helper to parse date string into a Date object for range comparisons
+const parseStandardDate = (dateStr: string): Date | null => {
+  if (!dateStr) return null
+  const ddMmmMatch = dateStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
+  if (ddMmmMatch) {
+    const day = parseInt(ddMmmMatch[1], 10)
+    const monthStr = ddMmmMatch[2].toUpperCase()
+    const year = parseInt(ddMmmMatch[3], 10)
+    const monthIndex = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(monthStr)
+    if (monthIndex !== -1) {
+      return new Date(year, monthIndex, day)
+    }
+  }
+  const parsed = new Date(dateStr)
+  return isNaN(parsed.getTime()) ? null : parsed
+}
+
 export const VisitsTable: React.FC<VisitsTableProps> = ({
   appointments,
   onViewReceipt,
+  onCancelAppointment,
   currentPatient,
   isLoading = false,
   error = null,
@@ -35,9 +54,53 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'completed'>('all')
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
 
+  // Date Filter States
+  const [fromDate, setFromDate] = useState<string>('')
+  const [toDate, setToDate] = useState<string>('')
+
+  // Filter CustomPanel UI States
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+  const [tempFromDate, setTempFromDate] = useState<string>('')
+  const [tempToDate, setTempToDate] = useState<string>('')
+  const [tempStatusFilter, setTempStatusFilter] = useState<'all' | 'scheduled' | 'completed'>('all')
+
+  // Search Toggle State
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+
   const today = todayStr()
 
-  // State for View Panel Modal
+  // Open Filter Panel with Current Applied Values
+  const handleOpenFilterPanel = () => {
+    setTempFromDate(fromDate)
+    setTempToDate(toDate)
+    setTempStatusFilter(statusFilter)
+    setIsFilterPanelOpen(true)
+  }
+
+  // Apply Filter Values from CustomPanel
+  const handleApplyFilter = () => {
+    setFromDate(tempFromDate)
+    setToDate(tempToDate)
+    setStatusFilter(tempStatusFilter)
+    setPageIndex(0)
+    setIsFilterPanelOpen(false)
+  }
+
+  // Reset / Clear All Filters
+  const clearFilters = () => {
+    setSearchTerm('')
+    setStatusFilter('all')
+    setFromDate('')
+    setToDate('')
+    setTempFromDate('')
+    setTempToDate('')
+    setTempStatusFilter('all')
+    setSortOrder('newest')
+    setPageIndex(0)
+    setIsFilterPanelOpen(false)
+  }
+
+  // State for View Details Panel Modal
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [isViewPanelOpen, setIsViewPanelOpen] = useState(false)
 
@@ -57,9 +120,24 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
       .filter((appt) => {
         // Status filter
         const isPast = appt.date < today
-        const status = isPast ? 'completed' : 'scheduled'
-        if (statusFilter !== 'all' && status !== statusFilter) {
+        const status = (appt as any).status?.toLowerCase() || (isPast ? 'completed' : 'scheduled')
+        if (statusFilter !== 'all' && status !== statusFilter.toLowerCase()) {
           return false
+        }
+
+        // Date filter logic
+        const apptDateObj = parseStandardDate(appt.date)
+        if (apptDateObj) {
+          if (fromDate) {
+            const fromObj = new Date(fromDate)
+            fromObj.setHours(0, 0, 0, 0)
+            if (apptDateObj < fromObj) return false
+          }
+          if (toDate) {
+            const toObj = new Date(toDate)
+            toObj.setHours(23, 59, 59, 999)
+            if (apptDateObj > toObj) return false
+          }
         }
 
         // Search term filter
@@ -80,9 +158,9 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
         }
         return a.date.localeCompare(b.date)
       })
-  }, [appointments, searchTerm, statusFilter, sortOrder, today])
+  }, [appointments, searchTerm, statusFilter, fromDate, toDate, sortOrder, today])
 
-  // Pagination Table Object Compatible with Pagination Component
+  // Pagination Table Object
   const tableObject = {
     getState: () => ({ pagination: { pageIndex, pageSize } }),
     setPageIndex: (index: number) => setPageIndex(index),
@@ -104,14 +182,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
     return filteredAppointments.slice(start, start + pageSize)
   }, [filteredAppointments, pageIndex, pageSize])
 
-  const clearFilters = () => {
-    setSearchTerm('')
-    setStatusFilter('all')
-    setSortOrder('newest')
-    setPageIndex(0)
-  }
-
-  const isFiltered = searchTerm !== '' || statusFilter !== 'all'
+  const isFiltered = searchTerm !== '' || statusFilter !== 'all' || fromDate !== '' || toDate !== ''
 
   // ERROR STATE
   if (error) {
@@ -133,101 +204,147 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
   }
 
   return (
-    <div className="space-y-5">
-      {/* Controls Bar: Search + Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl shadow-xs">
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
-          <Input
-            type="text"
-            placeholder="Search by doctor, department, or Appt ID..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value)
-              setPageIndex(0)
-            }}
-            className="pl-9 h-9 text-xs bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
-          />
-        </div>
+    <div className="space-y-4">
+      {/* Header & Controls Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+        {/* Left Side: Title, Total Visits Badge, Status Tabs */}
+        <div className="flex flex-wrap items-center gap-3">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+            Visits History
+          </h3>
 
-        {/* Filters & Sort */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Status Filter */}
-          <div className="flex items-center gap-1.5">
-            <Filter className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0 hidden md:inline" />
-            <NativeSelect
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value as 'all' | 'scheduled' | 'completed')
+          <Badge variant="secondary" className="text-xs font-semibold">
+            {appointments.length} Total Visits
+          </Badge>
+
+          {/* Status Tabs/Filters */}
+          {/* <div className="inline-flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('all')
                 setPageIndex(0)
               }}
-              size="sm"
-              className="w-36 h-9 text-xs"
+              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${statusFilter === 'all'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
-              <option value="all">All Statuses</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-            </NativeSelect>
-          </div>
-
-          {/* Sort Order */}
-          <NativeSelect
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-            size="sm"
-            className="w-32 h-9 text-xs"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </NativeSelect>
-
-          {/* Clear Filters Button */}
-          {isFiltered && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="h-9 px-2.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+              All Statuses
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('scheduled')
+                setPageIndex(0)
+              }}
+              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${statusFilter === 'scheduled'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
-              Clear
-            </Button>
+              Scheduled
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setStatusFilter('completed')
+                setPageIndex(0)
+              }}
+              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${statusFilter === 'completed'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+            >
+              Completed
+            </button>
+          </div> */}
+        </div>
+
+        {/* Right Side: Search Icon & Filter Icon */}
+        <div className="flex items-center gap-2 relative">
+          {/* Search Toggle / Input */}
+          {isSearchOpen || searchTerm !== '' ? (
+            <div className="relative flex items-center min-w-[200px] sm:min-w-[220px]">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search by doctor, dept, ID..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setPageIndex(0)
+                }}
+                className="w-full pl-8 pr-7 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('')
+                  setIsSearchOpen(false)
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                title="Clear search"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              className="p-1.5  border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-2xs"
+              title="Search visits"
+              style={{ borderRadius: '4px' }}
+            >
+              <Search className="w-4 h-4" />
+            </button>
           )}
+
+          {/* Filter Custom Panel Button */}
+          <button
+            type="button"
+            onClick={handleOpenFilterPanel}
+            className={`p-1.5  border transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold shadow-2xs ${isFilterPanelOpen || isFiltered
+              ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400'
+              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/70 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+              }`}
+            style={{ borderRadius: '4px' }}
+            title="Filter visits"
+          >
+            <Filter className="w-4 h-4" />
+            {isFiltered && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
+          </button>
         </div>
       </div>
 
-      {/* Results Header / Counter */}
-      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
-        <div>
-          Showing <span className="font-bold text-slate-800 dark:text-slate-200">{filteredAppointments.length}</span> {filteredAppointments.length === 1 ? 'visit' : 'visits'}
-          {isFiltered && <span className="ml-1 text-slate-400 dark:text-slate-500">(filtered from {appointments.length} total)</span>}
+      {/* Results Sub-counter when filtered */}
+      {isFiltered && (
+        <div className="text-xs text-slate-500 dark:text-slate-400 px-1">
+          Showing <span className="font-bold text-slate-800 dark:text-slate-200">{filteredAppointments.length}</span> {filteredAppointments.length === 1 ? 'visit' : 'visits'} (filtered from {appointments.length} total)
         </div>
-      </div>
+      )}
 
       {/* LOADING SKELETON STATE */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="space-y-2.5">
+          {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="h-64 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-4 bg-white dark:bg-slate-900"
+              className="h-20 rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-white dark:bg-slate-900 flex items-center gap-4"
             >
-              <div className="flex justify-between items-center">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-14 w-16 rounded" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-32" />
               </div>
-              <Skeleton className="h-8 w-full" />
-              <div className="grid grid-cols-2 gap-2 pt-2">
-                <Skeleton className="h-10 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <Skeleton className="h-8 w-full mt-4" />
             </div>
           ))}
         </div>
       ) : paginatedData.length > 0 ? (
-        /* CARD GRID PRESENTATION */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        /* CARD LIST PRESENTATION */
+        <div className="space-y-2.5">
           {paginatedData.map((appt) => (
             <VisitCard
               key={appt.apptNo}
@@ -235,6 +352,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
               currentPatient={currentPatient}
               onView={handleView}
               onDownloadReceipt={onViewReceipt}
+              onCancelAppointment={onCancelAppointment}
             />
           ))}
         </div>
@@ -247,7 +365,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
           <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">No Visits Found</h4>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             {isFiltered
-              ? 'No visit history records match your selected search or status filter criteria.'
+              ? 'No visit history records match your selected date range or status filter criteria.'
               : 'There are currently no hospital visit records available for this patient profile.'}
           </p>
           {isFiltered && (
@@ -267,6 +385,83 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
       {!isLoading && filteredAppointments.length > 0 && (
         <Pagination table={tableObject as any} totalCount={filteredAppointments.length} />
       )}
+
+      {/* FILTER CUSTOM PANEL DRAWER */}
+      <CustomPanel
+        isOpen={isFilterPanelOpen}
+        title="Filter Visits"
+        onClose={() => setIsFilterPanelOpen(false)}
+        onSave={handleApplyFilter}
+        saveLabel="Apply Filter"
+        width="420px"
+      >
+        <div className="space-y-5">
+          {/* 1. Date Filter (From Date & To Date) */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Date Range
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
+                  From Date
+                </label>
+                <input
+                  type="date"
+                  value={tempFromDate}
+                  onChange={(e) => setTempFromDate(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
+                  To Date
+                </label>
+                <input
+                  type="date"
+                  value={tempToDate}
+                  onChange={(e) => setTempToDate(e.target.value)}
+                  className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Status Filter */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Status
+            </label>
+            <NativeSelect
+              value={tempStatusFilter}
+              onChange={(e) => setTempStatusFilter(e.target.value as 'all' | 'scheduled' | 'completed')}
+              size="sm"
+              className="w-full text-xs"
+            >
+              <option value="all">All Statuses</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+            </NativeSelect>
+          </div>
+
+          {/* Reset Action inside Panel */}
+          {(tempFromDate || tempToDate || tempStatusFilter !== 'all') && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setTempFromDate('')
+                  setTempToDate('')
+                  setTempStatusFilter('all')
+                }}
+                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+              >
+                Reset Filter Selections
+              </button>
+            </div>
+          )}
+        </div>
+      </CustomPanel>
 
       {/* VIEW DETAILS PANEL MODAL */}
       <CustomPanel

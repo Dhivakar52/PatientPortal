@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { INITIAL_APPOINTMENTS, DOCTORS } from '@/constants/patient.constants'
 import { genOtp, genApptNo } from '@/utils/patient.utils'
+import { toast } from 'sonner'
 
 export function useAppointmentBooking(currentPatient: Patient | null) {
   const [appointmentsDB, setAppointmentsDB] = useState<Record<string, Appointment[]>>(() => {
@@ -84,6 +85,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       unit: bookUnit,
       bookedOn: new Date().toISOString(),
       room: `GYN-${200 + (roomIndex > 0 ? roomIndex : 1)}`,
+      status: 'Scheduled',
     }
 
     setAppointmentsDB((prev) => ({
@@ -117,6 +119,25 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setShowReceiptModal(true)
   }
 
+  const handleCancelAppointment = (apptToCancel: Appointment) => {
+    if (!currentPatient) return
+
+    setAppointmentsDB((prev) => {
+      const list = prev[currentPatient.id] || []
+      const updatedList = list.map((item) =>
+        item.apptNo === apptToCancel.apptNo
+          ? { ...item, status: 'Cancelled' }
+          : item
+      )
+      return {
+        ...prev,
+        [currentPatient.id]: updatedList,
+      }
+    })
+
+    toast.success(`Appointment ${apptToCancel.apptNo || ''} cancelled successfully!`)
+  }
+
   return {
     appointmentsDB,
     bookDate,
@@ -147,5 +168,6 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     handleResendBookOtp,
     handleSuccessClose,
     handleViewReceipt,
+    handleCancelAppointment,
   }
 }

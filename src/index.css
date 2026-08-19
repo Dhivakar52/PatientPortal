@@ -137,11 +137,12 @@ body {
 
 input,
 select,
-button,
 button[role="combobox"] {
-  /* border-radius: 4px !important; */
+  border-radius: 4px !important;
   font-size: 12px;
+
 }
+
 
 select option {
   background-color: var(--popover);
@@ -202,4 +203,72 @@ select option {
 
 .text-blue-brand {
   color: var(--blue-text-color) !important;
+}
+
+/* ==========================================
+   Global Responsive & Print Styles
+   ========================================== */
+
+/* Touch & horizontal scrolling for small screens */
+.responsive-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Universal Print Styles for Responsive Printing */
+@media print {
+
+  /* Hide non-printable navigation, headers, sidebars, buttons, and popovers */
+  header:not(.print-header),
+  nav,
+  aside,
+  button:not(.print-keep),
+  [role="combobox"],
+  [data-slot="sidebar"],
+  [data-slot="popover-content"],
+  .no-print,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force clean white background and dark crisp text for paper printing */
+  html,
+  body,
+  #root,
+  main {
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  /* Page setup for standard A4 document printing */
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  /* Keep cards and printable sections intact without awkward page cuts */
+  .printable-area,
+  article,
+  section,
+  div[class*="rounded"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Format grids for paper printing */
+  .grid {
+    display: block !important;
+  }
+
+  .grid>* {
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    page-break-inside: avoid !important;
+  }
 }

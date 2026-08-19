@@ -43,7 +43,7 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
         <Button
           onClick={onClose}
           className="w-full text-white font-semibold cursor-pointer"
-          style={{ background: 'var(--blue-btn)' }}
+          style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
         >
           Go to Home
         </Button>

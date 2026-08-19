@@ -94,15 +94,15 @@ const PatientModule: React.FC = () => {
                     currentPatient={auth.currentPatient}
                     patients={auth.currentUserRecord?.patients || []}
                     onSelectPatient={(id) => {
-                      auth.setActivePatientId(id)
-                      auth.setSpSelectedId(id)
-                      auth.setUsersDB((prev) => ({
-                        ...prev,
-                        [auth.currentMobile]: {
-                          ...prev[auth.currentMobile],
-                          activePatientId: id,
-                        },
-                      }))
+                        auth.setActivePatientId(id)
+                        auth.setSpSelectedId(id)
+                        auth.setUsersDB((prev) => ({
+                            ...prev,
+                            [auth.currentMobile]: {
+                                ...prev[auth.currentMobile],
+                                activePatientId: id,
+                            },
+                        }))
                     }}
                     patientAppointments={patientAppointments}
                     onSelectPatientClick={() => auth.setScreen('select')}
@@ -119,6 +119,7 @@ const PatientModule: React.FC = () => {
                     bookErrors={booking.bookErrors}
                     onConfirmBooking={booking.handleConfirmBookingClick}
                     onViewReceipt={booking.handleViewReceipt}
+                    onCancelAppointment={booking.handleCancelAppointment}
                 />
             )}
 
