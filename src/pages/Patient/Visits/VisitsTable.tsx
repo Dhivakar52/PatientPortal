@@ -42,7 +42,7 @@ const parseStandardDate = (dateStr: string): Date | null => {
 export const VisitsTable: React.FC<VisitsTableProps> = ({
   appointments,
   onViewReceipt,
-  onCancelAppointment,
+  onCancelAppointment: _onCancelAppointment,
   currentPatient,
   isLoading = false,
   error = null,
@@ -118,9 +118,16 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
   const filteredAppointments = useMemo(() => {
     return appointments
       .filter((appt) => {
-        // Status filter
         const isPast = appt.date < today
-        const status = (appt as any).status?.toLowerCase() || (isPast ? 'completed' : 'scheduled')
+        const status = ((appt as any).status || (isPast ? 'Completed' : 'Scheduled')).toLowerCase()
+
+        // Visits tab only shows Completed, Visited, Not Visited, and Cancelled
+        const allowedVisitsStatuses = ['completed', 'visited', 'not visited', 'cancelled']
+        if (!allowedVisitsStatuses.includes(status)) {
+          return false
+        }
+
+        // Status filter
         if (statusFilter !== 'all' && status !== statusFilter.toLowerCase()) {
           return false
         }
@@ -214,51 +221,8 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
           </h3>
 
           <Badge variant="secondary" className="text-xs font-semibold">
-            {appointments.length} Total Visits
+            {filteredAppointments.length} Visits
           </Badge>
-
-          {/* Status Tabs/Filters */}
-          {/* <div className="inline-flex items-center bg-slate-100 dark:bg-slate-800/80 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter('all')
-                setPageIndex(0)
-              }}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${statusFilter === 'all'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-            >
-              All Statuses
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter('scheduled')
-                setPageIndex(0)
-              }}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${statusFilter === 'scheduled'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-            >
-              Scheduled
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter('completed')
-                setPageIndex(0)
-              }}
-              className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer ${statusFilter === 'completed'
-                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-            >
-              Completed
-            </button>
-          </div> */}
         </div>
 
         {/* Right Side: Search Icon & Filter Icon */}
@@ -352,7 +316,8 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
               currentPatient={currentPatient}
               onView={handleView}
               onDownloadReceipt={onViewReceipt}
-              onCancelAppointment={onCancelAppointment}
+              showDownload={true}
+              showCancel={false}
             />
           ))}
         </div>
@@ -434,13 +399,15 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
             </label>
             <NativeSelect
               value={tempStatusFilter}
-              onChange={(e) => setTempStatusFilter(e.target.value as 'all' | 'scheduled' | 'completed')}
+              onChange={(e) => setTempStatusFilter(e.target.value as any)}
               size="sm"
               className="w-full text-xs"
             >
               <option value="all">All Statuses</option>
-              <option value="scheduled">Scheduled</option>
               <option value="completed">Completed</option>
+              <option value="visited">Visited</option>
+              <option value="not visited">Not Visited</option>
+              <option value="cancelled">Cancelled</option>
             </NativeSelect>
           </div>
 

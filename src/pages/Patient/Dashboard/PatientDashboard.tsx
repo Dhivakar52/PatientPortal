@@ -107,7 +107,12 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const today = todayStr()
   const upcomingAppointments = patientAppointments
     .filter((a) => a.date >= today)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => {
+      if (a.bookedOn && b.bookedOn) {
+        return b.bookedOn.localeCompare(a.bookedOn)
+      }
+      return b.date.localeCompare(a.date)
+    })
   const pastAppointments = patientAppointments
     .filter((a) => a.date < today)
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -223,7 +228,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                   className="ml-auto px-4 py-2.5 text-xs font-bold flex items-center gap-2 rounded-xl text-white transition-all duration-300 hover:scale-105 hover:shadow-lg cursor-pointer"
                   style={{
                     background: activeTab === 'book' ? '#586fb2' : 'var(--blue-btn)',
-                    borderRadius: '12px',
+                    borderRadius: '4px',
                     boxShadow: activeTab === 'book'
                       ? '0 4px 12px rgba(88, 111, 178, 0.4)'
                       : '0 4px 12px rgba(88, 111, 178, 0.3)'
@@ -255,6 +260,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                       <UpcomingAppointments
                         appointments={upcomingAppointments}
                         onViewReceipt={onViewReceipt}
+                        onCancelAppointment={onCancelAppointment}
                       />
                     </div>
                   )}

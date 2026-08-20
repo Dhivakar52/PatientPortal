@@ -70,16 +70,19 @@ export function SelectField({
   placeholder = "Select",
   value,
   onChange,
+  disabled,
 }: {
   options: readonly string[];
   placeholder?: string;
   value?: string;
   onChange?: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <NativeSelect
       value={value ?? ""}
       onChange={(e) => onChange?.(e.target.value)}
+      disabled={disabled}
       className="h-9 text-[13px] w-full rounded-[4px]"
       style={{
         borderRadius: "4px !important"

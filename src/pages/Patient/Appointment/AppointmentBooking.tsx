@@ -2,15 +2,14 @@ import React, { useState } from 'react'
 import { CalendarPlus, CalendarCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldLabel, DateField, SelectField } from '@/components/FormPrimitives'
-import { DOCTORS, UNIT_SLOTS, UNIT_BOOKED } from '@/constants/patient.constants'
 
 interface AppointmentBookingProps {
   bookDate: string
   setBookDate: (v: string) => void
-  bookDoctor: string
-  setBookDoctor: (v: string) => void
-  bookUnit: string
-  setBookUnit: (v: string) => void
+  bookDoctor?: string
+  setBookDoctor?: (v: string) => void
+  bookUnit?: string
+  setBookUnit?: (v: string) => void
   selectedSlot: string
   setSelectedSlot: (v: string) => void
   bookErrors: Record<string, string>
@@ -31,24 +30,58 @@ const DEPARTMENTS = [
   'General Surgery'
 ]
 
+// Hourly Time Ranges
+const TIME_RANGES = [
+  '08:00 AM - 09:00 AM',
+  '09:00 AM - 10:00 AM',
+  '10:00 AM - 11:00 AM',
+  '11:00 AM - 12:00 PM',
+  '12:00 PM - 01:00 PM',
+  '01:00 PM - 02:00 PM',
+  '02:00 PM - 03:00 PM',
+  '03:00 PM - 04:00 PM',
+  '04:00 PM - 05:00 PM',
+]
+
+const TIME_RANGE_SLOTS: Record<string, string[]> = {
+  '08:00 AM - 09:00 AM': ['08:00-08:15', '08:15-08:30', '08:30-08:45', '08:45-09:00'],
+  '09:00 AM - 10:00 AM': ['09:00-09:15', '09:15-09:30', '09:30-09:45', '09:45-10:00'],
+  '10:00 AM - 11:00 AM': ['10:00-10:15', '10:15-10:30', '10:30-10:45', '10:45-11:00'],
+  '11:00 AM - 12:00 PM': ['11:00-11:15', '11:15-11:30', '11:30-11:45', '11:45-12:00'],
+  '12:00 PM - 01:00 PM': ['12:00-12:15', '12:15-12:30', '12:30-12:45', '12:45-13:00'],
+  '01:00 PM - 02:00 PM': ['13:00-13:15', '13:15-13:30', '13:30-13:45', '13:45-14:00'],
+  '02:00 PM - 03:00 PM': ['14:00-14:15', '14:15-14:30', '14:30-14:45', '14:45-15:00'],
+  '03:00 PM - 04:00 PM': ['15:00-15:15', '15:15-15:30', '15:30-15:45', '15:45-16:00'],
+  '04:00 PM - 05:00 PM': ['16:00-16:15', '16:15-16:30', '16:30-16:45', '16:45-17:00'],
+}
+
+const BOOKED_SLOTS_MOCK: string[] = ['08:30-08:45', '10:15-10:30', '14:30-14:45']
+
 export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   bookDate,
   setBookDate,
-  bookDoctor,
-  setBookDoctor,
-  bookUnit,
-  setBookUnit,
+  bookDoctor: _bookDoctor,
+  setBookDoctor: _setBookDoctor,
+  bookUnit: _bookUnit,
+  setBookUnit: _setBookUnit,
   selectedSlot,
   setSelectedSlot,
   bookErrors,
   onConfirm,
 }) => {
   const dateValue = bookDate ? new Date(bookDate) : undefined
-  const [bookDepartment, setBookDepartment] = useState<string>('')
+  const [bookDepartment, setBookDepartment] = useState<string>('Gynecology')
+  const [selectedTimeRange, setSelectedTimeRange] = useState<string>('')
+  const [localErrors, setLocalErrors] = useState<Record<string, string>>({})
 
   // Disable past dates (only allow current date & future dates)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+
+  // Calculate date 60 days from today
+  const maxDate = new Date()
+  maxDate.setDate(maxDate.getDate() + 60)
+  maxDate.setHours(0, 0, 0, 0)
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -56,14 +89,17 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
       setBookDate(`${year}-${month}-${day}`)
+      setLocalErrors(prev => ({ ...prev, date: '' }))
     } else {
       setBookDate('')
+      setLocalErrors(prev => ({ ...prev, date: 'Please select a date' }))
     }
+    setSelectedSlot('')
   }
 
-  // Get available slots for selected unit
-  const availableSlots = bookUnit ? UNIT_SLOTS[bookUnit] || [] : []
-  const bookedSlots = bookUnit ? UNIT_BOOKED[bookUnit] || [] : []
+  // Get available sub-slots for the selected time range
+  const availableSlots = selectedTimeRange ? TIME_RANGE_SLOTS[selectedTimeRange] || [] : []
+  const bookedSlots = BOOKED_SLOTS_MOCK
 
   // Check if time slot is in the past for today's selected date
   const isSlotExpired = (slot: string): boolean => {
@@ -93,8 +129,40 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     return slotDateTime <= now
   }
 
+  const validateAndConfirm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!bookDate) {
+      errors.date = 'Please select an appointment date'
+    }
+
+    if (!selectedTimeRange) {
+      errors.timeRange = 'Please select a time range'
+    }
+
+    if (!selectedSlot) {
+      errors.slot = 'Please select a time slot'
+    }
+
+    if (selectedSlot && bookedSlots.includes(selectedSlot)) {
+      errors.slot = 'This slot is already booked'
+    }
+
+    if (selectedSlot && isSlotExpired(selectedSlot)) {
+      errors.slot = 'This time slot has passed'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setLocalErrors(errors)
+      return
+    }
+
+    setLocalErrors({})
+    onConfirm()
+  }
+
   return (
-    <div className="p-4 sm:p-6">
+    <div className="">
       {/* Section header bar */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-t-lg px-6 py-4 flex items-center gap-3">
         <div className="w-9 h-9 rounded-md flex items-center justify-center bg-blue-50 dark:bg-slate-800">
@@ -109,7 +177,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       {/* Form card */}
       <div className="bg-white dark:bg-slate-900 border-x border-b border-slate-200 dark:border-slate-800 rounded-b-lg shadow-sm">
         <div className="p-6 sm:p-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-5">
             {/* Appointment Date */}
             <div>
               <FieldLabel required>Appointment Date</FieldLabel>
@@ -118,12 +186,17 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 onChange={handleDateSelect}
                 placeholder="Select date"
                 defaultLabel="Select date"
-                disabled={{ before: today }}
+                disabled={{
+                  before: today,
+                  after: maxDate
+                }}
               />
-              {bookErrors.date && <p className="text-xs text-rose-600 mt-1">{bookErrors.date}</p>}
+              {(bookErrors.date || localErrors.date) && (
+                <p className="text-xs text-rose-600 mt-1">{bookErrors.date || localErrors.date}</p>
+              )}
             </div>
 
-            {/* Department - Fixed with proper state */}
+            {/* Department */}
             <div>
               <FieldLabel required>Department</FieldLabel>
               <SelectField
@@ -131,46 +204,40 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 placeholder="Select department"
                 value={bookDepartment}
                 onChange={setBookDepartment}
+                disabled={true}
               />
               {bookErrors.department && <p className="text-xs text-rose-600 mt-1">{bookErrors.department}</p>}
             </div>
 
-            {/* Select Doctor */}
+            {/* Time Slot Range Select */}
             <div>
-              <FieldLabel required>Select Doctor</FieldLabel>
+              <FieldLabel required>Time Slot Range</FieldLabel>
               <SelectField
-                options={DOCTORS}
-                placeholder="Choose a doctor"
-                value={bookDoctor}
-                onChange={setBookDoctor}
-              />
-              {bookErrors.doctor && <p className="text-xs text-rose-600 mt-1">{bookErrors.doctor}</p>}
-            </div>
-
-            {/* Unit */}
-            <div>
-              <FieldLabel required>Unit</FieldLabel>
-              <SelectField
-                options={['Unit 1', 'Unit 2', 'Unit 3', 'Unit 4']}
-                placeholder="Choose a unit"
-                value={bookUnit}
-                onChange={(v) => {
-                  setBookUnit(v)
+                options={TIME_RANGES}
+                placeholder="Select a Time Range"
+                value={selectedTimeRange}
+                onChange={(val) => {
+                  setSelectedTimeRange(val)
                   setSelectedSlot('')
+                  setLocalErrors(prev => ({ ...prev, timeRange: '', slot: '' }))
                 }}
               />
-              {bookErrors.unit && <p className="text-xs text-rose-600 mt-1">{bookErrors.unit}</p>}
+              {(bookErrors.timeRange || localErrors.timeRange) && (
+                <p className="text-xs text-rose-600 mt-1">{bookErrors.timeRange || localErrors.timeRange}</p>
+              )}
             </div>
           </div>
 
-          {/* Time Slots */}
-          {bookUnit && (
+          {/* Time Slots - Displayed directly when Time Slot Range is selected */}
+          {selectedTimeRange && (
             <div className="space-y-3 pt-6 mt-6 border-t border-slate-200 dark:border-slate-800">
-              <FieldLabel required>Available Time Slots</FieldLabel>
+              <FieldLabel required>
+                Available Time Slots {selectedTimeRange ? `(${selectedTimeRange})` : ''}
+              </FieldLabel>
 
               {availableSlots.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     {availableSlots.map((slot) => {
                       const isBooked = bookedSlots.includes(slot)
                       const isExpired = isSlotExpired(slot)
@@ -181,7 +248,12 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                           key={slot}
                           type="button"
                           disabled={isDisabled}
-                          onClick={() => !isDisabled && setSelectedSlot(slot)}
+                          onClick={() => {
+                            if (!isDisabled) {
+                              setSelectedSlot(slot)
+                              setLocalErrors(prev => ({ ...prev, slot: '' }))
+                            }
+                          }}
                           title={isExpired ? 'Time slot has passed' : isBooked ? 'Slot already booked' : 'Select slot'}
                           className={`
                             px-3 py-2.5 text-center text-sm font-medium rounded-lg border-2 
@@ -216,11 +288,13 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                     </span>
                   </div>
 
-                  {bookErrors.slot && <p className="text-xs text-rose-600 mt-1">{bookErrors.slot}</p>}
+                  {(bookErrors.slot || localErrors.slot) && (
+                    <p className="text-xs text-rose-600 mt-1">{bookErrors.slot || localErrors.slot}</p>
+                  )}
                 </>
               ) : (
                 <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
-                  No time slots available for this unit. Please select a different unit.
+                  No time slots available for this time range.
                 </p>
               )}
             </div>
@@ -230,7 +304,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
         {/* Footer actions */}
         <div className="flex justify-end items-center gap-3 border-t border-slate-200 dark:border-slate-800 px-6 sm:px-8 py-4">
           <Button
-            onClick={onConfirm}
+            onClick={validateAndConfirm}
             className="text-white cursor-pointer font-semibold px-6 flex items-center gap-2"
             style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
           >

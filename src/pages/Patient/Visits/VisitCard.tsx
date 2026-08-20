@@ -156,7 +156,9 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     }
   }
 
-  const isCancellable = showCancel && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited' && computedStatus.toLowerCase() !== 'cancelled'
+  const isCancelled = computedStatus.toLowerCase() === 'cancelled'
+  const isCancellable = showCancel && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited' && !isCancelled
+  const hasMenuItems = !isCancelled && ((showDownload && !!onDownloadReceipt) || !!onView || isCancellable)
 
   return (
     <>
@@ -239,60 +241,62 @@ export const VisitCard: React.FC<VisitCardProps> = ({
             </div>
           </div>
 
-          {/* Three dots menu - positioned at top-right side of the card */}
-          <div className="absolute top-[36px] right-3 z-30" ref={menuRef}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                setIsMenuOpen(!isMenuOpen)
-              }}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="More actions"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
+          {/* Three dots menu - positioned at top-right side of the card (only shown if menu items exist) */}
+          {hasMenuItems && (
+            <div className="absolute top-[36px] right-3 z-30" ref={menuRef}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsMenuOpen(!isMenuOpen)
+                }}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="More actions"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
 
-            {/* Dropdown Menu - positioned downwards over card */}
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl z-[100] py-1.5 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                <div className="py-0.5">
-                  {showDownload && (
-                    <button
-                      type="button"
-                      onClick={handleDownload}
-                      className="w-full text-left px-3.5 py-2 flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-colors cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                      <span>Download Visit Summary</span>
-                    </button>
-                  )}
+              {/* Dropdown Menu - positioned downwards over card */}
+              {isMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xl z-[100] py-1.5 divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                  <div className="py-0.5">
+                    {showDownload && !!onDownloadReceipt && (
+                      <button
+                        type="button"
+                        onClick={handleDownload}
+                        className="w-full text-left px-3.5 py-2 flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-colors cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        <span>Download Visit Summary</span>
+                      </button>
+                    )}
 
-                  {onView && (
-                    <button
-                      type="button"
-                      onClick={handleCardClick}
-                      className="w-full text-left px-3.5 py-2 flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-colors cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                      <span>View Details</span>
-                    </button>
-                  )}
+                    {onView && (
+                      <button
+                        type="button"
+                        onClick={handleCardClick}
+                        className="w-full text-left px-3.5 py-2 flex items-center gap-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium transition-colors cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        <span>View Details</span>
+                      </button>
+                    )}
 
-                  {isCancellable && (
-                    <button
-                      type="button"
-                      onClick={handleCancelClick}
-                      className="w-full text-left px-3.5 py-2 flex items-center gap-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium transition-colors cursor-pointer"
-                    >
-                      <CalendarX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                      <span>Cancel Appointment</span>
-                    </button>
-                  )}
+                    {isCancellable && (
+                      <button
+                        type="button"
+                        onClick={handleCancelClick}
+                        className="w-full text-left px-3.5 py-2 flex items-center gap-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium transition-colors cursor-pointer"
+                      >
+                        <CalendarX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                        <span>Cancel Appointment</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

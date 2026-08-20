@@ -44,8 +44,6 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const handleConfirmBookingClick = () => {
     const errs: Record<string, string> = {}
     if (!bookDate) errs.date = 'Please select an appointment date.'
-    if (!bookDoctor) errs.doctor = 'Please select a doctor.'
-    if (!bookUnit) errs.unit = 'Please select a unit.'
     if (!selectedSlot) errs.slot = 'Please select a time slot.'
 
     if (Object.keys(errs).length > 0) {
@@ -75,14 +73,15 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
     if (!currentPatient) return
 
-    const roomIndex = DOCTORS.indexOf(bookDoctor) + 1
+    const selectedDoctor = bookDoctor || 'Dr. Madhumitha'
+    const roomIndex = DOCTORS.indexOf(selectedDoctor) + 1
     const newAppt: Appointment = {
       apptNo: genApptNo(),
       date: bookDate,
-      doctor: bookDoctor,
+      doctor: selectedDoctor,
       department: 'Gynecology',
       slot: selectedSlot,
-      unit: bookUnit,
+      unit: bookUnit || 'Unit 1',
       bookedOn: new Date().toISOString(),
       room: `GYN-${200 + (roomIndex > 0 ? roomIndex : 1)}`,
       status: 'Scheduled',
