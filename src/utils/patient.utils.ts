@@ -1,9 +1,3 @@
-let patientIdSeq = 3
-
-export function nextPatientId(): string {
-  return `p${patientIdSeq++}`
-}
-
 export function genOtp(): string {
   return String(Math.floor(1000 + Math.random() * 9000))
 }

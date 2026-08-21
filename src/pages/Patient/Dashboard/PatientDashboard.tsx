@@ -6,9 +6,6 @@ import {
   FlaskConical,
   FileText,
   Calendar as CalendarIcon,
-  User,
-  Venus,
-  Mars,
   ChevronRight,
   Loader2,
 } from 'lucide-react'
@@ -19,10 +16,11 @@ import { VisitsTab } from '../Visits/VisitsTab'
 import { LaboratoryTab } from '../Laboratory/LaboratoryTab'
 import { BillsTab } from '../Bills/BillsTab'
 import { AppointmentBooking } from '../Appointment/AppointmentBooking'
+import { PatientProfileCard } from '../Profile/PatientProfileCard'
 
 import { type Patient, type Appointment, type ActiveTab } from '@/types/patient.types'
-import { initials, capitalizeName, formatDateLong, calcAge, todayStr } from '@/utils/patient.utils'
-import { getDashboard, type DashboardResponse } from '@/services/apiService'
+import { todayStr } from '@/utils/patient.utils'
+import { getDashboard, fetchAppointments, type DashboardResponse } from '@/services/apiService'
 
 interface PatientDashboardProps {
   currentPatient: Patient | null
@@ -30,18 +28,18 @@ interface PatientDashboardProps {
   patientError?: string | null
   patients?: Patient[]
   onSelectPatient?: (patientId: string) => void
-  onSelectPatientClick: () => void
+  onSelectPatientClick?: () => void
   onAddPatient?: () => void
-  patientAppointments: Appointment[]
-  onLogout: () => void
+  patientAppointments?: Appointment[]
+  onLogout?: () => void
 
   // Booking props
   bookDate: string
   setBookDate: (v: string) => void
-  bookDoctor: string
-  setBookDoctor: (v: string) => void
-  bookUnit: string
-  setBookUnit: (v: string) => void
+  bookDoctor?: string
+  setBookDoctor?: (v: string) => void
+  bookUnit?: string
+  setBookUnit?: (v: string) => void
   selectedSlot: string
   setSelectedSlot: (v: string) => void
   selectedDepartmentId?: string
@@ -54,7 +52,7 @@ interface PatientDashboardProps {
   bookErrors: Record<string, string>
   onConfirmBooking: (data?: { deptID: string; doctorID: string; timeSlotID: string }) => void
   onViewReceipt: (appt: Appointment) => void
-  onCancelAppointment?: (appt: Appointment) => void
+  onCancelAppointment: (appt: Appointment) => void
 }
 
 export const PatientDashboard: React.FC<PatientDashboardProps> = ({
@@ -65,7 +63,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   onSelectPatient,
   onSelectPatientClick,
   onAddPatient,
-  patientAppointments,
+  patientAppointments = [],
   onLogout,
   bookDate,
   setBookDate,
@@ -101,14 +99,16 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const [activeTab, setActiveTabState] = useState<ActiveTab>(() => getTabFromPath(location.pathname))
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null)
   const [isLoadingDashboard, setIsLoadingDashboard] = useState<boolean>(false)
+  const [fetchedAppointments, setFetchedAppointments] = useState<Appointment[]>([])
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState<boolean>(false)
 
   const setActiveTab = (tab: ActiveTab) => {
     setActiveTabState(tab)
-    if (tab === 'home') navigate('/patient/home')
-    else if (tab === 'visits') navigate('/patient/visits')
-    else if (tab === 'lab') navigate('/patient/lab')
-    else if (tab === 'bills') navigate('/patient/bills')
-    else if (tab === 'book') navigate('/patient/book')
+    if (tab === 'home' && location.pathname !== '/patient/dashboard') navigate('/patient/dashboard')
+    else if (tab === 'visits' && location.pathname !== '/patient/visits') navigate('/patient/visits')
+    else if (tab === 'lab' && location.pathname !== '/patient/lab') navigate('/patient/lab')
+    else if (tab === 'bills' && location.pathname !== '/patient/bills') navigate('/patient/bills')
+    else if (tab === 'book' && location.pathname !== '/patient/book') navigate('/patient/book')
   }
 
   useEffect(() => {
@@ -118,9 +118,82 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     }
   }, [location.pathname])
 
-  // Fetch Dashboard data from GET /api/dashboard using active patient ID
   const patientNumericId = currentPatient?.PatientID || (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
 
+  const loadPatientAppointments = async (patientId: number) => {
+    setIsLoadingAppointments(true)
+    try {
+      const res = await fetchAppointments({
+        PatientID: patientId,
+        pageNo: 1,
+        recordCount: 50,
+      })
+      if (Array.isArray(res)) {
+        const mapped: Appointment[] = res.map((item: Record<string, unknown>, idx: number) => {
+          const apptStatus = String(item.AppointmentStatus || item.Status || item.status || 'Scheduled')
+          const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : `APT-${item.AppointmentID || idx + 1}`
+          const apptDate = String(item.AppointmentDate || item.date || item.Date || todayStr())
+          const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || 'General')
+          const rawDoctor = String(item.DoctorName || item.Doctor_Name || item.doctor || '')
+          const cleanDoctor = (rawDoctor === '--Select--' || !rawDoctor.trim() || item.DoctorID === 0) ? `${deptName} Specialist` : rawDoctor
+          const timeSlot = String(item.TimeSlot || item.Timeslot || item.timeslot || item.slot || '08:00 AM - 08:10 AM')
+          const bookedOn = String(item.CreatedAt || item.BookedOn || item.bookedOn || new Date().toISOString())
+
+          return {
+            AppointmentID: Number(item.AppointmentID || idx + 1),
+            PatientID: Number(item.PatientID || patientId),
+            PatientName: String(item.PatientName || ''),
+            AppointmentStatus: apptStatus,
+            AppointmentDate: apptDate,
+            AppointmentType: String(item.AppointmentType || 'Online'),
+            DeptID: Number(item.DeptID || 0),
+            DeptName: deptName,
+            Department: deptName,
+            department: deptName,
+            DoctorID: Number(item.DoctorID || 0),
+            DoctorName: cleanDoctor,
+            Doctor_Name: cleanDoctor,
+            doctor: cleanDoctor,
+            TimeSlotID: Number(item.TimeSlotID || 1),
+            TimeSlot: timeSlot,
+            Timeslot: timeSlot,
+            slot: timeSlot,
+            UnitID: Number(item.UnitID || 0),
+            Unit: String(item.Unit || item.unit || 'Unit 1'),
+            unit: String(item.Unit || item.unit || 'Unit 1'),
+            StatusID: Number(item.StatusID || 0),
+            Status: apptStatus,
+            status: apptStatus,
+            AppointmentNo: apptNo,
+            apptNo: apptNo,
+            bookedOn: bookedOn,
+            BookedOn: bookedOn,
+            date: apptDate,
+            room: String(item.Room || item.room || 'OPD-101'),
+          }
+        })
+        setFetchedAppointments(mapped)
+      }
+    } catch (err) {
+      console.error('Failed to fetch appointments:', err)
+    } finally {
+      setIsLoadingAppointments(false)
+    }
+  }
+
+  const handleCancelAppointmentAndRefresh = async (appt: Appointment) => {
+    if (onCancelAppointment) {
+      await onCancelAppointment(appt)
+    }
+    if (patientNumericId) {
+      loadPatientAppointments(Number(patientNumericId))
+    }
+  }
+
+  // Re-fetch data on:
+  // 1. Patient ID change
+  // 2. Switching to Home tab or Visits tab
+  // 3. Location / navigation changes
   useEffect(() => {
     if (!patientNumericId) return
 
@@ -144,33 +217,12 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
         if (isMounted) setIsLoadingDashboard(false)
       })
 
+    loadPatientAppointments(Number(patientNumericId))
+
     return () => {
       isMounted = false
     }
-  }, [patientNumericId])
-
-  // Dynamic values directly from API response
-  const rawName = currentPatient?.PatientName || currentPatient?.name || ''
-  const gender = currentPatient?.Gender || currentPatient?.gender || '—'
-  const salutation = gender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
-  const displayName = rawName
-    ? `${salutation} ${capitalizeName(rawName.trim().split(/\s+/)[0] || rawName)}`
-    : '—'
-  const fullPatientName = rawName ? capitalizeName(rawName) : '—'
-
-  const displayDob = currentPatient?.DOB || (currentPatient?.dob ? formatDateLong(currentPatient.dob) : '—')
-  const displayAge = currentPatient?.Age !== undefined && currentPatient.Age !== null
-    ? currentPatient.Age
-    : (currentPatient?.dob ? calcAge(currentPatient.dob) : '—')
-
-  const displayPhone = currentPatient?.PhoneNo || currentPatient?.mobile || '—'
-  const displayAddress = currentPatient?.PatientAddress || currentPatient?.address || '—'
-  const displayCity = currentPatient?.City || currentPatient?.city || '—'
-  const displayState = currentPatient?.PatientState || currentPatient?.state || '—'
-  const displayPinCode = currentPatient?.PinCode || currentPatient?.pincode || '—'
-  const displayUhid = currentPatient?.UHID || '—'
-  const displayRegisterNo = currentPatient?.RegisterNo || '—'
-  const displayAbhaId = currentPatient?.AbhaID || '—'
+  }, [patientNumericId, activeTab, location.pathname])
 
   const today = todayStr()
   const localUpcomingAppointments = patientAppointments
@@ -185,7 +237,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     .filter((a) => a.date < today)
     .sort((a, b) => b.date.localeCompare(a.date))
 
-  // Map API dashboard items or fall back to local store
   const mapAppt = (item: Record<string, unknown>, idx: number, defaultPrefix: string): Appointment => ({
     apptNo: String(item.apptNo || item.ApptNo || `${defaultPrefix}-${idx + 1}`),
     date: String(item.date || item.AppointmentDate || item.Date || today),
@@ -206,14 +257,20 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     mapAppt(item, idx, 'VIS')
   ) || []
 
-  const upcomingAppointments = dashboardData ? apiUpcoming : localUpcomingAppointments
-  const pastAppointments = dashboardData ? apiPast : localPastAppointments
+  const fetchedUpcoming = fetchedAppointments.filter(
+    (a) => a.date >= today || a.status?.toLowerCase() === 'scheduled' || a.status?.toLowerCase() === 'confirmed'
+  )
+  const fetchedPast = fetchedAppointments.filter(
+    (a) => a.date < today && a.status?.toLowerCase() !== 'scheduled' && a.status?.toLowerCase() !== 'confirmed'
+  )
 
-  const getGenderIcon = () => {
-    if (gender.toLowerCase() === 'female') return <Venus className="w-3.5 h-3.5 text-pink-500" />
-    if (gender.toLowerCase() === 'male') return <Mars className="w-3.5 h-3.5 text-blue-500" />
-    return <User className="w-3.5 h-3.5 text-slate-400" />
-  }
+  const upcomingAppointments = fetchedAppointments.length > 0
+    ? (fetchedUpcoming.length > 0 ? fetchedUpcoming : fetchedAppointments)
+    : (dashboardData?.UpcomingAppointments?.length ? apiUpcoming : localUpcomingAppointments)
+
+  const pastAppointments = fetchedPast.length > 0
+    ? fetchedPast
+    : (dashboardData?.PastVisits?.length ? apiPast : localPastAppointments)
 
   const tabs = [
     { id: 'home', label: 'Home', icon: Home },
@@ -235,121 +292,14 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
       <div className="px-4 py-6 max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-5 items-start">
-          {/* Left Profile Side Card */}
-          <div className="w-full lg:w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shrink-0 shadow-sm">
-            {isLoadingPatient && !currentPatient ? (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
-                <p className="text-xs">Loading patient profile...</p>
-              </div>
-            ) : patientError && !currentPatient ? (
-              <div className="text-center py-8">
-                <p className="text-xs text-rose-500">{patientError}</p>
-              </div>
-            ) : (
-              <>
-                {/* Header info */}
-                <div className="text-center">
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center text-xl font-bold mx-auto mb-3 shadow-md shadow-blue-500/20">
-                    {initials(rawName)}
-                  </div>
-                  <div className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
-                    {displayName}
-                  </div>
-                  <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">
-                      {getGenderIcon()}
-                      {gender}
-                    </span>
-                    {displayAge !== '—' && (
-                      <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-0.5 rounded-full">
-                        {displayAge} Years
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-slate-200 dark:border-slate-800 my-4" />
-
-                {/* Profile Details List */}
-                <div className="space-y-2.5 text-xs">
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Patient Name</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{fullPatientName}</span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Date of Birth</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{displayDob}</span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Age</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">
-                      {displayAge !== '—' ? `${displayAge} Years` : '—'}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Gender</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{gender}</span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Phone Number</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">
-                      {displayPhone !== '—' ? `+91 ${displayPhone}` : '—'}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Address</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right break-words max-w-[150px]">
-                      {displayAddress}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">City</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{displayCity}</span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">State</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{displayState}</span>
-                  </div>
-
-                  <div className="flex justify-between items-start gap-2">
-                    <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">PIN Code</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{displayPinCode}</span>
-                  </div>
-
-                  <div className="border-t border-dashed border-slate-200 dark:border-slate-800 my-2.5 pt-2 space-y-2">
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">UHID</span>
-                      <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 text-right">
-                        {displayUhid}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Register No.</span>
-                      <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 text-right">
-                        {displayRegisterNo}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-start gap-2">
-                      <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">ABHA ID</span>
-                      <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 text-right">
-                        {displayAbhaId}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+          {/* Left Profile Side Card (Desktop View: visible on lg+; Mobile View: accessed via Header Dropdown -> Profile -> /profile) */}
+          <div className="hidden lg:block w-72 shrink-0">
+            <PatientProfileCard
+              currentPatient={currentPatient}
+              isLoadingPatient={isLoadingPatient}
+              patientError={patientError}
+              className="w-full"
+            />
           </div>
 
 
@@ -407,7 +357,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
             <div className="p-5">
               {activeTab === 'home' && (
                 <div className="space-y-6">
-                  {isLoadingDashboard && upcomingAppointments.length === 0 && pastAppointments.length === 0 ? (
+                  {(isLoadingDashboard || isLoadingAppointments) && upcomingAppointments.length === 0 && pastAppointments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-slate-500">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
                       <p className="text-sm font-medium">Loading dashboard...</p>
@@ -420,7 +370,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                           <UpcomingAppointments
                             appointments={upcomingAppointments}
                             onViewReceipt={onViewReceipt}
-                            onCancelAppointment={onCancelAppointment}
+                            onCancelAppointment={handleCancelAppointmentAndRefresh}
                           />
                         </div>
                       )}
@@ -467,9 +417,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
               {activeTab === 'visits' && (
                 <VisitsTab
-                  appointments={patientAppointments}
+                  appointments={fetchedAppointments.length > 0 ? fetchedAppointments : patientAppointments}
                   onViewReceipt={onViewReceipt}
-                  onCancelAppointment={onCancelAppointment}
+                  onCancelAppointment={handleCancelAppointmentAndRefresh}
                   currentPatient={currentPatient}
                 />
               )}

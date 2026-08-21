@@ -112,6 +112,20 @@ export const getRoutes = () => {
       protected: false,
     },
     {
+      path: "/profile",
+      name: "Profile",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
+      path: "/patient/profile",
+      name: "Patient Profile",
+      component: lazy(() => import("@/pages/Patient/PatientModule")),
+      exact: true,
+      protected: false,
+    },
+    {
       path: "/visit",
       name: "Visit",
       component: lazy(() => import("@/pages/Patient/PatientModule")),

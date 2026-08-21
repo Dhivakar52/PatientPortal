@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-// 1. Axios Instance உருவாக்கவும் (Base URL + Headers)
+// 1. Axios Instance  (Base URL + Headers)
 const axiosInstance = axios.create({
     baseURL: apiUrl,
     timeout: 10000,

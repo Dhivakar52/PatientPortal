@@ -1,5 +1,6 @@
 import React from 'react'
-import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon, LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon, LogOut, User } from 'lucide-react'
 import srmLogo from '@/assets/images/srm_logo.png'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
@@ -31,7 +32,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   onAddPatient,
   onLogout,
 }) => {
+  const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+
   const rawName = currentPatient?.PatientName || currentPatient?.name || ''
   const gender = currentPatient?.Gender || currentPatient?.gender || ''
   const salutation = gender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
@@ -40,23 +43,22 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
     : '—'
 
   // Determine list of patients for dropdown menu
-  // If patients list is passed and has items, use it; otherwise fallback to [currentPatient] if present
   const patientList = patients.length > 0 ? patients : (currentPatient ? [currentPatient] : [])
   const showMoreCardView = patientList.length > 5
   const displayedPatients = showMoreCardView ? patientList.slice(0, 5) : patientList
 
   return (
-    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-40 sticky top-0" style={{ background: "var(--blue-text-color)" }}>
+    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-9999 sticky top-0" style={{ background: "var(--blue-text-color)" }}>
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex items-center gap-3 shrink-0">
           <div className="bg-white rounded p-1 w-12 h-12 flex items-center justify-center overflow-hidden shrink-0">
             <img src={srmLogo} alt="SRM Logo" className="w-10 h-auto object-contain" />
           </div>
           <div>
-            <div className="font-bold md:text-sm sm:text-[10px] leading-snug  ">
+            <div className="font-bold md:text-sm sm:text-[10px] leading-snug">
               Patient Portal
             </div>
-            <div className="text-xs text-blue-200 ">Doctor Appointment</div>
+            <div className="text-xs text-blue-200">Doctor Appointment</div>
           </div>
         </div>
       </div>
@@ -83,7 +85,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
               render={
                 <button
                   type="button"
-                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5  text-xs font-semibold cursor-pointer text-white transition-colors outline-none"
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 text-xs font-semibold cursor-pointer text-white transition-colors outline-none"
                   style={{ borderRadius: '4px' }}
                 >
                   <div className="w-6 h-6 rounded-full bg-blue-200 text-[#14213D] flex items-center justify-center font-bold text-xs">
@@ -95,7 +97,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
               }
             />
 
-            <DropdownMenuContent align="end" className="w-72 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-xl">
+            <DropdownMenuContent align="end" className="w-72 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-xl max-h-[400px] overflow-y-auto">
               <DropdownMenuGroup>
                 <DropdownMenuLabel className="text-xs text-slate-500 dark:text-slate-400 font-semibold px-2 py-1 flex items-center justify-between">
                   <span>Select Patient Profile</span>
@@ -107,7 +109,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
               <DropdownMenuSeparator className="my-1.5" />
 
-              {/* Patient List (up to 5 inline) */}
+              {/* Patient List */}
               <DropdownMenuGroup className="space-y-0.5">
                 {displayedPatients.map((p, idx) => {
                   const pId = String(p.PatientID || p.id || idx)
@@ -117,7 +119,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                   const pGender = p.Gender || p.gender || ''
                   const pSalutation = pGender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
                   const pName = `${pSalutation} ${capitalizeName(pRawName)}`
-                  const age = p.Age !== undefined ? p.Age : (p.dob || p.DOB ? calcAge(p.dob || p.DOB) : '')
+                  const age = p.Age !== undefined ? p.Age : (p.dob || p.DOB ? calcAge(p.dob || p.DOB || '') : '')
 
                   return (
                     <DropdownMenuItem
@@ -140,7 +142,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                           {pName}
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                          {age !== '' ? `${age} Years` : '—'} • {pGender || '—'}
+                          {p.PhoneNo || p.mobile || '—'} • {age !== '' ? `${age} Years` : '—'} • {pGender || '—'}
                         </div>
                       </div>
 
@@ -151,6 +153,16 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                   )
                 })}
               </DropdownMenuGroup>
+
+              {/* Profile Action for Mobile View (Hidden on Desktop) */}
+              <DropdownMenuSeparator className="my-1.5 lg:hidden" />
+              <DropdownMenuItem
+                onClick={() => navigate('/profile')}
+                className="flex lg:hidden items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg"
+              >
+                <User className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span>Profile</span>
+              </DropdownMenuItem>
 
               {/* If > 5 patients, show option to open existing Patient Selection CARD view */}
               {showMoreCardView && (
@@ -196,19 +208,6 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-
-        {/* Header Logout Button */}
-        {/* {onLogout && (
-          <button
-            type="button"
-            onClick={onLogout}
-            className="inline-flex h-8 items-center gap-1.5 px-3 rounded-full bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 text-white text-xs font-semibold transition-colors cursor-pointer outline-none ml-1"
-            title="Logout"
-          >
-            <LogOut className="h-3.5 w-3.5 text-rose-100" />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        )} */}
       </div>
     </header>
   )
