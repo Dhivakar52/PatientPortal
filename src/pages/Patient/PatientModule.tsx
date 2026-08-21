@@ -31,9 +31,8 @@ const PatientModule: React.FC = () => {
     const booking = useAppointmentBooking(auth.currentPatient)
 
     // Derive appointments for active patient
-    const patientAppointments = auth.currentPatient
-        ? booking.appointmentsDB[auth.currentPatient.id] || []
-        : []
+    const patientKey = auth.currentPatient ? String(auth.currentPatient.PatientID || auth.currentPatient.id || '') : ''
+    const patientAppointments = patientKey ? booking.appointmentsDB[patientKey] || [] : []
 
     return (
         <>
@@ -47,6 +46,8 @@ const PatientModule: React.FC = () => {
                     loginOtpInput={auth.loginOtpInput}
                     setLoginOtpInput={auth.setLoginOtpInput}
                     loginOtpErr={auth.loginOtpErr}
+                    isGeneratingOtp={auth.isGeneratingOtp}
+                    isVerifyingOtp={auth.isVerifyingOtp}
                     onGenerateOtp={auth.handleGenerateLoginOtp}
                     onVerifyOtp={auth.handleVerifyLoginOtp}
                     onResendOtp={auth.handleResendLoginOtp}
@@ -72,6 +73,7 @@ const PatientModule: React.FC = () => {
                     regPincode={reg.regPincode}
                     setRegPincode={reg.setRegPincode}
                     regErrors={reg.regErrors}
+                    isSubmitting={reg.isSubmitting}
                     onSubmit={reg.handleRegisterSubmit}
                     onBack={reg.handleBack}
                 />
@@ -80,7 +82,7 @@ const PatientModule: React.FC = () => {
             {/* SCREEN 3: SELECT PATIENT */}
             {auth.screen === 'select' && (
                 <PatientSelection
-                    patients={auth.currentUserRecord?.patients || []}
+                    patients={auth.patientsList}
                     spSelectedId={auth.spSelectedId}
                     setSpSelectedId={auth.setSpSelectedId}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
@@ -92,7 +94,9 @@ const PatientModule: React.FC = () => {
             {auth.screen === 'app' && (
                 <PatientDashboard
                     currentPatient={auth.currentPatient}
-                    patients={auth.currentUserRecord?.patients || []}
+                    isLoadingPatient={auth.isLoadingPatient}
+                    patientError={auth.patientError}
+                    patients={auth.patientsList}
                     onSelectPatient={(id) => {
                         auth.setActivePatientId(id)
                         auth.setSpSelectedId(id)
@@ -116,6 +120,13 @@ const PatientModule: React.FC = () => {
                     setBookUnit={booking.setBookUnit}
                     selectedSlot={booking.selectedSlot}
                     setSelectedSlot={booking.setSelectedSlot}
+                    selectedDepartmentId={booking.selectedDepartmentId}
+                    setSelectedDepartmentId={booking.setSelectedDepartmentId}
+                    selectedDoctorId={booking.selectedDoctorId}
+                    setSelectedDoctorId={booking.setSelectedDoctorId}
+                    selectedTimeSlotId={booking.selectedTimeSlotId}
+                    setSelectedTimeSlotId={booking.setSelectedTimeSlotId}
+                    isConfirming={booking.isConfirming}
                     bookErrors={booking.bookErrors}
                     onConfirmBooking={booking.handleConfirmBookingClick}
                     onViewReceipt={booking.handleViewReceipt}

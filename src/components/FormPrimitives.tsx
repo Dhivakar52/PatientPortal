@@ -64,6 +64,8 @@ export function TextField({
   );
 }
 
+export type SelectOption = string | { value: string | number; label: string };
+
 // ✅ Controlled SelectField - accepts value/onChange so it can be wired into filter state
 export function SelectField({
   options,
@@ -72,15 +74,15 @@ export function SelectField({
   onChange,
   disabled,
 }: {
-  options: readonly string[];
+  options: readonly SelectOption[];
   placeholder?: string;
-  value?: string;
+  value?: string | number;
   onChange?: (value: string) => void;
   disabled?: boolean;
 }) {
   return (
     <NativeSelect
-      value={value ?? ""}
+      value={value !== undefined ? String(value) : ""}
       onChange={(e) => onChange?.(e.target.value)}
       disabled={disabled}
       className="h-9 text-[13px] w-full rounded-[4px]"
@@ -91,14 +93,19 @@ export function SelectField({
       <option value="" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
         {placeholder}
       </option>
-      {options.map((opt) => (
-        <option key={opt} value={opt} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-          {opt}
-        </option>
-      ))}
+      {options.map((opt) => {
+        const optValue = typeof opt === "object" ? String(opt.value) : opt;
+        const optLabel = typeof opt === "object" ? opt.label : opt;
+        return (
+          <option key={optValue} value={optValue} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+            {optLabel}
+          </option>
+        );
+      })}
     </NativeSelect>
   );
 }
+
 
 // ✅ Controlled DateField - accepts value/onChange so it can be wired into filter state
 export function DateField({

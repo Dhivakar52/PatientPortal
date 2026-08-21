@@ -2,7 +2,7 @@ import React from 'react'
 import { Button } from '@/components/ui/button'
 import { LoginOtp } from './LoginOtp'
 import { digitsOnly } from '@/utils/patient.utils'
-import { Smartphone, Shield, ArrowRight, Phone } from 'lucide-react'
+import { Smartphone, Shield, ArrowRight, Phone, Loader2, CheckCircle2 } from 'lucide-react'
 
 interface PatientLoginProps {
   loginMobileInput: string
@@ -12,6 +12,8 @@ interface PatientLoginProps {
   loginOtpInput: string
   setLoginOtpInput: (v: string) => void
   loginOtpErr: string
+  isGeneratingOtp?: boolean
+  isVerifyingOtp?: boolean
   onGenerateOtp: () => void
   onVerifyOtp: () => void
   onResendOtp: () => void
@@ -25,6 +27,8 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
   loginOtpInput,
   setLoginOtpInput,
   loginOtpErr,
+  isGeneratingOtp = false,
+  isVerifyingOtp = false,
   onGenerateOtp,
   onVerifyOtp,
   onResendOtp,
@@ -64,49 +68,71 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
 
             {/* Mobile Input */}
             <div className="space-y-2">
-              <div className="flex items-stretch border-2 border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all duration-200"
-                style={{ borderRadius: "4px" }}>
+              <div
+                className="flex items-stretch border-2 border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all duration-200"
+                style={{ borderRadius: "4px" }}
+              >
                 <span className="bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-slate-700 dark:text-slate-300 font-semibold text-sm flex items-center border-r-2 border-slate-200 dark:border-slate-700">
                   +91
                 </span>
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="numeric"
                   value={loginMobileInput}
                   onChange={(e) => setLoginMobileInput(digitsOnly(e.target.value, 10))}
-                  onKeyDown={(e) => e.key === 'Enter' && onGenerateOtp()}
+                  onKeyDown={(e) => e.key === 'Enter' && !isGeneratingOtp && onGenerateOtp()}
                   placeholder="Enter mobile number"
                   className="flex-1 px-4 py-2.5 text-sm outline-none bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   maxLength={10}
+                  disabled={isGeneratingOtp}
                   autoFocus
                 />
+                {showLoginOtpBlock && (
+                  <span className="flex items-center px-3 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-900">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </span>
+                )}
               </div>
               {loginMobileErr && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 animate-in fade-in duration-200">
                   <span className="text-rose-500 text-xs">⚠</span>
                   <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{loginMobileErr}</p>
                 </div>
               )}
             </div>
 
-            {/* Generate OTP Button */}
-            <Button
-              onClick={onGenerateOtp}
-              className="w-full text-white font-semibold cursor-pointer py-6 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
-              style={{ background: 'var(--blue-btn)', borderRadius: "4px" }}
-              disabled={loginMobileInput.length !== 10}
-            >
-              <Smartphone className="w-4 h-4 mr-2" />
-              Generate OTP
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            {/* Generate OTP Button - Shown when OTP block is not yet open or can be regenerated */}
+            {!showLoginOtpBlock && (
+              <Button
+                onClick={onGenerateOtp}
+                className="w-full text-white font-semibold cursor-pointer py-6 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                style={{ background: 'var(--blue-btn)', borderRadius: "4px" }}
+                disabled={loginMobileInput.length !== 10 || isGeneratingOtp}
+              >
+                {isGeneratingOtp ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating OTP...
+                  </>
+                ) : (
+                  <>
+                    <Smartphone className="w-4 h-4 mr-2" />
+                    Generate OTP
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            )}
 
             {/* OTP Section */}
             {showLoginOtpBlock && (
-              <div className="border-t border-slate-200 dark:border-slate-800 pt-5 mt-2">
+              <div className="border-t border-slate-200 dark:border-slate-800 pt-5 mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
                 <LoginOtp
                   loginOtpInput={loginOtpInput}
                   setLoginOtpInput={setLoginOtpInput}
                   loginOtpErr={loginOtpErr}
+                  isVerifyingOtp={isVerifyingOtp}
+                  isGeneratingOtp={isGeneratingOtp}
                   onVerify={onVerifyOtp}
                   onResend={onResendOtp}
                 />
@@ -119,4 +145,4 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
   )
 }
 
-export default PatientLogin
+export default PatientLogin

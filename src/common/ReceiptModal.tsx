@@ -75,10 +75,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   const receiptData = {
     apptNo: appt.apptNo,
-    patientName: capitalizeName(patient.name),
-    gender: patient.gender,
-    age: calcAge(patient.dob) || '—',
-    mobile: patient.mobile,
+    patientName: capitalizeName(patient.PatientName || patient.name || ''),
+    gender: patient.Gender || patient.gender || '—',
+    age: patient.Age !== undefined ? `${patient.Age} Years` : (calcAge(patient.DOB || patient.dob || '') || '—'),
+    mobile: patient.PhoneNo || patient.mobile || '',
     status: appt.date < today ? 'Visited' : 'Upcoming',
     bookedOn: formatDateTime(appt.bookedOn),
     appointmentDate: formatDateFull(appt.date),

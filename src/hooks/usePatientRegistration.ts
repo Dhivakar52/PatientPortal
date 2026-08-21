@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { type Patient, type UserRecord, type RegisterContext } from '@/types/patient.types'
-import { nextPatientId } from '@/utils/patient.utils'
+import { nextPatientId, calcAge } from '@/utils/patient.utils'
+import { savePatient, type RegisterPatientRequest } from '@/services/apiService'
+import { toast } from '@/components/ui/toast'
 
 interface UsePatientRegistrationProps {
   pendingMobile: string
@@ -27,6 +29,7 @@ export function usePatientRegistration({
   const [regState, setRegState] = useState('')
   const [regPincode, setRegPincode] = useState('')
   const [regErrors, setRegErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const resetForm = () => {
     setRegName('')
@@ -39,7 +42,9 @@ export function usePatientRegistration({
     setRegErrors({})
   }
 
-  const handleRegisterSubmit = () => {
+  const handleRegisterSubmit = async () => {
+    if (isSubmitting) return
+
     const errs: Record<string, string> = {}
     if (!regName.trim()) errs.name = 'Name is required.'
     if (!regDob) errs.dob = 'Date of birth is required.'
@@ -48,41 +53,103 @@ export function usePatientRegistration({
     if (!regState.trim()) errs.state = 'State is required.'
     if (!/^\d{6}$/.test(regPincode)) errs.pincode = 'Enter a valid 6-digit PIN code.'
 
+    const targetMobile = pendingMobile || localStorage.getItem('srm_patient_pending_mobile') || ''
+    if (!/^[6-9]\d{9}$/.test(targetMobile)) {
+      errs.mobile = 'Enter a valid 10-digit mobile number.'
+    }
+
     if (Object.keys(errs).length > 0) {
       setRegErrors(errs)
       return
     }
 
-    const targetMobile = pendingMobile || '9876543210'
+    setRegErrors({})
+    setIsSubmitting(true)
 
-    const newP: Patient = {
-      id: nextPatientId(),
-      mobile: targetMobile,
+    const calculatedAge = calcAge(regDob)
+    const ageValue = typeof calculatedAge === 'number' ? calculatedAge : 0
+    const storedUserId = localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')
+    const userId = storedUserId ? Number(storedUserId) : 0
+    const genderCode = regGender === 'Male' ? 1 : regGender === 'Female' ? 2 : 3
+
+    const payload: RegisterPatientRequest = {
+      userID: userId,
       name: regName.trim(),
-      gender: regGender,
+      gender: genderCode,
       dob: regDob,
+      age: ageValue,
+      mobileNo: targetMobile,
       address: regAddress.trim(),
       city: regCity.trim(),
       state: regState.trim(),
-      pincode: regPincode,
+      pinCode: regPincode.trim(),
+      createdBy: userId,
+      updatedBy: userId,
     }
 
-    setUsersDB((prev) => {
-      const rec = prev[targetMobile] || { mobile: targetMobile, patients: [], activePatientId: null }
-      return {
-        ...prev,
-        [targetMobile]: {
-          ...rec,
-          patients: [...rec.patients, newP],
-          activePatientId: newP.id,
-        },
-      }
-    })
+    try {
+      await savePatient(payload)
+      toast.success('Patient registered successfully!')
 
-    setCurrentMobile(targetMobile)
-    setActivePatientId(newP.id)
-    resetForm()
-    setScreen('app')
+      const newPId = nextPatientId()
+      const newP: Patient = {
+        PatientID: Number(userId) || 1,
+        PatientName: regName.trim(),
+        UHID: null,
+        RegisterNo: null,
+        AbhaID: null,
+        DOB: regDob,
+        Age: ageValue,
+        GenderID: genderCode,
+        Gender: regGender,
+        PatientAddress: regAddress.trim(),
+        City: regCity.trim(),
+        PatientState: regState.trim(),
+        PinCode: regPincode.trim(),
+        PhoneNo: targetMobile,
+        id: newPId,
+        mobile: targetMobile,
+        name: regName.trim(),
+        gender: regGender,
+        dob: regDob,
+        address: regAddress.trim(),
+        city: regCity.trim(),
+        state: regState.trim(),
+        pincode: regPincode.trim(),
+      }
+
+      setUsersDB((prev) => {
+        const rec = prev[targetMobile] || { mobile: targetMobile, patients: [], activePatientId: null }
+        return {
+          ...prev,
+          [targetMobile]: {
+            ...rec,
+            patients: [...rec.patients, newP],
+            activePatientId: newPId,
+          },
+        }
+      })
+
+      setCurrentMobile(targetMobile)
+      setActivePatientId(newPId)
+      resetForm()
+      setScreen('app')
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+      const resData = error.response?.data
+      let message = 'Failed to register patient. Please try again.'
+      if (typeof resData === 'string' && resData.trim()) {
+        message = resData
+      } else if (resData && typeof resData === 'object') {
+        message = resData.message || resData.Result || message
+      } else if (error.message) {
+        message = error.message
+      }
+      toast.error(message)
+      setRegErrors((prev) => ({ ...prev, form: message }))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleBack = () => {
@@ -109,7 +176,9 @@ export function usePatientRegistration({
     regPincode,
     setRegPincode,
     regErrors,
+    isSubmitting,
     handleRegisterSubmit,
     handleBack,
   }
 }
+

@@ -1,8 +1,9 @@
-import React, { } from 'react'
+import React from 'react'
 import { Button } from '@/components/ui/button'
 import { FieldLabel, TextField, DobDateField } from '@/components/FormPrimitives'
 import { PatientHeader } from '@/common/PatientHeader'
 import { calcAge, digitsOnly } from '@/utils/patient.utils'
+import { Loader2 } from 'lucide-react'
 
 interface PatientRegistrationProps {
   pendingMobile: string
@@ -21,6 +22,7 @@ interface PatientRegistrationProps {
   regPincode: string
   setRegPincode: (v: string) => void
   regErrors: Record<string, string>
+  isSubmitting?: boolean
   onSubmit: () => void
   onBack: () => void
 }
@@ -42,6 +44,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   regPincode,
   setRegPincode,
   regErrors,
+  isSubmitting = false,
   onSubmit,
   onBack,
 }) => {
@@ -86,6 +89,12 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
               We couldn't find an account for this number. Please complete your details to continue.
             </p>
 
+            {regErrors.form && (
+              <div className="mb-5 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 text-xs font-medium">
+                {regErrors.form}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
               {/* Mobile Number - Readonly */}
               <div>
@@ -93,6 +102,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 <div className="border border-slate-200 dark:border-slate-800 rounded p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-sm h-9 flex items-center">
                   +91 {pendingMobile}
                 </div>
+                {regErrors.mobile && <p className="text-xs text-rose-600 mt-1">{regErrors.mobile}</p>}
               </div>
 
               {/* Full Name */}
@@ -194,15 +204,23 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
           {/* Footer actions */}
           <div className="flex justify-end items-center gap-3 border-t border-slate-200 dark:border-slate-800 px-6 sm:px-8 py-4">
-            <Button variant="outline" onClick={onBack} className="cursor-pointer">
+            <Button variant="outline" onClick={onBack} disabled={isSubmitting} className="cursor-pointer">
               Back
             </Button>
             <Button
               onClick={onSubmit}
-              className="text-white cursor-pointer font-semibold px-6"
+              disabled={isSubmitting}
+              className="text-white cursor-pointer font-semibold px-6 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: 'var(--blue-btn)' }}
             >
-              Register &amp; Continue
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                'Register & Continue'
+              )}
             </Button>
           </div>
         </div>
@@ -211,4 +229,4 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   )
 }
 
-export default PatientRegistration
+export default PatientRegistration
