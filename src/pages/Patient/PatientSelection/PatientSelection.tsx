@@ -95,7 +95,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
             })}
           </div>
 
-          {/* Add Patient Button */}
+          {/* Register New Patient Button */}
           <button
             onClick={onAddPatient}
             className="w-full text-left px-6 py-4 border-t border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all duration-200 flex items-center gap-3 cursor-pointer group"
@@ -105,10 +105,10 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
             </div>
             <div>
               <div className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                Add Patient
+                Register New Patient
                 <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">New</span>
               </div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Register new patient under this mobile</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">Register another patient profile</div>
             </div>
             <ArrowRight className="w-4 h-4 text-slate-400 ml-auto opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-1" />
           </button>

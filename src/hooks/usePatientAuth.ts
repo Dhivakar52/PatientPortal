@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { UserRecord, Patient, FlowScreen, RegisterContext } from '@/types/patient.types'
-import { generateOtp, validateOtp, fetchPatient } from '@/services/apiService'
+import { generateOtp, validateOtp, fetchPatient, getUsers, type UserData } from '@/services/apiService'
 
 const getScreenFromPath = (path: string): FlowScreen => {
   if (path === '/patient/register') return 'register'
@@ -78,29 +78,117 @@ export function usePatientAuth() {
     return saved ? Number(saved) : null
   })
 
+  // Full User Data returned from GET /api/getusers
+  const [currentUserData, setCurrentUserData] = useState<UserData | null>(() => {
+    try {
+      const saved = localStorage.getItem('srm_patient_user_data')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
+  })
+
   // API Patient Data State
   const [apiPatient, setApiPatient] = useState<Patient | null>(null)
-  const [apiPatientsList, setApiPatientsList] = useState<Patient[]>([])
+  const [apiPatientsList, setApiPatientsList] = useState<Patient[]>(() => {
+    try {
+      const saved = localStorage.getItem('srm_patient_user_data')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed.Patients) && parsed.Patients.length > 0) {
+          return parsed.Patients
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return []
+  })
   const [isLoadingPatient, setIsLoadingPatient] = useState<boolean>(false)
   const [patientError, setPatientError] = useState<string | null>(null)
 
+  // Helper to fetch and sync all user patients from GET /api/getusers
+  const refreshUserPatients = async (phone?: string) => {
+    const targetMobile = phone || currentMobile || localStorage.getItem('srm_patient_current_mobile')
+    if (!targetMobile) return []
+    try {
+      const userList = await getUsers({ phoneNo: targetMobile })
+      if (Array.isArray(userList) && userList.length > 0) {
+        const matchedUser = userList[0]
+        setCurrentUserData(matchedUser)
+        const userPatients: Patient[] = []
+        if (Array.isArray(matchedUser.Patients)) {
+          matchedUser.Patients.forEach((rawP) => {
+            const p = (rawP as unknown) as Record<string, unknown>
+            const patientId = Number(p.PatientID || p.id || 0)
+            const patientName = String(p.PatientName || p.name || '')
+            const dob = String(p.DOB || p.dob || '')
+            const age = typeof p.Age === 'number' ? p.Age : 0
+            const gender = String(p.Gender || p.gender || 'Male')
+            const genderId = Number(p.GenderID || p.genderID || (gender.toLowerCase() === 'female' ? 2 : 1))
+            const address = String(p.Address || p.PatientAddress || p.address || '')
+            const city = String(p.City || p.city || '')
+            const state = String(p.State || p.PatientState || p.state || '')
+            const pinCode = String(p.PinCode || p.pinCode || p.pincode || '')
+            const phoneNo = String(p.PhoneNo || p.phoneNo || matchedUser.phoneNo || targetMobile)
+
+            userPatients.push({
+              ...p,
+              PatientID: patientId,
+              PatientName: patientName,
+              UHID: p.UHID != null ? String(p.UHID) : null,
+              RegisterNo: p.RegisterNo != null ? String(p.RegisterNo) : null,
+              AbhaID: p.AbhaID != null ? String(p.AbhaID) : null,
+              DOB: dob,
+              Age: age,
+              GenderID: genderId,
+              Gender: gender,
+              Address: address,
+              PatientAddress: address,
+              City: city,
+              State: state,
+              PatientState: state,
+              PinCode: pinCode,
+              PhoneNo: phoneNo,
+              id: String(patientId),
+              name: patientName,
+              mobile: phoneNo,
+              gender: gender,
+              dob: dob,
+              address: address,
+              city: city,
+              state: state,
+              pincode: pinCode,
+            })
+          })
+        }
+        setApiPatientsList(userPatients)
+        return userPatients
+      }
+    } catch (e) {
+      console.error('Failed to fetch user patients:', e)
+    }
+    return []
+  }
+
   // Fetch patient from GET /api/fetchpatient
-  const fetchCurrentPatient = async (patientId?: number | string) => {
-    const targetId = patientId ?? (activePatientId ? Number(String(activePatientId).replace(/\D/g, '')) || activePatientId : currentUserId)
+  const fetchCurrentPatient = async (id?: number | string) => {
+    const storedUid = Number(localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')) || undefined
+    const targetId = id ?? activePatientId ?? currentUserId ?? storedUid
+
     if (!targetId) return null
 
     setIsLoadingPatient(true)
     setPatientError(null)
     try {
       const list = await fetchPatient({ patientID: targetId })
+
       if (Array.isArray(list) && list.length > 0) {
-        setApiPatientsList(list)
         const matched = list.find((p) => String(p.PatientID) === String(targetId)) || list[0]
         setApiPatient(matched)
         return matched
       } else {
         setApiPatient(null)
-        setApiPatientsList([])
         return null
       }
     } catch (err: unknown) {
@@ -120,6 +208,14 @@ export function usePatientAuth() {
       console.error(e)
     }
   }, [usersDB])
+
+  useEffect(() => {
+    if (currentUserData) {
+      localStorage.setItem('srm_patient_user_data', JSON.stringify(currentUserData))
+    } else {
+      localStorage.removeItem('srm_patient_user_data')
+    }
+  }, [currentUserData])
 
   useEffect(() => {
     localStorage.setItem('srm_patient_current_mobile', currentMobile)
@@ -142,16 +238,19 @@ export function usePatientAuth() {
     }
   }, [currentUserId])
 
-  // Single effect to fetch patient on ID change
+  // Sync user patients on mobile change
   useEffect(() => {
-    const targetId = activePatientId ? Number(String(activePatientId).replace(/\D/g, '')) || activePatientId : currentUserId
-    if (targetId) {
-      fetchCurrentPatient(targetId)
-    } else {
-      setApiPatient(null)
-      setApiPatientsList([])
+    if (currentMobile) {
+      refreshUserPatients(currentMobile)
     }
-  }, [activePatientId, currentUserId])
+  }, [currentMobile])
+
+  // Fetch active patient profile details on ID change
+  useEffect(() => {
+    if (activePatientId) {
+      fetchCurrentPatient(activePatientId)
+    }
+  }, [activePatientId])
 
   const [screen, setScreenState] = useState<FlowScreen>(() => getScreenFromPath(location.pathname))
 
@@ -217,14 +316,17 @@ export function usePatientAuth() {
     if (apiPatientsList && apiPatientsList.length > 0) {
       return apiPatientsList
     }
-    if (apiPatient) {
-      return [apiPatient]
+    if (currentUserData && Array.isArray(currentUserData.Patients) && currentUserData.Patients.length > 0) {
+      return currentUserData.Patients
     }
     if (currentUserRecord && Array.isArray(currentUserRecord.patients) && currentUserRecord.patients.length > 0) {
       return currentUserRecord.patients
     }
+    if (apiPatient) {
+      return [apiPatient]
+    }
     return []
-  }, [apiPatientsList, apiPatient, currentUserRecord])
+  }, [apiPatientsList, currentUserData, currentUserRecord, apiPatient])
 
 
   const handleGenerateLoginOtp = async () => {
@@ -328,19 +430,127 @@ export function usePatientAuth() {
         setLoginOtpInput('')
 
         if (ExistUser === true) {
-          // Existing User Flow: UserID -> Patient Select
-          setCurrentMobile(targetMobile)
-          if (UserID != null) {
-            await fetchCurrentPatient(UserID)
+          // Existing User Flow: Call GET /api/getusers?phoneNo=<verifiedPhoneNumber>
+          try {
+            const userList = await getUsers({ phoneNo: targetMobile })
+            console.log('Fetched existing users:', userList)
+
+            if (!Array.isArray(userList) || userList.length === 0) {
+              setLoginOtpErr('No existing user found for this mobile number.')
+              return
+            }
+
+            const matchedUser = userList[0]
+            const userPatients: Patient[] = []
+
+            if (Array.isArray(matchedUser.Patients) && matchedUser.Patients.length > 0) {
+              matchedUser.Patients.forEach((rawP) => {
+                const p = (rawP as unknown) as Record<string, unknown>
+                const patientId = Number(p.PatientID || p.id || 0)
+                const patientName = String(p.PatientName || p.name || '')
+                const dob = String(p.DOB || p.dob || '')
+                const age = typeof p.Age === 'number' ? p.Age : 0
+                const gender = String(p.Gender || p.gender || 'Male')
+                const genderId = Number(p.GenderID || p.genderID || (gender.toLowerCase() === 'female' ? 2 : 1))
+                const address = String(p.Address || p.PatientAddress || p.address || '')
+                const city = String(p.City || p.city || '')
+                const state = String(p.State || p.PatientState || p.state || '')
+                const pinCode = String(p.PinCode || p.pinCode || p.pincode || '')
+                const phoneNo = String(p.PhoneNo || p.phoneNo || matchedUser.phoneNo || targetMobile)
+
+                userPatients.push({
+                  ...p,
+                  PatientID: patientId,
+                  PatientName: patientName,
+                  UHID: p.UHID != null ? String(p.UHID) : null,
+                  RegisterNo: p.RegisterNo != null ? String(p.RegisterNo) : null,
+                  AbhaID: p.AbhaID != null ? String(p.AbhaID) : null,
+                  DOB: dob,
+                  Age: age,
+                  GenderID: genderId,
+                  Gender: gender,
+                  Address: address,
+                  PatientAddress: address,
+                  City: city,
+                  State: state,
+                  PatientState: state,
+                  PinCode: pinCode,
+                  PhoneNo: phoneNo,
+                  id: String(patientId),
+                  name: patientName,
+                  mobile: phoneNo,
+                  gender: gender,
+                  dob: dob,
+                  address: address,
+                  city: city,
+                  state: state,
+                  pincode: pinCode,
+                })
+              })
+            }
+
+            const effectiveUserId = matchedUser.UserID || UserID
+            setCurrentUserId(effectiveUserId)
+            setCurrentUserData(matchedUser)
+            localStorage.setItem('userID', String(effectiveUserId))
+            localStorage.setItem('srm_patient_user_id', String(effectiveUserId))
+
+            setCurrentMobile(targetMobile)
+            setApiPatientsList(userPatients)
+
+            // Extract PatientID and fetch FULL patient data from /api/fetchpatient
+            if (userPatients.length > 0) {
+              const initialPatientId = userPatients[0].PatientID
+              setActivePatientId(String(initialPatientId))
+              setSpSelectedId(String(initialPatientId))
+
+              try {
+                const fullPatientList = await fetchPatient({ patientID: initialPatientId })
+                if (Array.isArray(fullPatientList) && fullPatientList.length > 0) {
+                  setApiPatient(fullPatientList[0])
+                } else {
+                  setApiPatient(userPatients[0])
+                }
+              } catch (fetchErr) {
+                console.error('Failed to fetch full patient record:', fetchErr)
+                setApiPatient(userPatients[0])
+              }
+            }
+
+            setUsersDB((prev) => ({
+              ...prev,
+              [targetMobile]: {
+                mobile: targetMobile,
+                patients: userPatients,
+                activePatientId: userPatients.length > 0 ? String(userPatients[0].PatientID) : null,
+              },
+            }))
+
+            setShowLoginOtpBlock(false)
+            setLoginMobileInput('')
+            setLoginOtpInput('')
+
+            navigate('/patient/select', {
+              state: {
+                userID: effectiveUserId,
+              },
+            })
+            setScreenState('select')
+          } catch (getUsersErr) {
+            console.error('getUsers failed:', getUsersErr)
+            setLoginOtpErr('Failed to fetch existing user data. Please try again.')
+            return
           }
-          navigate('/patient/select', {
-            state: {
-              userID: UserID,
-            },
-          })
-          setScreenState('select')
         } else {
-          // New User Flow: UserID -> Registration Screen
+          // New User Flow: UserID -> Registration Screen (Do NOT call /api/getusers)
+          if (UserID != null) {
+            setCurrentUserId(UserID)
+            localStorage.setItem('userID', String(UserID))
+            localStorage.setItem('srm_patient_user_id', String(UserID))
+          }
+          setShowLoginOtpBlock(false)
+          setLoginMobileInput('')
+          setLoginOtpInput('')
           setPendingMobile(targetMobile)
           setRegisterContext('newAccount')
           navigate('/patient/register', {
@@ -380,17 +590,36 @@ export function usePatientAuth() {
     setScreenState('register')
   }
 
-  const handleSelectPatientContinue = () => {
+  const handleSelectPatientContinue = async () => {
     if (!spSelectedId) return
-    setActivePatientId(spSelectedId)
+    const targetPatientId = Number(spSelectedId)
+    setActivePatientId(String(targetPatientId))
+
+    // Call GET /api/fetchpatient?patientID=<PatientID>
+    try {
+      const fullPatientList = await fetchPatient({ patientID: targetPatientId })
+      if (Array.isArray(fullPatientList) && fullPatientList.length > 0) {
+        const matched = fullPatientList.find((p) => Number(p.PatientID) === targetPatientId) || fullPatientList[0]
+        setApiPatient(matched)
+      } else {
+        const fallback = apiPatientsList.find((p) => Number(p.PatientID) === targetPatientId)
+        if (fallback) setApiPatient(fallback)
+      }
+    } catch (err) {
+      console.error('Failed to fetch patient on selection continue:', err)
+      const fallback = apiPatientsList.find((p) => Number(p.PatientID) === targetPatientId)
+      if (fallback) setApiPatient(fallback)
+    }
+
     setUsersDB((prev) => ({
       ...prev,
       [currentMobile]: {
         ...prev[currentMobile],
-        activePatientId: spSelectedId,
+        activePatientId: String(targetPatientId),
       },
     }))
-    setScreen('app')
+    navigate('/patient/home')
+    setScreenState('app')
   }
 
   const handleLogout = () => {
@@ -399,12 +628,20 @@ export function usePatientAuth() {
     setActivePatientId(null)
     setSpSelectedId(null)
     setCurrentUserId(null)
+    setCurrentUserData(null)
+    setApiPatient(null)
+    setApiPatientsList([])
+    setUsersDB({})
     setLoginMobileInput('')
     setShowLoginOtpBlock(false)
     setLoginOtpErr('')
     setLoginMobileErr('')
-    localStorage.removeItem('srm_patient_user_id')
-    setScreen('login')
+
+    // Clear ALL local storage completely
+    localStorage.clear()
+
+    navigate('/patient/login')
+    setScreenState('login')
   }
 
   return {
@@ -422,8 +659,13 @@ export function usePatientAuth() {
     spSelectedId,
     setSpSelectedId,
     currentUserRecord,
+    currentUserData,
+    setCurrentUserData,
     currentPatient,
     apiPatient,
+    setApiPatient,
+    apiPatientsList,
+    setApiPatientsList,
     patientsList,
     isLoadingPatient,
     patientError,

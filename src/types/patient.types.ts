@@ -1,19 +1,23 @@
 export interface Patient {
+  TotalPatients?: number
   TotalCount?: number
   PatientID: number
   PatientName: string
-  UHID: string | null
-  RegisterNo: string | null
-  AbhaID: string | null
-  DOB: string
-  Age: number
-  GenderID: number
-  Gender: string
-  PatientAddress: string
-  City: string
-  PatientState: string
-  PinCode: string
-  PhoneNo: string
+  UHID?: string | null
+  RegisterNo?: string | null
+  AbhaID?: string | null
+  DOB?: string
+  Age?: number
+  GenderID?: number
+  Gender?: string
+  Address?: string
+  PatientAddress?: string
+  City?: string
+  State?: string
+  PatientState?: string
+  PinCode?: string
+  PhoneNo?: string
+  phoneNo?: string
 
   // Convenience aliases for existing components
   id?: string
@@ -25,6 +29,15 @@ export interface Patient {
   city?: string
   state?: string
   pincode?: string
+}
+
+export interface UserPatientResponse {
+  TotalCount: number
+  UserID: number
+  UserTypeID?: number
+  UserType?: string
+  phoneNo: string
+  Patients: Patient[]
 }
 
 export interface UserRecord {

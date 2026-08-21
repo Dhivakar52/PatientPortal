@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { DOCTORS } from '@/constants/patient.constants'
 import { genApptNo } from '@/utils/patient.utils'
-import { saveAppointment, generateOtp, type SaveAppointmentRequest } from '@/services/apiService'
+import { saveAppointment, generateOtp, cancelAppointmentApi, type SaveAppointmentRequest } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
 
 export function useAppointmentBooking(currentPatient: Patient | null) {
@@ -80,10 +80,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setBookErrors({})
     setIsConfirming(true)
 
-    const numericPatientId = currentPatient?.id
-      ? Number(String(currentPatient.id).replace(/\D/g, '')) || 1
-      : 1
-    const storedUserId = localStorage.getItem('srm_patient_user_id')
+    const numericPatientId = currentPatient?.PatientID
+      ? Number(currentPatient.PatientID)
+      : (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 1 : 1)
+    const storedUserId = localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')
     const userId = storedUserId ? Number(storedUserId) : 0
 
     const payload: SaveAppointmentRequest = {
@@ -220,10 +220,22 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setShowReceiptModal(true)
   }
 
-  const handleCancelAppointment = (apptToCancel: Appointment) => {
+  const handleCancelAppointment = async (apptToCancel: Appointment) => {
     if (!currentPatient) return
 
     const patientKey = String(currentPatient.PatientID || currentPatient.id || 'current')
+    const apptRecord = apptToCancel as unknown as Record<string, unknown>
+    const apptId = Number(apptRecord.AppointmentID || apptRecord.id || (typeof apptToCancel.apptNo === 'string' && apptToCancel.apptNo.startsWith('APT-') ? 0 : Number(apptToCancel.apptNo)))
+    const storedUserId = Number(localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')) || 0
+
+    if (apptId > 0) {
+      try {
+        await cancelAppointmentApi(apptId, storedUserId)
+      } catch (err) {
+        console.error('Cancel appointment API error:', err)
+      }
+    }
+
     setAppointmentsDB((prev) => {
       const list = prev[patientKey] || []
       const updatedList = list.map((item: Appointment) =>

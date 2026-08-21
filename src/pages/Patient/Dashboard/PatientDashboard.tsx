@@ -163,10 +163,10 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     ? currentPatient.Age
     : (currentPatient?.dob ? calcAge(currentPatient.dob) : '—')
 
-  const displayPhone = currentPatient?.PhoneNo || currentPatient?.mobile || '—'
-  const displayAddress = currentPatient?.PatientAddress || currentPatient?.address || '—'
+  const displayPhone = currentPatient?.PhoneNo || currentPatient?.phoneNo || currentPatient?.mobile || '—'
+  const displayAddress = currentPatient?.Address || currentPatient?.PatientAddress || currentPatient?.address || '—'
   const displayCity = currentPatient?.City || currentPatient?.city || '—'
-  const displayState = currentPatient?.PatientState || currentPatient?.state || '—'
+  const displayState = currentPatient?.State || currentPatient?.PatientState || currentPatient?.state || '—'
   const displayPinCode = currentPatient?.PinCode || currentPatient?.pincode || '—'
   const displayUhid = currentPatient?.UHID || '—'
   const displayRegisterNo = currentPatient?.RegisterNo || '—'

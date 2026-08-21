@@ -21,10 +21,13 @@ const PatientModule: React.FC = () => {
     const reg = usePatientRegistration({
         pendingMobile: auth.pendingMobile,
         registerContext: auth.registerContext,
+        authUserId: auth.currentUserId,
         setUsersDB: auth.setUsersDB,
         setCurrentMobile: auth.setCurrentMobile,
         setActivePatientId: auth.setActivePatientId,
         setScreen: auth.setScreen,
+        fetchCurrentPatient: auth.fetchCurrentPatient,
+        setApiPatient: auth.setApiPatient,
     })
 
     // 3. Appointment Booking Hook
@@ -97,9 +100,10 @@ const PatientModule: React.FC = () => {
                     isLoadingPatient={auth.isLoadingPatient}
                     patientError={auth.patientError}
                     patients={auth.patientsList}
-                    onSelectPatient={(id) => {
+                    onSelectPatient={async (id) => {
                         auth.setActivePatientId(id)
                         auth.setSpSelectedId(id)
+                        await auth.fetchCurrentPatient(id)
                         auth.setUsersDB((prev) => ({
                             ...prev,
                             [auth.currentMobile]: {
