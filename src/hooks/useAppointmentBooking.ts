@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { DOCTORS } from '@/constants/patient.constants'
 import { genApptNo } from '@/utils/patient.utils'
-import { saveAppointment, generateOtp, cancelAppointmentApi, type SaveAppointmentRequest } from '@/services/apiService'
+import { saveAppointment, generateOtp, cancelAppointment, type SaveAppointmentRequest } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
 
 export function useAppointmentBooking(currentPatient: Patient | null) {
@@ -62,14 +62,15 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     if (isConfirming) return
 
     const deptID = bookingData?.deptID || selectedDepartmentId || '1'
-    const doctorID = bookingData?.doctorID || selectedDoctorId
+    const doctorID = bookingData?.doctorID || selectedDoctorId || '0'
     const timeSlotID = bookingData?.timeSlotID || selectedTimeSlotId
 
     const errs: Record<string, string> = {}
-    if (!currentPatient?.id) errs.patient = 'No active patient selected.'
+    if (!currentPatient?.id && !currentPatient?.PatientID) errs.patient = 'No active patient selected.'
     if (!bookDate) errs.date = 'Please select an appointment date.'
     if (!deptID) errs.department = 'Please select a department.'
-    if (!doctorID) errs.doctor = 'Please select a doctor.'
+    // Doctor field is commented out in UI
+    // if (!doctorID) errs.doctor = 'Please select a doctor.'
     if (!timeSlotID && !selectedSlot) errs.slot = 'Please select a time slot.'
 
     if (Object.keys(errs).length > 0) {
@@ -93,7 +94,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       doctorID: Number(doctorID),
       timeSlotID: Number(timeSlotID) || 1,
       unitID: 0,
-      typeID: 0,
+      typeID: 4,  // 4 . Online, 5. Phone , 6. Reception.
       statusID: 0,
       createdBy: userId,
       updatedBy: userId,
@@ -221,35 +222,60 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   }
 
   const handleCancelAppointment = async (apptToCancel: Appointment) => {
-    if (!currentPatient) return
+    const appointmentId = Number(
+      apptToCancel.AppointmentID ??
+      (apptToCancel as unknown as Record<string, unknown>).appointmentId ??
+      (apptToCancel as unknown as Record<string, unknown>).id ??
+      (typeof apptToCancel.apptNo === 'string' && apptToCancel.apptNo.startsWith('APT-')
+        ? Number(apptToCancel.apptNo.replace(/\D/g, '')) || 0
+        : Number(apptToCancel.apptNo) || 0)
+    )
 
-    const patientKey = String(currentPatient.PatientID || currentPatient.id || 'current')
-    const apptRecord = apptToCancel as unknown as Record<string, unknown>
-    const apptId = Number(apptRecord.AppointmentID || apptRecord.id || (typeof apptToCancel.apptNo === 'string' && apptToCancel.apptNo.startsWith('APT-') ? 0 : Number(apptToCancel.apptNo)))
-    const storedUserId = Number(localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')) || 0
+    const patientId = Number(
+      apptToCancel.PatientID ??
+      (apptToCancel as unknown as Record<string, unknown>).patientId ??
+      currentPatient?.PatientID ??
+      (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
+    )
 
-    if (apptId > 0) {
-      try {
-        await cancelAppointmentApi(apptId, storedUserId)
-      } catch (err) {
-        console.error('Cancel appointment API error:', err)
-      }
+    if (!appointmentId || !patientId) {
+      toast.error('Cannot cancel: Invalid AppointmentID or PatientID.')
+      return
     }
 
-    setAppointmentsDB((prev) => {
-      const list = prev[patientKey] || []
-      const updatedList = list.map((item: Appointment) =>
-        item.apptNo === apptToCancel.apptNo
-          ? { ...item, status: 'Cancelled' }
-          : item
-      )
-      return {
-        ...prev,
-        [patientKey]: updatedList,
-      }
-    })
+    try {
+      console.log(`🗑️ Cancelling appointment: DELETE /api/cancelappointment/${appointmentId}?updatedBy=${patientId}`)
+      await cancelAppointment(appointmentId, patientId)
 
-    toast.success(`Appointment ${apptToCancel.apptNo || ''} cancelled successfully!`)
+      const patientKey = String(patientId)
+      setAppointmentsDB((prev) => {
+        const list = prev[patientKey] || []
+        const updatedList = list.map((item: Appointment) =>
+          Number(item.AppointmentID) === appointmentId || item.apptNo === apptToCancel.apptNo
+            ? { ...item, status: 'Cancelled', Status: 'Cancelled', AppointmentStatus: 'Cancelled' }
+            : item
+        )
+        return {
+          ...prev,
+          [patientKey]: updatedList,
+        }
+      })
+
+      toast.success(`Appointment ${apptToCancel.apptNo || `#${appointmentId}`} cancelled successfully!`)
+    } catch (err: unknown) {
+      console.error('Cancel appointment API error:', err)
+      const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+      const resData = error.response?.data
+      let message = 'Failed to cancel appointment. Please try again.'
+      if (typeof resData === 'string' && resData.trim()) {
+        message = resData
+      } else if (resData && typeof resData === 'object') {
+        message = resData.message || resData.Result || message
+      } else if (error.message) {
+        message = error.message
+      }
+      toast.error(message)
+    }
   }
 
   return {

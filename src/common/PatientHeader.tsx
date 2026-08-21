@@ -46,7 +46,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   const displayedPatients = showMoreCardView ? patientList.slice(0, 5) : patientList
 
   return (
-    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-40 sticky top-0" style={{ background: "var(--blue-text-color)" }}>
+    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-9999 sticky top-0" style={{ background: "var(--blue-text-color)" }}>
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex items-center gap-3 shrink-0">
           <div className="bg-white rounded p-1 w-12 h-12 flex items-center justify-center overflow-hidden shrink-0">

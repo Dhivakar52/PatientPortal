@@ -22,7 +22,7 @@ import { AppointmentBooking } from '../Appointment/AppointmentBooking'
 
 import { type Patient, type Appointment, type ActiveTab } from '@/types/patient.types'
 import { initials, capitalizeName, formatDateLong, calcAge, todayStr } from '@/utils/patient.utils'
-import { getDashboard, type DashboardResponse } from '@/services/apiService'
+import { getDashboard, fetchAppointments, type DashboardResponse } from '@/services/apiService'
 
 interface PatientDashboardProps {
   currentPatient: Patient | null
@@ -30,18 +30,18 @@ interface PatientDashboardProps {
   patientError?: string | null
   patients?: Patient[]
   onSelectPatient?: (patientId: string) => void
-  onSelectPatientClick: () => void
+  onSelectPatientClick?: () => void
   onAddPatient?: () => void
-  patientAppointments: Appointment[]
-  onLogout: () => void
+  patientAppointments?: Appointment[]
+  onLogout?: () => void
 
   // Booking props
   bookDate: string
   setBookDate: (v: string) => void
-  bookDoctor: string
-  setBookDoctor: (v: string) => void
-  bookUnit: string
-  setBookUnit: (v: string) => void
+  bookDoctor?: string
+  setBookDoctor?: (v: string) => void
+  bookUnit?: string
+  setBookUnit?: (v: string) => void
   selectedSlot: string
   setSelectedSlot: (v: string) => void
   selectedDepartmentId?: string
@@ -54,7 +54,7 @@ interface PatientDashboardProps {
   bookErrors: Record<string, string>
   onConfirmBooking: (data?: { deptID: string; doctorID: string; timeSlotID: string }) => void
   onViewReceipt: (appt: Appointment) => void
-  onCancelAppointment?: (appt: Appointment) => void
+  onCancelAppointment: (appt: Appointment) => void
 }
 
 export const PatientDashboard: React.FC<PatientDashboardProps> = ({
@@ -65,7 +65,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   onSelectPatient,
   onSelectPatientClick,
   onAddPatient,
-  patientAppointments,
+  patientAppointments = [],
   onLogout,
   bookDate,
   setBookDate,
@@ -101,14 +101,16 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const [activeTab, setActiveTabState] = useState<ActiveTab>(() => getTabFromPath(location.pathname))
   const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null)
   const [isLoadingDashboard, setIsLoadingDashboard] = useState<boolean>(false)
+  const [fetchedAppointments, setFetchedAppointments] = useState<Appointment[]>([])
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState<boolean>(false)
 
   const setActiveTab = (tab: ActiveTab) => {
     setActiveTabState(tab)
-    if (tab === 'home') navigate('/patient/home')
-    else if (tab === 'visits') navigate('/patient/visits')
-    else if (tab === 'lab') navigate('/patient/lab')
-    else if (tab === 'bills') navigate('/patient/bills')
-    else if (tab === 'book') navigate('/patient/book')
+    if (tab === 'home' && location.pathname !== '/patient/dashboard') navigate('/patient/dashboard')
+    else if (tab === 'visits' && location.pathname !== '/patient/visits') navigate('/patient/visits')
+    else if (tab === 'lab' && location.pathname !== '/patient/lab') navigate('/patient/lab')
+    else if (tab === 'bills' && location.pathname !== '/patient/bills') navigate('/patient/bills')
+    else if (tab === 'book' && location.pathname !== '/patient/book') navigate('/patient/book')
   }
 
   useEffect(() => {
@@ -118,8 +120,77 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     }
   }, [location.pathname])
 
-  // Fetch Dashboard data from GET /api/dashboard using active patient ID
   const patientNumericId = currentPatient?.PatientID || (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
+
+  const loadPatientAppointments = async (patientId: number) => {
+    setIsLoadingAppointments(true)
+    try {
+      const res = await fetchAppointments({
+        PatientID: patientId,
+        pageNo: 1,
+        recordCount: 50,
+      })
+      if (Array.isArray(res)) {
+        const mapped: Appointment[] = res.map((item: Record<string, unknown>, idx: number) => {
+          const apptStatus = String(item.AppointmentStatus || item.Status || item.status || 'Scheduled')
+          const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : `APT-${item.AppointmentID || idx + 1}`
+          const apptDate = String(item.AppointmentDate || item.date || item.Date || todayStr())
+          const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || 'General')
+          const rawDoctor = String(item.DoctorName || item.Doctor_Name || item.doctor || '')
+          const cleanDoctor = (rawDoctor === '--Select--' || !rawDoctor.trim() || item.DoctorID === 0) ? `${deptName} Specialist` : rawDoctor
+          const timeSlot = String(item.TimeSlot || item.Timeslot || item.timeslot || item.slot || '08:00 AM - 08:10 AM')
+          const bookedOn = String(item.CreatedAt || item.BookedOn || item.bookedOn || new Date().toISOString())
+
+          return {
+            AppointmentID: Number(item.AppointmentID || idx + 1),
+            PatientID: Number(item.PatientID || patientId),
+            PatientName: String(item.PatientName || ''),
+            AppointmentStatus: apptStatus,
+            AppointmentDate: apptDate,
+            AppointmentType: String(item.AppointmentType || 'Online'),
+            DeptID: Number(item.DeptID || 0),
+            DeptName: deptName,
+            Department: deptName,
+            department: deptName,
+            DoctorID: Number(item.DoctorID || 0),
+            DoctorName: cleanDoctor,
+            Doctor_Name: cleanDoctor,
+            doctor: cleanDoctor,
+            TimeSlotID: Number(item.TimeSlotID || 1),
+            TimeSlot: timeSlot,
+            Timeslot: timeSlot,
+            slot: timeSlot,
+            UnitID: Number(item.UnitID || 0),
+            Unit: String(item.Unit || item.unit || 'Unit 1'),
+            unit: String(item.Unit || item.unit || 'Unit 1'),
+            StatusID: Number(item.StatusID || 0),
+            Status: apptStatus,
+            status: apptStatus,
+            AppointmentNo: apptNo,
+            apptNo: apptNo,
+            bookedOn: bookedOn,
+            BookedOn: bookedOn,
+            date: apptDate,
+            room: String(item.Room || item.room || 'OPD-101'),
+          }
+        })
+        setFetchedAppointments(mapped)
+      }
+    } catch (err) {
+      console.error('Failed to fetch appointments:', err)
+    } finally {
+      setIsLoadingAppointments(false)
+    }
+  }
+
+  const handleCancelAppointmentAndRefresh = async (appt: Appointment) => {
+    if (onCancelAppointment) {
+      await onCancelAppointment(appt)
+    }
+    if (patientNumericId) {
+      loadPatientAppointments(Number(patientNumericId))
+    }
+  }
 
   useEffect(() => {
     if (!patientNumericId) return
@@ -144,12 +215,13 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
         if (isMounted) setIsLoadingDashboard(false)
       })
 
+    loadPatientAppointments(Number(patientNumericId))
+
     return () => {
       isMounted = false
     }
   }, [patientNumericId])
 
-  // Dynamic values directly from API response
   const rawName = currentPatient?.PatientName || currentPatient?.name || ''
   const gender = currentPatient?.Gender || currentPatient?.gender || '—'
   const salutation = gender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
@@ -185,7 +257,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     .filter((a) => a.date < today)
     .sort((a, b) => b.date.localeCompare(a.date))
 
-  // Map API dashboard items or fall back to local store
   const mapAppt = (item: Record<string, unknown>, idx: number, defaultPrefix: string): Appointment => ({
     apptNo: String(item.apptNo || item.ApptNo || `${defaultPrefix}-${idx + 1}`),
     date: String(item.date || item.AppointmentDate || item.Date || today),
@@ -206,8 +277,20 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     mapAppt(item, idx, 'VIS')
   ) || []
 
-  const upcomingAppointments = dashboardData ? apiUpcoming : localUpcomingAppointments
-  const pastAppointments = dashboardData ? apiPast : localPastAppointments
+  const fetchedUpcoming = fetchedAppointments.filter(
+    (a) => a.date >= today || a.status?.toLowerCase() === 'scheduled' || a.status?.toLowerCase() === 'confirmed'
+  )
+  const fetchedPast = fetchedAppointments.filter(
+    (a) => a.date < today && a.status?.toLowerCase() !== 'scheduled' && a.status?.toLowerCase() !== 'confirmed'
+  )
+
+  const upcomingAppointments = fetchedAppointments.length > 0
+    ? (fetchedUpcoming.length > 0 ? fetchedUpcoming : fetchedAppointments)
+    : (dashboardData?.UpcomingAppointments?.length ? apiUpcoming : localUpcomingAppointments)
+
+  const pastAppointments = fetchedPast.length > 0
+    ? fetchedPast
+    : (dashboardData?.PastVisits?.length ? apiPast : localPastAppointments)
 
   const getGenderIcon = () => {
     if (gender.toLowerCase() === 'female') return <Venus className="w-3.5 h-3.5 text-pink-500" />
@@ -407,7 +490,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
             <div className="p-5">
               {activeTab === 'home' && (
                 <div className="space-y-6">
-                  {isLoadingDashboard && upcomingAppointments.length === 0 && pastAppointments.length === 0 ? (
+                  {(isLoadingDashboard || isLoadingAppointments) && upcomingAppointments.length === 0 && pastAppointments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-slate-500">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
                       <p className="text-sm font-medium">Loading dashboard...</p>
@@ -420,7 +503,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                           <UpcomingAppointments
                             appointments={upcomingAppointments}
                             onViewReceipt={onViewReceipt}
-                            onCancelAppointment={onCancelAppointment}
+                            onCancelAppointment={handleCancelAppointmentAndRefresh}
                           />
                         </div>
                       )}
@@ -467,9 +550,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
               {activeTab === 'visits' && (
                 <VisitsTab
-                  appointments={patientAppointments}
+                  appointments={fetchedAppointments.length > 0 ? fetchedAppointments : patientAppointments}
                   onViewReceipt={onViewReceipt}
-                  onCancelAppointment={onCancelAppointment}
+                  onCancelAppointment={handleCancelAppointmentAndRefresh}
                   currentPatient={currentPatient}
                 />
               )}

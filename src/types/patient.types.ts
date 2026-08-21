@@ -49,6 +49,28 @@ export interface UserRecord {
 
 
 export interface Appointment {
+  AppointmentID?: number
+  PatientID?: number
+  PatientName?: string
+  AppointmentStatus?: string
+  AppointmentDate?: string
+  AppointmentType?: string
+  DeptID?: number
+  DeptName?: string
+  Department?: string
+  DoctorID?: number
+  DoctorName?: string
+  TimeSlotID?: number
+  TimeSlot?: string
+  Timeslot?: string
+  UnitID?: number
+  Unit?: string
+  StatusID?: number
+  Status?: string
+  AppointmentNo?: string
+  BookedOn?: string
+
+  // UI mapping fields
   apptNo: string
   date: string
   doctor: string

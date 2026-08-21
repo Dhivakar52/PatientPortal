@@ -361,6 +361,7 @@ export const fetchAppointments = async (params?: FetchAppointmentParams) => {
                 ...(params?.ToDate !== undefined && { ToDate: params.ToDate }),
             },
         });
+        console.log('Appointments:', response.data)
         return response.data;
     } catch (error) {
         console.error('Fetch Appointments Error:', error);
@@ -370,13 +371,16 @@ export const fetchAppointments = async (params?: FetchAppointmentParams) => {
 
 /**
  * Cancel Appointment
- * Calls DELETE /api/cancelappointment/{id}?updatedBy={updatedBy}
+ * Calls DELETE /api/cancelappointment/{id}?updatedBy={patientId}
  */
-export const cancelAppointmentApi = async (id: number, updatedBy?: number) => {
+export const cancelAppointment = async (
+    appointmentId: number,
+    patientId: number
+) => {
     try {
-        const response = await axiosInstance.delete(`/api/cancelappointment/${id}`, {
+        const response = await axiosInstance.delete(`/api/cancelappointment/${appointmentId}`, {
             params: {
-                ...(updatedBy !== undefined && { updatedBy }),
+                updatedBy: patientId,
             },
         });
         return response.data;
@@ -385,6 +389,8 @@ export const cancelAppointmentApi = async (id: number, updatedBy?: number) => {
         throw error;
     }
 };
+
+export const cancelAppointmentApi = cancelAppointment;
 
 /**
  * Get departments from Master

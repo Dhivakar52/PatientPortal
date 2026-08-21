@@ -32,6 +32,23 @@ const formatVisitDate = (dateStr: string) => {
     return { dayMonth: '06 JUL', year: '2026', dayName: 'Monday' }
   }
 
+  // Handle DD-MM-YYYY (e.g. 22-08-2026 or 22/08/2026)
+  const ddMmYyyyMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
+  if (ddMmYyyyMatch) {
+    const day = ddMmYyyyMatch[1].padStart(2, '0')
+    const monthNum = parseInt(ddMmYyyyMatch[2], 10)
+    const year = ddMmYyyyMatch[3]
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    const month = monthNames[monthNum - 1] || 'AUG'
+    const d = new Date(parseInt(year, 10), monthNum - 1, parseInt(day, 10))
+    const dayName = !isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { weekday: 'long' }) : 'Monday'
+    return {
+      dayMonth: `${day} ${month}`,
+      year,
+      dayName,
+    }
+  }
+
   // Handle DD-MMM-YYYY (e.g. 15-Jun-2026 or 06-Jul-2026)
   const ddMmmYyyyMatch = dateStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
   if (ddMmmYyyyMatch) {
@@ -100,9 +117,17 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Compute status if not explicitly present
-  const computedStatus =
-    (appointment as any).status || (appointment.date < today ? 'Completed' : 'Scheduled')
+  // Compute status directly from API response or fallback
+  const rawStatus =
+    appointment.AppointmentStatus ||
+    appointment.status ||
+    appointment.Status ||
+    (appointment as unknown as Record<string, unknown>).AppointmentStatus ||
+    (appointment as unknown as Record<string, unknown>).status
+  const computedStatus = rawStatus ? String(rawStatus) : (appointment.date < today ? 'Completed' : 'Scheduled')
+
+  const departmentName = appointment.department || appointment.DeptName || appointment.Department || ''
+  const displayDoctor = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : ('Specialist Consultation')
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -110,7 +135,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     if (onDownloadReceipt) {
       onDownloadReceipt(appointment)
     } else {
-      toast.success(`Downloading Visit Summary for ${appointment.doctor}`)
+      toast.success(`Downloading Visit Summary for ${displayDoctor}`)
     }
   }
 
@@ -128,12 +153,22 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     setIsCancelDialogOpen(true)
   }
 
-  const handleConfirmCancel = () => {
-    setIsCancelDialogOpen(false)
-    if (onCancelAppointment) {
-      onCancelAppointment(appointment)
-    } else {
-      toast.success(`Appointment ${appointment.apptNo || ''} with Dr. ${appointment.doctor} cancelled successfully!`)
+  const [isCancelling, setIsCancelling] = useState(false)
+
+  const handleConfirmCancel = async () => {
+    if (isCancelling) return
+    setIsCancelling(true)
+    try {
+      if (onCancelAppointment) {
+        await onCancelAppointment(appointment)
+      } else {
+        toast.success(`Appointment ${appointment.apptNo || ''} cancelled successfully!`)
+      }
+      setIsCancelDialogOpen(false)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsCancelling(false)
     }
   }
 
@@ -189,11 +224,11 @@ export const VisitCard: React.FC<VisitCardProps> = ({
               <div className="flex items-center gap-2 flex-nowrap min-w-0">
                 <Stethoscope className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
                 <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug whitespace-nowrap truncate">
-                  {appointment.doctor}
+                  {displayDoctor}
                 </span>
-                {appointment.department && (
+                {departmentName && displayDoctor !== departmentName && (
                   <span className="text-[10px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap">
-                    {appointment.department}
+                    {departmentName}
                   </span>
                 )}
               </div>
