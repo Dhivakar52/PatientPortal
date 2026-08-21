@@ -1,5 +1,6 @@
 import React from 'react'
-import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon, LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon, LogOut, User } from 'lucide-react'
 import srmLogo from '@/assets/images/srm_logo.png'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
@@ -31,6 +32,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   onAddPatient,
   onLogout,
 }) => {
+  const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
 
   const rawName = currentPatient?.PatientName || currentPatient?.name || ''
@@ -151,6 +153,16 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                   )
                 })}
               </DropdownMenuGroup>
+
+              {/* Profile Action for Mobile View (Hidden on Desktop) */}
+              <DropdownMenuSeparator className="my-1.5 lg:hidden" />
+              <DropdownMenuItem
+                onClick={() => navigate('/profile')}
+                className="flex lg:hidden items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg"
+              >
+                <User className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span>Profile</span>
+              </DropdownMenuItem>
 
               {/* If > 5 patients, show option to open existing Patient Selection CARD view */}
               {showMoreCardView && (

@@ -10,6 +10,8 @@ const getScreenFromPath = (path: string): FlowScreen => {
     path === '/patient/dashboard' ||
     path === '/home' ||
     path === '/patient/home' ||
+    path === '/profile' ||
+    path === '/patient/profile' ||
     path === '/visit' ||
     path === '/visits' ||
     path === '/patient/visits' ||

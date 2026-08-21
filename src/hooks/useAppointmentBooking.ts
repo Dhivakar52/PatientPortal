@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { DOCTORS } from '@/constants/patient.constants'
 import { genApptNo } from '@/utils/patient.utils'
-import { saveAppointment, generateOtp, cancelAppointment, type SaveAppointmentRequest } from '@/services/apiService'
+import { saveAppointment, generateOtp, cancelAppointment, fetchAppointments, type SaveAppointmentRequest } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
+import { todayStr } from '@/utils/patient.utils'
 
 export function useAppointmentBooking(currentPatient: Patient | null) {
   const [appointmentsDB, setAppointmentsDB] = useState<Record<string, Appointment[]>>(() => {
@@ -23,6 +24,73 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       return {}
     }
   })
+
+  // Re-fetch patient appointments helper
+  const refreshAppointments = async (patientId?: number) => {
+    const pId = patientId || (currentPatient?.PatientID ? Number(currentPatient.PatientID) : (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) : undefined))
+    if (!pId) return []
+    try {
+      const res = await fetchAppointments({
+        PatientID: pId,
+        pageNo: 1,
+        recordCount: 50,
+      })
+      if (Array.isArray(res)) {
+        const mapped: Appointment[] = res.map((item: Record<string, unknown>, idx: number) => {
+          const apptStatus = String(item.AppointmentStatus || item.Status || item.status || 'Scheduled')
+          const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : `APT-${item.AppointmentID || idx + 1}`
+          const apptDate = String(item.AppointmentDate || item.date || item.Date || todayStr())
+          const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || 'General')
+          const rawDoctor = String(item.DoctorName || item.Doctor_Name || item.doctor || '')
+          const cleanDoctor = (rawDoctor === '--Select--' || !rawDoctor.trim() || item.DoctorID === 0) ? `${deptName} Specialist` : rawDoctor
+          const timeSlot = String(item.TimeSlot || item.Timeslot || item.timeslot || item.slot || '08:00 AM - 08:10 AM')
+          const bookedOn = String(item.CreatedAt || item.BookedOn || item.bookedOn || new Date().toISOString())
+
+          return {
+            AppointmentID: Number(item.AppointmentID || idx + 1),
+            PatientID: Number(item.PatientID || pId),
+            PatientName: String(item.PatientName || ''),
+            AppointmentStatus: apptStatus,
+            AppointmentDate: apptDate,
+            AppointmentType: String(item.AppointmentType || 'Online'),
+            DeptID: Number(item.DeptID || 0),
+            DeptName: deptName,
+            Department: deptName,
+            department: deptName,
+            DoctorID: Number(item.DoctorID || 0),
+            DoctorName: cleanDoctor,
+            Doctor_Name: cleanDoctor,
+            doctor: cleanDoctor,
+            TimeSlotID: Number(item.TimeSlotID || 1),
+            TimeSlot: timeSlot,
+            Timeslot: timeSlot,
+            slot: timeSlot,
+            UnitID: Number(item.UnitID || 0),
+            Unit: String(item.Unit || item.unit || 'Unit 1'),
+            unit: String(item.Unit || item.unit || 'Unit 1'),
+            StatusID: Number(item.StatusID || 0),
+            Status: apptStatus,
+            status: apptStatus,
+            AppointmentNo: apptNo,
+            apptNo: apptNo,
+            bookedOn: bookedOn,
+            BookedOn: bookedOn,
+            date: apptDate,
+            room: String(item.Room || item.room || 'OPD-101'),
+          }
+        })
+        const patientKey = String(pId)
+        setAppointmentsDB((prev) => ({
+          ...prev,
+          [patientKey]: mapped,
+        }))
+        return mapped
+      }
+    } catch (err) {
+      console.error('Failed to refresh appointments:', err)
+    }
+    return []
+  }
 
   useEffect(() => {
     try {
@@ -168,11 +236,20 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       status: 'Scheduled',
     }
 
-    const patientKey = String(currentPatient.PatientID || currentPatient.id || 'current')
+    const numericPatientId = currentPatient.PatientID
+      ? Number(currentPatient.PatientID)
+      : (currentPatient.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
+
+    const patientKey = String(numericPatientId || 'current')
     setAppointmentsDB((prev) => ({
       ...prev,
       [patientKey]: [...(prev[patientKey] || []), newAppt],
     }))
+
+    // Immediately re-fetch real appointments from backend API
+    if (numericPatientId > 0) {
+      refreshAppointments(numericPatientId)
+    }
 
     setLastBookedAppt(newAppt)
     setShowSuccessModal(true)
@@ -316,6 +393,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     handleSuccessClose,
     handleViewReceipt,
     handleCancelAppointment,
+    refreshAppointments,
   }
 }
 

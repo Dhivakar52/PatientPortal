@@ -1,5 +1,5 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { usePatientAuth } from '@/hooks/usePatientAuth'
 import { usePatientRegistration } from '@/hooks/usePatientRegistration'
 import { useAppointmentBooking } from '@/hooks/useAppointmentBooking'
@@ -8,12 +8,15 @@ import PatientLogin from './Login/PatientLogin'
 import PatientRegistration from './Registration/PatientRegistration'
 import { PatientSelection } from './PatientSelection/PatientSelection'
 import { PatientDashboard } from './Dashboard/PatientDashboard'
+import { MobileProfilePage } from './Profile/MobileProfilePage'
 import { BookingOtpModal } from './Appointment/BookingOtpModal'
 import { BookingSuccessModal } from './Appointment/BookingSuccessModal'
 import { ReceiptModal } from '@/common/ReceiptModal'
 
 const PatientModule: React.FC = () => {
     const navigate = useNavigate()
+    const location = useLocation()
+    const isProfileRoute = location.pathname === '/profile' || location.pathname === '/patient/profile'
     // 1. Auth & Patient Flow Hook
     const auth = usePatientAuth()
 
@@ -93,8 +96,32 @@ const PatientModule: React.FC = () => {
                 />
             )}
 
-            {/* SCREEN 4: APP DASHBOARD */}
-            {auth.screen === 'app' && (
+            {/* SCREEN 4: APP DASHBOARD / PROFILE */}
+            {auth.screen === 'app' && isProfileRoute && (
+                <MobileProfilePage
+                    currentPatient={auth.currentPatient}
+                    isLoadingPatient={auth.isLoadingPatient}
+                    patientError={auth.patientError}
+                    patients={auth.patientsList}
+                    onSelectPatient={async (id) => {
+                        auth.setActivePatientId(id)
+                        auth.setSpSelectedId(id)
+                        await auth.fetchCurrentPatient(id)
+                        auth.setUsersDB((prev) => ({
+                            ...prev,
+                            [auth.currentMobile]: {
+                                ...prev[auth.currentMobile],
+                                activePatientId: id,
+                            },
+                        }))
+                    }}
+                    onSelectPatientClick={() => auth.setScreen('select')}
+                    onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
+                    onLogout={auth.handleLogout}
+                />
+            )}
+
+            {auth.screen === 'app' && !isProfileRoute && (
                 <PatientDashboard
                     currentPatient={auth.currentPatient}
                     isLoadingPatient={auth.isLoadingPatient}

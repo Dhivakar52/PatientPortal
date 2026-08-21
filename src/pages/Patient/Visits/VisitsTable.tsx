@@ -119,7 +119,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
     return appointments
       .filter((appt) => {
         const isPast = appt.date < today
-        const status = ((appt as any).status || (isPast ? 'Completed' : 'Scheduled')).toLowerCase()
+        const status = ((appt as any).status || (isPast ? 'Visited' : 'Scheduled')).toLowerCase()
 
         // Visits tab only shows Completed, Visited, Not Visited, and Cancelled
         const allowedVisitsStatuses = ['completed', 'visited', 'not visited', 'cancelled']
