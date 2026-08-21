@@ -1,16 +1,26 @@
 import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
-import { INITIAL_APPOINTMENTS, DOCTORS } from '@/constants/patient.constants'
-import { genOtp, genApptNo } from '@/utils/patient.utils'
-import { toast } from 'sonner'
+import { DOCTORS } from '@/constants/patient.constants'
+import { genApptNo } from '@/utils/patient.utils'
+import { saveAppointment, generateOtp, type SaveAppointmentRequest } from '@/services/apiService'
+import { toast } from '@/components/ui/toast'
 
 export function useAppointmentBooking(currentPatient: Patient | null) {
   const [appointmentsDB, setAppointmentsDB] = useState<Record<string, Appointment[]>>(() => {
     try {
       const saved = localStorage.getItem('srm_patient_appointments_db')
-      return saved ? JSON.parse(saved) : INITIAL_APPOINTMENTS
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Purge mock dummy patient p1 if previously stored
+        if (parsed['p1']) {
+          delete parsed['p1']
+          localStorage.setItem('srm_patient_appointments_db', JSON.stringify(parsed))
+        }
+        return parsed
+      }
+      return {}
     } catch {
-      return INITIAL_APPOINTMENTS
+      return {}
     }
   })
 
@@ -27,11 +37,14 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const [bookDoctor, setBookDoctor] = useState('')
   const [bookUnit, setBookUnit] = useState('')
   const [selectedSlot, setSelectedSlot] = useState('')
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('1')
+  const [selectedDoctorId, setSelectedDoctorId] = useState('')
+  const [selectedTimeSlotId, setSelectedTimeSlotId] = useState('')
   const [bookErrors, setBookErrors] = useState<Record<string, string>>({})
+  const [isConfirming, setIsConfirming] = useState(false)
 
   // Modals State
   const [showBookOtpModal, setShowBookOtpModal] = useState(false)
-  const [generatedBookOtp, setGeneratedBookOtp] = useState('')
   const [bookOtpInput, setBookOtpInput] = useState('')
   const [bookOtpErr, setBookOtpErr] = useState('')
 
@@ -41,21 +54,93 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const [showReceiptModal, setShowReceiptModal] = useState(false)
   const [selectedReceiptAppt, setSelectedReceiptAppt] = useState<Appointment | null>(null)
 
-  const handleConfirmBookingClick = () => {
+  const handleConfirmBookingClick = async (bookingData?: {
+    deptID: string
+    doctorID: string
+    timeSlotID: string
+  }) => {
+    if (isConfirming) return
+
+    const deptID = bookingData?.deptID || selectedDepartmentId || '1'
+    const doctorID = bookingData?.doctorID || selectedDoctorId
+    const timeSlotID = bookingData?.timeSlotID || selectedTimeSlotId
+
     const errs: Record<string, string> = {}
+    if (!currentPatient?.id) errs.patient = 'No active patient selected.'
     if (!bookDate) errs.date = 'Please select an appointment date.'
-    if (!selectedSlot) errs.slot = 'Please select a time slot.'
+    if (!deptID) errs.department = 'Please select a department.'
+    if (!doctorID) errs.doctor = 'Please select a doctor.'
+    if (!timeSlotID && !selectedSlot) errs.slot = 'Please select a time slot.'
 
     if (Object.keys(errs).length > 0) {
       setBookErrors(errs)
       return
     }
+
     setBookErrors({})
-    const otp = genOtp()
-    setGeneratedBookOtp(otp)
-    setBookOtpInput(otp)
-    setBookOtpErr('')
-    setShowBookOtpModal(true)
+    setIsConfirming(true)
+
+    const numericPatientId = currentPatient?.id
+      ? Number(String(currentPatient.id).replace(/\D/g, '')) || 1
+      : 1
+    const storedUserId = localStorage.getItem('srm_patient_user_id')
+    const userId = storedUserId ? Number(storedUserId) : 0
+
+    const payload: SaveAppointmentRequest = {
+      patientID: numericPatientId,
+      appointmentDate: bookDate,
+      deptID: Number(deptID),
+      doctorID: Number(doctorID),
+      timeSlotID: Number(timeSlotID) || 1,
+      unitID: 0,
+      typeID: 0,
+      statusID: 0,
+      createdBy: userId,
+      updatedBy: userId,
+    }
+
+    try {
+      // 1. Call POST /api/saveappointment
+      await saveAppointment(payload)
+
+      // 2. Immediately call POST /api/generateotp on success
+      try {
+        const targetMobile = currentPatient?.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
+        await generateOtp(targetMobile, numericPatientId)
+        setBookOtpInput('')
+        setBookOtpErr('')
+        setShowBookOtpModal(true)
+      } catch (otpErr: unknown) {
+        const error = otpErr as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+        const resData = error.response?.data
+        let message = 'Appointment saved, but failed to generate OTP. Please click Resend OTP.'
+        if (typeof resData === 'string' && resData.trim()) {
+          message = resData
+        } else if (resData && typeof resData === 'object') {
+          message = resData.message || resData.Result || message
+        } else if (error.message) {
+          message = error.message
+        }
+        toast.error(message)
+        setBookOtpErr(message)
+        setShowBookOtpModal(true)
+      }
+    } catch (saveErr: unknown) {
+      const error = saveErr as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+      const resData = error.response?.data
+      let message = 'Failed to save appointment. Please try again.'
+      if (typeof resData === 'string' && resData.trim()) {
+        message = resData
+      } else if (resData && typeof resData === 'object') {
+        message = resData.message || resData.Result || message
+      } else if (error.message) {
+        message = error.message
+      }
+      toast.error(message)
+      setBookErrors((prev) => ({ ...prev, form: message }))
+    } finally {
+      setIsConfirming(false)
+    }
   }
 
   const handleVerifyBookOtp = (onSuccess: () => void) => {
@@ -63,33 +148,29 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       setBookOtpErr('Enter the 4-digit OTP to continue.')
       return
     }
-    if (bookOtpInput !== generatedBookOtp) {
-      setBookOtpErr('Incorrect OTP. Please try again.')
-      setBookOtpInput('')
-      return
-    }
     setBookOtpErr('')
     setShowBookOtpModal(false)
 
     if (!currentPatient) return
 
-    const selectedDoctor = bookDoctor || 'Dr. Madhumitha'
-    const roomIndex = DOCTORS.indexOf(selectedDoctor) + 1
+    const selectedDoctorName = bookDoctor || 'Dr. Madhumitha'
+    const roomIndex = DOCTORS.indexOf(selectedDoctorName) + 1
     const newAppt: Appointment = {
       apptNo: genApptNo(),
       date: bookDate,
-      doctor: selectedDoctor,
+      doctor: selectedDoctorName,
       department: 'Gynecology',
-      slot: selectedSlot,
+      slot: selectedSlot || '08:00 AM-08:10 AM',
       unit: bookUnit || 'Unit 1',
       bookedOn: new Date().toISOString(),
       room: `GYN-${200 + (roomIndex > 0 ? roomIndex : 1)}`,
       status: 'Scheduled',
     }
 
+    const patientKey = String(currentPatient.PatientID || currentPatient.id || 'current')
     setAppointmentsDB((prev) => ({
       ...prev,
-      [currentPatient.id]: [...(prev[currentPatient.id] || []), newAppt],
+      [patientKey]: [...(prev[patientKey] || []), newAppt],
     }))
 
     setLastBookedAppt(newAppt)
@@ -97,11 +178,30 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     onSuccess()
   }
 
-  const handleResendBookOtp = () => {
-    const otp = genOtp()
-    setGeneratedBookOtp(otp)
-    setBookOtpInput(otp)
-    setBookOtpErr('')
+  const handleResendBookOtp = async () => {
+    if (!currentPatient) return
+    const numericPatientId = currentPatient.PatientID || (currentPatient.id
+      ? Number(String(currentPatient.id).replace(/\D/g, '')) || 1
+      : 1)
+    const targetMobile = currentPatient.PhoneNo || currentPatient.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
+
+    try {
+      await generateOtp(targetMobile, numericPatientId)
+      setBookOtpErr('')
+      toast.success('OTP resent successfully!')
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+      const resData = error.response?.data
+      let message = 'Failed to resend OTP.'
+      if (typeof resData === 'string' && resData.trim()) {
+        message = resData
+      } else if (resData && typeof resData === 'object') {
+        message = resData.message || resData.Result || message
+      } else if (error.message) {
+        message = error.message
+      }
+      setBookOtpErr(message)
+    }
   }
 
   const handleSuccessClose = (onClose: () => void) => {
@@ -110,6 +210,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setBookDoctor('')
     setBookUnit('')
     setSelectedSlot('')
+    setSelectedDoctorId('')
+    setSelectedTimeSlotId('')
     onClose()
   }
 
@@ -121,16 +223,17 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const handleCancelAppointment = (apptToCancel: Appointment) => {
     if (!currentPatient) return
 
+    const patientKey = String(currentPatient.PatientID || currentPatient.id || 'current')
     setAppointmentsDB((prev) => {
-      const list = prev[currentPatient.id] || []
-      const updatedList = list.map((item) =>
+      const list = prev[patientKey] || []
+      const updatedList = list.map((item: Appointment) =>
         item.apptNo === apptToCancel.apptNo
           ? { ...item, status: 'Cancelled' }
           : item
       )
       return {
         ...prev,
-        [currentPatient.id]: updatedList,
+        [patientKey]: updatedList,
       }
     })
 
@@ -147,7 +250,14 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setBookUnit,
     selectedSlot,
     setSelectedSlot,
+    selectedDepartmentId,
+    setSelectedDepartmentId,
+    selectedDoctorId,
+    setSelectedDoctorId,
+    selectedTimeSlotId,
+    setSelectedTimeSlotId,
     bookErrors,
+    isConfirming,
 
     showBookOtpModal,
     setShowBookOtpModal,
@@ -170,3 +280,4 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     handleCancelAppointment,
   }
 }
+

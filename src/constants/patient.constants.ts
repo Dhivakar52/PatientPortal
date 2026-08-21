@@ -51,58 +51,7 @@ export const UNIT_BOOKED: Record<string, string[]> = {
   'Unit 4': ['11:00-11:30', '17:00-17:30'],
 }
 
-export const INITIAL_USERS: Record<string, UserRecord> = {
-  '9876543210': {
-    mobile: '9876543210',
-    patients: [
-      {
-        id: 'p1',
-        mobile: '9876543210',
-        name: 'Priya Kumar',
-        gender: 'Female',
-        dob: '1994-05-15',
-        address: '123 SRM Avenue',
-        city: 'Chennai',
-        state: 'Tamil Nadu',
-        pincode: '603203',
-      },
-      {
-        id: 'p2',
-        mobile: '9876543210',
-        name: 'Rajesh Kumar',
-        gender: 'Male',
-        dob: '1990-08-20',
-        address: '123 SRM Avenue',
-        city: 'Chennai',
-        state: 'Tamil Nadu',
-        pincode: '603203',
-      },
-    ],
-    activePatientId: 'p1',
-  },
-}
+export const INITIAL_USERS: Record<string, UserRecord> = {}
 
-export const INITIAL_APPOINTMENTS: Record<string, Appointment[]> = {
-  p1: [
-    {
-      apptNo: 'APT-20260815-482910',
-      date: '2026-08-20',
-      doctor: 'Dr. Madhumitha',
-      department: 'Gynecology',
-      slot: '09:00-09:10',
-      unit: 'Unit 2',
-      bookedOn: new Date().toISOString(),
-      room: 'GYN-201',
-    },
-    {
-      apptNo: 'APT-20260710-119284',
-      date: '2026-07-10',
-      doctor: 'Dr. Ravi',
-      department: 'Gynecology',
-      slot: '10:10-10:20',
-      unit: 'Unit 3',
-      bookedOn: '2026-07-05T10:00:00.000Z',
-      room: 'GYN-202',
-    },
-  ],
-}
+export const INITIAL_APPOINTMENTS: Record<string, Appointment[]> = {}
+

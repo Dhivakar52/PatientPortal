@@ -1,13 +1,30 @@
 export interface Patient {
-  id: string
-  mobile: string
-  name: string
-  gender: 'Male' | 'Female' | 'Other'
-  dob: string
-  address: string
-  city: string
-  state: string
-  pincode: string
+  TotalCount?: number
+  PatientID: number
+  PatientName: string
+  UHID: string | null
+  RegisterNo: string | null
+  AbhaID: string | null
+  DOB: string
+  Age: number
+  GenderID: number
+  Gender: string
+  PatientAddress: string
+  City: string
+  PatientState: string
+  PinCode: string
+  PhoneNo: string
+
+  // Convenience aliases for existing components
+  id?: string
+  mobile?: string
+  name?: string
+  gender?: string
+  dob?: string
+  address?: string
+  city?: string
+  state?: string
+  pincode?: string
 }
 
 export interface UserRecord {
@@ -15,6 +32,8 @@ export interface UserRecord {
   patients: Patient[]
   activePatientId: string | null
 }
+
+
 
 export interface Appointment {
   apptNo: string

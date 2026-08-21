@@ -45,13 +45,17 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
 
           {/* Patient List */}
           <div className="max-h-[340px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-            {patients.map((p) => {
-              const age = calcAge(p.dob)
-              const isActive = p.id === spSelectedId
+            {patients.map((p, idx) => {
+              const pId = String(p.PatientID || p.id || idx)
+              const pRawName = p.PatientName || p.name || `Patient #${pId}`
+              const pDob = p.DOB || p.dob || ''
+              const pGender = p.Gender || p.gender || '—'
+              const age = p.Age !== undefined ? p.Age : (pDob ? calcAge(pDob) : '')
+              const isActive = pId === spSelectedId
               return (
                 <div
-                  key={p.id}
-                  onClick={() => setSpSelectedId(p.id)}
+                  key={pId}
+                  onClick={() => setSpSelectedId(pId)}
                   className={`flex items-center gap-3 px-6 py-4 cursor-pointer transition-all duration-200 ${isActive
                       ? 'bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-600'
                       : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
@@ -63,23 +67,23 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700'
                       }`}
                   >
-                    {initials(p.name)}
+                    {initials(pRawName)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className={`font-bold text-sm truncate ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
                         }`}>
-                        {capitalizeName(p.name)}
+                        {capitalizeName(pRawName)}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {age !== '' ? `${age}Y` : '—'}
+                        {age !== '' ? `${age} Years` : '—'}
                       </span>
                       <span className="flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        {p.gender || '—'}
+                        {pGender}
                       </span>
                     </div>
                   </div>
