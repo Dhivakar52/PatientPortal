@@ -314,6 +314,7 @@ export interface Department {
     DepartmentID?: number;
     DepartmentName?: string;
     DeptID?: number;
+    DeptName?: string;
     name?: string;
     id?: number;
 }

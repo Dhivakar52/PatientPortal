@@ -53,7 +53,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   const otherAccounts = knownAccounts.filter((a) => a.phoneNo && a.phoneNo !== activePhone)
 
   return (
-    <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-9999 sticky top-0" style={{ background: "var(--blue-text-color)" }}>
+    <header className="text-white px-4 sm:px-5 py-3 flex items-center justify-between shadow-md sticky top-0 z-50 overflow-visible" style={{ background: "var(--blue-text-color)" }}>
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex items-center gap-3 shrink-0">
           <div className="bg-white rounded p-1 w-12 h-12 flex items-center justify-center overflow-hidden shrink-0">

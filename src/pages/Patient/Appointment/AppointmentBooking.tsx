@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { CalendarPlus, CalendarCheck, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { FieldLabel, DateField, SelectField } from '@/components/FormPrimitives'
+import { FieldLabel, DateField, SelectField, TextField } from '@/components/FormPrimitives'
 import { getTimeSlots, type TimeSlot } from '@/services/apiService'
+import { useDepartmentsQuery } from '@/hooks/queries/useMasterDataQueries'
 
 interface AppointmentBookingProps {
   bookDate: string
@@ -24,21 +25,6 @@ interface AppointmentBookingProps {
   onConfirm: (data?: { deptID: string; doctorID: string; timeSlotID: string }) => void
 }
 
-// Departments with IDs
-const DEPARTMENTS = [
-  { id: 1, name: 'Gynecology' },
-  { id: 2, name: 'Cardiology' },
-  { id: 3, name: 'Neurology' },
-  { id: 4, name: 'Orthopedics' },
-  { id: 5, name: 'Pediatrics' },
-  { id: 6, name: 'Dermatology' },
-  { id: 7, name: 'Ophthalmology' },
-  { id: 8, name: 'ENT' },
-  { id: 9, name: 'General Medicine' },
-  { id: 10, name: 'General Surgery' },
-  { id: 11, name: 'Pulmonary Medicine' },
-]
-
 // Skeleton Loader Component for Time Slots
 const TimeSlotsSkeleton: React.FC = () => {
   const skeletonItems = Array(8).fill(null)
@@ -57,12 +43,12 @@ const TimeSlotsSkeleton: React.FC = () => {
   )
 }
 
-// Skeleton Loader for Dropdown
+// Skeleton Loader Component for Dropdowns
 const DropdownSkeleton: React.FC = () => {
   return (
-    <div className="relative">
-      <div className="w-full h-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 animate-pulse px-3 py-2">
-        <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
+    <div className="w-full">
+      <div className="w-full h-9 rounded-[4px] border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 animate-pulse px-3 flex items-center">
+        <div className="h-3.5 bg-slate-200 dark:bg-slate-700 rounded w-32"></div>
       </div>
     </div>
   )
@@ -116,10 +102,22 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   const selectedTimeSlotId = parentSlotId !== undefined ? parentSlotId : internalTimeSlotId
   const setSelectedTimeSlotId = setParentSlotId || setInternalTimeSlotId
 
-  // API Data States
+  // API Data States: Departments & Time Slots
+  const { data: departmentsList = [], isLoading: isLoadingDepartments } = useDepartmentsQuery()
   const [timeSlotsList, setTimeSlotsList] = useState<TimeSlot[]>([])
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState<boolean>(true)
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({})
+
+  // Auto-select the first available department from API list
+  useEffect(() => {
+    if (departmentsList.length > 0) {
+      const firstDept = departmentsList[0]
+      const firstDeptId = String(firstDept.DepartmentID || firstDept.DeptID || (firstDept as any).id || '1')
+      if (!selectedDepartmentId || selectedDepartmentId !== firstDeptId) {
+        setSelectedDepartmentId(firstDeptId)
+      }
+    }
+  }, [departmentsList, selectedDepartmentId, setSelectedDepartmentId])
 
   // 1. Fetch Time Slots on mount with 1 second delay
   useEffect(() => {
@@ -202,11 +200,6 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     }
   }
 
-  const handleDepartmentChange = (val: string) => {
-    setSelectedDepartmentId(val)
-    setLocalErrors((prev) => ({ ...prev, department: '' }))
-  }
-
   const handleTimeSlotChange = (val: string) => {
     setSelectedTimeSlotId(val)
     const slot = timeSlotsList.find((s) => String(s.TimeSlotID) === val)
@@ -218,6 +211,14 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     setLocalErrors((prev) => ({ ...prev, slot: '' }))
   }
 
+  const firstDept = departmentsList.length > 0 ? departmentsList[0] : null
+  const defaultFirstDeptId = firstDept
+    ? String(firstDept.DepartmentID || firstDept.DeptID || (firstDept as any).id || '1')
+    : '1'
+  const firstDeptName = firstDept
+    ? (firstDept.DepartmentName || firstDept.DeptName || (firstDept as any).name || 'Gynecology')
+    : 'Gynecology'
+
   const validateAndConfirm = () => {
     if (isConfirming) return
 
@@ -227,9 +228,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       errors.date = 'Please select an appointment date'
     }
 
-    if (!selectedDepartmentId) {
-      errors.department = 'Please select a department'
-    }
+    const effectiveDeptId = selectedDepartmentId || defaultFirstDeptId
 
     if (!selectedTimeSlotId && !selectedSlot) {
       errors.slot = 'Please select a time slot'
@@ -242,16 +241,11 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
     setLocalErrors({})
     onConfirm({
-      deptID: selectedDepartmentId,
+      deptID: effectiveDeptId,
       doctorID: '0',
       timeSlotID: selectedTimeSlotId || (timeSlotsList.length > 0 ? timeSlotsList[0]?.TimeSlotID?.toString() : '1'),
     })
   }
-
-  const departmentOptions = DEPARTMENTS.map((d) => ({
-    value: String(d.id),
-    label: d.name,
-  }))
 
   const timeSlotOptions = timeSlotsList.map((slot) => ({
     value: String(slot.TimeSlotID),
@@ -299,15 +293,20 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
               )}
             </div>
 
-            {/* Department */}
+            {/* Department - Auto-selected First Available & Disabled / Read-only */}
             <div>
               <FieldLabel required>Department</FieldLabel>
-              <SelectField
-                options={departmentOptions}
-                placeholder="Select Department"
-                value={selectedDepartmentId}
-                onChange={handleDepartmentChange}
-              />
+              <div className="relative">
+                {isLoadingDepartments ? (
+                  <DropdownSkeleton />
+                ) : (
+                  <TextField
+                    value={firstDeptName}
+                    disabled={true}
+                    placeholder="Department"
+                  />
+                )}
+              </div>
               {(bookErrors.department || localErrors.department) && (
                 <p className="text-xs text-rose-600 mt-1">{bookErrors.department || localErrors.department}</p>
               )}
@@ -389,22 +388,22 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
         </div>
 
         {/* Footer actions */}
-        <div className="flex justify-end items-center gap-3 border-t border-slate-200 dark:border-slate-800 px-6 sm:px-8 py-4">
+        <div className="flex justify-end items-center gap-3 border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 md:px-8 py-4">
           <Button
             onClick={validateAndConfirm}
             disabled={isConfirming || isLoadingTimeSlots}
-            className="text-white cursor-pointer font-semibold px-6 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto text-white cursor-pointer font-semibold px-6 py-2.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
           >
             {isConfirming ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Confirming Appointment...
+                <span>Confirming Appointment...</span>
               </>
             ) : (
               <>
                 <CalendarCheck className="w-4 h-4" />
-                Confirmation Appointment
+                <span>Confirmation Appointment</span>
               </>
             )}
           </Button>
