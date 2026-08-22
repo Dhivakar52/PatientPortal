@@ -5,6 +5,10 @@ import { genApptNo } from '@/utils/patient.utils'
 import { saveAppointment, generateOtp, cancelAppointment, fetchAppointments, type SaveAppointmentRequest } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
 import { todayStr } from '@/utils/patient.utils'
+import { queryClient } from '@/lib/queryClient'
+import { useAuthStore } from '@/stores/authStore'
+import { appointmentsQueryKeys } from './queries/useAppointmentsQuery'
+import { dashboardQueryKeys } from './queries/useDashboardQuery'
 
 export function useAppointmentBooking(currentPatient: Patient | null) {
   const [appointmentsDB, setAppointmentsDB] = useState<Record<string, Appointment[]>>(() => {
@@ -246,9 +250,14 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       [patientKey]: [...(prev[patientKey] || []), newAppt],
     }))
 
-    // Immediately re-fetch real appointments from backend API
+    // Immediately re-fetch real appointments from backend API & invalidate query cache
     if (numericPatientId > 0) {
       refreshAppointments(numericPatientId)
+      const userId = useAuthStore.getState().userId
+      queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.user(userId) })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.user(userId) })
+      queryClient.invalidateQueries({ queryKey: ['appointments', userId, numericPatientId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', userId, numericPatientId] })
     }
 
     setLastBookedAppt(newAppt)
@@ -337,6 +346,15 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
           [patientKey]: updatedList,
         }
       })
+
+      // Invalidate TanStack Query user-specific cache
+      const userId = useAuthStore.getState().userId
+      queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.user(userId) })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.user(userId) })
+      if (patientId) {
+        queryClient.invalidateQueries({ queryKey: ['appointments', userId, patientId] })
+        queryClient.invalidateQueries({ queryKey: ['dashboard', userId, patientId] })
+      }
 
       toast.success(`Appointment ${apptToCancel.apptNo || `#${appointmentId}`} cancelled successfully!`)
     } catch (err: unknown) {
