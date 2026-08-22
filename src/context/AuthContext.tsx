@@ -1,17 +1,19 @@
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useContext, type ReactNode } from "react"
+import { useAuthStore, type AuthUser } from "@/stores/authStore"
 
-interface User {
+export interface User {
   userId: string
   name: string
   email?: string
   avatar?: string
   roles?: string[]
+  [key: string]: unknown
 }
 
 interface AuthContextType {
   isAuthenticated: boolean
   user: User | null
-  login: (user: User) => void
+  login: (user: User, token?: string) => void
   updateUser: (changes: Partial<User>) => void
   logout: () => void
 }
@@ -19,39 +21,27 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    () => localStorage.getItem("isAuthenticated") === "true"
-  )
+  const user = useAuthStore((s) => s.user) as User | null
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const setAuth = useAuthStore((s) => s.setAuth)
+  const storeLogout = useAuthStore((s) => s.logout)
 
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const stored = localStorage.getItem("user")
-      return stored ? JSON.parse(stored) : null
-    } catch {
-      return null
-    }
-  })
-
-  const login = (userData: User) => {
-    localStorage.setItem("isAuthenticated", "true")
-    localStorage.setItem("user", JSON.stringify(userData))
-    setUser(userData)
-    setIsAuthenticated(true) // ✅ synchronous — no render lag, no race condition
+  const login = (userData: User, token?: string) => {
+    setAuth({
+      user: userData as AuthUser,
+      userId: userData.userId,
+      authToken: token || localStorage.getItem('authToken'),
+    })
   }
 
   const logout = () => {
-    localStorage.clear()
-    setUser(null)
-    setIsAuthenticated(false)
+    storeLogout()
   }
 
   const updateUser = (changes: Partial<User>) => {
-    setUser((currentUser) => {
-      if (!currentUser) return currentUser
-      const updatedUser = { ...currentUser, ...changes }
-      localStorage.setItem("user", JSON.stringify(updatedUser))
-      return updatedUser
-    })
+    if (!user) return
+    const updated = { ...user, ...changes }
+    setAuth({ user: updated as AuthUser })
   }
 
   return (
@@ -68,3 +58,4 @@ export const useAuth = () => {
   }
   return ctx
 }
+

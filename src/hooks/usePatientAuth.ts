@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { UserRecord, Patient, FlowScreen, RegisterContext } from '@/types/patient.types'
 import { generateOtp, validateOtp, fetchPatient, getUsers, type UserData } from '@/services/apiService'
+import { useAuthStore } from '@/stores/authStore'
 
 const getScreenFromPath = (path: string): FlowScreen => {
   if (path === '/patient/register') return 'register'
@@ -519,6 +520,19 @@ export function usePatientAuth() {
               }
             }
 
+            const primaryPatient = userPatients[0]
+            useAuthStore.getState().setAuth({
+              user: {
+                userId: effectiveUserId,
+                name: primaryPatient?.name || primaryPatient?.PatientName || `User ${targetMobile}`,
+                mobile: targetMobile,
+                phoneNo: targetMobile,
+              },
+              userId: effectiveUserId,
+              activePhone: targetMobile,
+              activePatientId: primaryPatient?.PatientID ? String(primaryPatient.PatientID) : null,
+            })
+
             setUsersDB((prev) => ({
               ...prev,
               [targetMobile]: {
@@ -620,8 +634,27 @@ export function usePatientAuth() {
         activePatientId: String(targetPatientId),
       },
     }))
+
+    useAuthStore.getState().setActivePatient(String(targetPatientId))
+
     navigate('/patient/home')
     setScreenState('app')
+  }
+
+  const switchAccount = async (targetPhone: string, targetPatientId?: string | number) => {
+    useAuthStore.getState().switchAccount(targetPhone, targetPatientId)
+    setCurrentMobile(targetPhone)
+    if (targetPatientId) {
+      setActivePatientId(String(targetPatientId))
+      setSpSelectedId(String(targetPatientId))
+    }
+    const patients = await refreshUserPatients(targetPhone)
+    if (patients.length > 0) {
+      const pid = targetPatientId ? String(targetPatientId) : String(patients[0].PatientID)
+      setActivePatientId(pid)
+      setSpSelectedId(pid)
+      await fetchCurrentPatient(pid)
+    }
   }
 
   const handleLogout = () => {
@@ -639,8 +672,8 @@ export function usePatientAuth() {
     setLoginOtpErr('')
     setLoginMobileErr('')
 
-    // Clear ALL local storage completely
-    localStorage.clear()
+    // Reset Zustand auth store and clear storage
+    useAuthStore.getState().logout()
 
     navigate('/patient/login')
     setScreenState('login')
@@ -692,6 +725,7 @@ export function usePatientAuth() {
     openRegisterForm,
     handleSelectPatientContinue,
     handleLogout,
+    switchAccount,
   }
 }
 

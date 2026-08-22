@@ -20,7 +20,10 @@ import { PatientProfileCard } from '../Profile/PatientProfileCard'
 
 import { type Patient, type Appointment, type ActiveTab } from '@/types/patient.types'
 import { todayStr } from '@/utils/patient.utils'
-import { getDashboard, fetchAppointments, type DashboardResponse } from '@/services/apiService'
+import { useAuthStore } from '@/stores/authStore'
+import { useAppointmentsQuery } from '@/hooks/queries/useAppointmentsQuery'
+import { useDashboardQuery } from '@/hooks/queries/useDashboardQuery'
+import { useCancelAppointmentMutation } from '@/hooks/mutations/useAppointmentMutations'
 
 interface PatientDashboardProps {
   currentPatient: Patient | null
@@ -97,10 +100,23 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   }
 
   const [activeTab, setActiveTabState] = useState<ActiveTab>(() => getTabFromPath(location.pathname))
-  const [dashboardData, setDashboardData] = useState<DashboardResponse | null>(null)
-  const [isLoadingDashboard, setIsLoadingDashboard] = useState<boolean>(false)
-  const [fetchedAppointments, setFetchedAppointments] = useState<Appointment[]>([])
-  const [isLoadingAppointments, setIsLoadingAppointments] = useState<boolean>(false)
+  const authUserId = useAuthStore((s) => s.userId)
+  const patientNumericId = currentPatient?.PatientID || (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
+
+  // TanStack Queries with user-specific query keys
+  const {
+    data: fetchedAppointments = [],
+    isLoading: isLoadingAppointments,
+    refetch: refetchAppointments,
+  } = useAppointmentsQuery(authUserId, patientNumericId || null)
+
+  const {
+    data: dashboardData,
+    isLoading: isLoadingDashboard,
+    refetch: refetchDashboard,
+  } = useDashboardQuery(authUserId, patientNumericId || null)
+
+  const cancelMutation = useCancelAppointmentMutation()
 
   const setActiveTab = (tab: ActiveTab) => {
     setActiveTabState(tab)
@@ -118,111 +134,25 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     }
   }, [location.pathname])
 
-  const patientNumericId = currentPatient?.PatientID || (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
-
-  const loadPatientAppointments = async (patientId: number) => {
-    setIsLoadingAppointments(true)
-    try {
-      const res = await fetchAppointments({
-        PatientID: patientId,
-        pageNo: 1,
-        recordCount: 50,
-      })
-      if (Array.isArray(res)) {
-        const mapped: Appointment[] = res.map((item: Record<string, unknown>, idx: number) => {
-          const apptStatus = String(item.AppointmentStatus || item.Status || item.status || 'Scheduled')
-          const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : `APT-${item.AppointmentID || idx + 1}`
-          const apptDate = String(item.AppointmentDate || item.date || item.Date || todayStr())
-          const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || 'General')
-          const rawDoctor = String(item.DoctorName || item.Doctor_Name || item.doctor || '')
-          const cleanDoctor = (rawDoctor === '--Select--' || !rawDoctor.trim() || item.DoctorID === 0) ? `${deptName} Specialist` : rawDoctor
-          const timeSlot = String(item.TimeSlot || item.Timeslot || item.timeslot || item.slot || '08:00 AM - 08:10 AM')
-          const bookedOn = String(item.CreatedAt || item.BookedOn || item.bookedOn || new Date().toISOString())
-
-          return {
-            AppointmentID: Number(item.AppointmentID || idx + 1),
-            PatientID: Number(item.PatientID || patientId),
-            PatientName: String(item.PatientName || ''),
-            AppointmentStatus: apptStatus,
-            AppointmentDate: apptDate,
-            AppointmentType: String(item.AppointmentType || 'Online'),
-            DeptID: Number(item.DeptID || 0),
-            DeptName: deptName,
-            Department: deptName,
-            department: deptName,
-            DoctorID: Number(item.DoctorID || 0),
-            DoctorName: cleanDoctor,
-            Doctor_Name: cleanDoctor,
-            doctor: cleanDoctor,
-            TimeSlotID: Number(item.TimeSlotID || 1),
-            TimeSlot: timeSlot,
-            Timeslot: timeSlot,
-            slot: timeSlot,
-            UnitID: Number(item.UnitID || 0),
-            Unit: String(item.Unit || item.unit || 'Unit 1'),
-            unit: String(item.Unit || item.unit || 'Unit 1'),
-            StatusID: Number(item.StatusID || 0),
-            Status: apptStatus,
-            status: apptStatus,
-            AppointmentNo: apptNo,
-            apptNo: apptNo,
-            bookedOn: bookedOn,
-            BookedOn: bookedOn,
-            date: apptDate,
-            room: String(item.Room || item.room || 'OPD-101'),
-          }
-        })
-        setFetchedAppointments(mapped)
-      }
-    } catch (err) {
-      console.error('Failed to fetch appointments:', err)
-    } finally {
-      setIsLoadingAppointments(false)
+  // Re-fetch on Home tab or navigation changes
+  useEffect(() => {
+    if (!patientNumericId) return
+    if (activeTab === 'home' || activeTab === 'visits') {
+      refetchAppointments()
+      refetchDashboard()
     }
-  }
+  }, [patientNumericId, activeTab, location.pathname, refetchAppointments, refetchDashboard])
 
   const handleCancelAppointmentAndRefresh = async (appt: Appointment) => {
     if (onCancelAppointment) {
       await onCancelAppointment(appt)
     }
-    if (patientNumericId) {
-      loadPatientAppointments(Number(patientNumericId))
+    const apptId = (appt as any).AppointmentID || Number(String(appt.apptNo).replace(/\D/g, ''))
+    const pId = (appt as any).PatientID || Number(patientNumericId)
+    if (apptId && pId) {
+      await cancelMutation.mutateAsync({ appointmentId: apptId, patientId: pId })
     }
   }
-
-  // Re-fetch data on:
-  // 1. Patient ID change
-  // 2. Switching to Home tab or Visits tab
-  // 3. Location / navigation changes
-  useEffect(() => {
-    if (!patientNumericId) return
-
-    let isMounted = true
-    setIsLoadingDashboard(true)
-
-    getDashboard({
-      patientID: patientNumericId,
-      pageNo: 1,
-      recordCount: 10,
-    })
-      .then((res) => {
-        if (isMounted && res) {
-          setDashboardData(res)
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to fetch dashboard data:', err)
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingDashboard(false)
-      })
-
-    loadPatientAppointments(Number(patientNumericId))
-
-    return () => {
-      isMounted = false
-    }
-  }, [patientNumericId, activeTab, location.pathname])
 
   const today = todayStr()
   const localUpcomingAppointments = patientAppointments

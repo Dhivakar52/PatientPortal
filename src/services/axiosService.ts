@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { useAuthStore } from '@/stores/authStore';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-// 1. Axios Instance  (Base URL + Headers)
+// 1. Axios Instance (Base URL + Headers)
 const axiosInstance = axios.create({
     baseURL: apiUrl,
     timeout: 10000,
@@ -11,10 +12,13 @@ const axiosInstance = axios.create({
     },
 });
 
-// 2. Request Interceptor 
+// 2. Request Interceptor: Always reads the latest token from Zustand
 axiosInstance.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('authToken');
+        const storeToken = useAuthStore.getState().authToken;
+        const fallbackToken = localStorage.getItem('authToken');
+        const token = storeToken || fallbackToken;
+
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -31,10 +35,9 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     (error) => {
-
         if (error.response?.status === 401) {
-            localStorage.removeItem('authToken');
-            window.location.href = '/login';
+            useAuthStore.getState().logout();
+            window.location.href = '/patient/login';
         }
         return Promise.reject(error);
     }

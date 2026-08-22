@@ -1,10 +1,11 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon, LogOut, User } from 'lucide-react'
+import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon, LogOut, User, Users } from 'lucide-react'
 import srmLogo from '@/assets/images/srm_logo.png'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
 import { useTheme } from '@/context/ThemeContext'
+import { useAuthStore } from '@/stores/authStore'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 }) => {
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const activePhone = useAuthStore((s) => s.activePhone)
+  const knownAccounts = useAuthStore((s) => s.knownAccounts)
+  const switchAccount = useAuthStore((s) => s.switchAccount)
 
   const rawName = currentPatient?.PatientName || currentPatient?.name || ''
   const gender = currentPatient?.Gender || currentPatient?.gender || ''
@@ -46,6 +50,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   const patientList = patients.length > 0 ? patients : (currentPatient ? [currentPatient] : [])
   const showMoreCardView = patientList.length > 5
   const displayedPatients = showMoreCardView ? patientList.slice(0, 5) : patientList
+  const otherAccounts = knownAccounts.filter((a) => a.phoneNo && a.phoneNo !== activePhone)
 
   return (
     <header className="text-white px-5 py-3 flex items-center justify-between shadow-md relative z-9999 sticky top-0" style={{ background: "var(--blue-text-color)" }}>
@@ -189,6 +194,42 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                     <UserPlus className="w-4 h-4 text-blue-600 shrink-0" />
                     <span>+ Add New Patient</span>
                   </DropdownMenuItem>
+                </>
+              )}
+
+              {/* Switch Account Section (Multi-user accounts without logout) */}
+              {otherAccounts.length > 0 && (
+                <>
+                  <DropdownMenuSeparator className="my-1.5" />
+                  <DropdownMenuLabel className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold px-2 py-0.5 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Switch Account</span>
+                  </DropdownMenuLabel>
+                  <DropdownMenuGroup className="space-y-0.5">
+                    {otherAccounts.map((acc) => (
+                      <DropdownMenuItem
+                        key={acc.phoneNo}
+                        onClick={() => {
+                          switchAccount(acc)
+                          if (acc.activePatientId) {
+                            onSelectPatient?.(String(acc.activePatientId))
+                          }
+                        }}
+                        className="flex items-center justify-between px-2.5 py-1.5 cursor-pointer rounded-lg text-xs hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-700 dark:text-slate-300"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center font-bold text-[10px]">
+                            {initials(acc.name || acc.phoneNo)}
+                          </div>
+                          <div className="truncate">
+                            <div className="font-semibold truncate">{acc.name || `+91 ${acc.phoneNo}`}</div>
+                            <div className="text-[10px] text-slate-400">{acc.phoneNo}</div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded">Switch</span>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuGroup>
                 </>
               )}
 
