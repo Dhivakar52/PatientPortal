@@ -19,6 +19,7 @@ export const PastVisits: React.FC<PastVisitsProps> = ({ appointments, onViewRece
               appointment={appt}
               onDownloadReceipt={onViewReceipt}
               showDownload={false}
+              showCancel={false}
             />
           ))}
         </div>

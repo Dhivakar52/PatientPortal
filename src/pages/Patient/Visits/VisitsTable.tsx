@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DateField } from '@/components/FormPrimitives'
 import Pagination from '@/common/Pagination'
 import Status from '@/common/Status'
 import CustomPanel from '@/common/CustomPanel'
@@ -22,27 +23,59 @@ interface VisitsTableProps {
   onRetry?: () => void
 }
 
-// Helper to parse date string into a Date object for range comparisons
+// Helper to parse date string into a Date object for range comparisons and sorting
 const parseStandardDate = (dateStr: string): Date | null => {
-  if (!dateStr) return null
-  const ddMmmMatch = dateStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
+  if (!dateStr || typeof dateStr !== 'string') return null
+  const cleanStr = dateStr.trim().split('T')[0].split(' ')[0]
+
+  // 1. DD-MM-YYYY or DD/MM/YYYY
+  const ddMmMatch = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
+  if (ddMmMatch) {
+    const day = parseInt(ddMmMatch[1], 10)
+    const month = parseInt(ddMmMatch[2], 10)
+    const year = parseInt(ddMmMatch[3], 10)
+    const d = new Date(year, month - 1, day)
+    d.setHours(0, 0, 0, 0)
+    return isNaN(d.getTime()) ? null : d
+  }
+
+  // 2. DD-MMM-YYYY (e.g. 24-AUG-2026 or 24-Aug-2026)
+  const ddMmmMatch = cleanStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
   if (ddMmmMatch) {
     const day = parseInt(ddMmmMatch[1], 10)
     const monthStr = ddMmmMatch[2].toUpperCase()
     const year = parseInt(ddMmmMatch[3], 10)
     const monthIndex = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(monthStr)
     if (monthIndex !== -1) {
-      return new Date(year, monthIndex, day)
+      const d = new Date(year, monthIndex, day)
+      d.setHours(0, 0, 0, 0)
+      return isNaN(d.getTime()) ? null : d
     }
   }
+
+  // 3. YYYY-MM-DD or YYYY/MM/DD
+  const isoMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10)
+    const month = parseInt(isoMatch[2], 10)
+    const day = parseInt(isoMatch[3], 10)
+    const d = new Date(year, month - 1, day)
+    d.setHours(0, 0, 0, 0)
+    return isNaN(d.getTime()) ? null : d
+  }
+
   const parsed = new Date(dateStr)
-  return isNaN(parsed.getTime()) ? null : parsed
+  if (!isNaN(parsed.getTime())) {
+    parsed.setHours(0, 0, 0, 0)
+    return parsed
+  }
+  return null
 }
 
 export const VisitsTable: React.FC<VisitsTableProps> = ({
   appointments,
   onViewReceipt,
-  onCancelAppointment: _onCancelAppointment,
+  onCancelAppointment,
   currentPatient,
   isLoading = false,
   error = null,
@@ -51,18 +84,18 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(6)
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'completed'>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
 
   // Date Filter States
-  const [fromDate, setFromDate] = useState<string>('')
-  const [toDate, setToDate] = useState<string>('')
+  const [fromDate, setFromDate] = useState<Date | undefined>()
+  const [toDate, setToDate] = useState<Date | undefined>()
 
   // Filter CustomPanel UI States
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
-  const [tempFromDate, setTempFromDate] = useState<string>('')
-  const [tempToDate, setTempToDate] = useState<string>('')
-  const [tempStatusFilter, setTempStatusFilter] = useState<'all' | 'scheduled' | 'completed'>('all')
+  const [tempFromDate, setTempFromDate] = useState<Date | undefined>()
+  const [tempToDate, setTempToDate] = useState<Date | undefined>()
+  const [tempStatusFilter, setTempStatusFilter] = useState<string>('all')
 
   // Search Toggle State
   const [isSearchOpen, setIsSearchOpen] = useState(false)
@@ -90,10 +123,10 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
   const clearFilters = () => {
     setSearchTerm('')
     setStatusFilter('all')
-    setFromDate('')
-    setToDate('')
-    setTempFromDate('')
-    setTempToDate('')
+    setFromDate(undefined)
+    setToDate(undefined)
+    setTempFromDate(undefined)
+    setTempToDate(undefined)
     setTempStatusFilter('all')
     setSortOrder('newest')
     setPageIndex(0)
@@ -118,23 +151,39 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
   const filteredAppointments = useMemo(() => {
     return appointments
       .filter((appt) => {
-        const isPast = appt.date < today
-        const status = ((appt as any).status || (isPast ? 'Visited' : 'Scheduled')).toLowerCase()
+        const rawStatus = (
+          appt.AppointmentStatus ||
+          appt.status ||
+          appt.Status ||
+          (appt as any).appointmentStatus ||
+          (appt.date < today ? 'Visited' : 'Scheduled')
+        ).toLowerCase()
 
-        // Visits tab only shows Completed, Visited, Not Visited, and Cancelled
-        const allowedVisitsStatuses = ['completed', 'visited', 'not visited', 'cancelled']
-        if (!allowedVisitsStatuses.includes(status)) {
+        // Visits tab strictly displays only: Visited, Not Visited, and Cancelled
+        const isAllowedVisitStatus =
+          rawStatus === 'visited' ||
+          rawStatus === 'completed' ||
+          rawStatus === 'not visited' ||
+          rawStatus === 'cancelled'
+
+        if (!isAllowedVisitStatus) {
           return false
         }
 
         // Status filter
-        if (statusFilter !== 'all' && status !== statusFilter.toLowerCase()) {
-          return false
+        if (statusFilter !== 'all') {
+          if (statusFilter === 'visited') {
+            if (rawStatus !== 'visited' && rawStatus !== 'completed') return false
+          } else if (rawStatus !== statusFilter.toLowerCase()) {
+            return false
+          }
         }
 
         // Date filter logic
-        const apptDateObj = parseStandardDate(appt.date)
-        if (apptDateObj) {
+        if (fromDate || toDate) {
+          const apptDateObj = parseStandardDate(appt.date || appt.AppointmentDate || '')
+          if (!apptDateObj) return false
+
           if (fromDate) {
             const fromObj = new Date(fromDate)
             fromObj.setHours(0, 0, 0, 0)
@@ -150,20 +199,22 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
         // Search term filter
         if (searchTerm.trim() !== '') {
           const q = searchTerm.toLowerCase().trim()
-          const matchDoctor = appt.doctor.toLowerCase().includes(q)
-          const matchDept = appt.department.toLowerCase().includes(q)
-          const matchApptNo = appt.apptNo.toLowerCase().includes(q)
-          const matchUnit = appt.unit.toLowerCase().includes(q)
+          const matchDoctor = (appt.doctor || appt.DoctorName || '').toLowerCase().includes(q)
+          const matchDept = (appt.department || appt.DeptName || '').toLowerCase().includes(q)
+          const matchApptNo = (appt.apptNo || appt.AppointmentNo || '').toLowerCase().includes(q)
+          const matchUnit = (appt.unit || appt.Unit || '').toLowerCase().includes(q)
           return matchDoctor || matchDept || matchApptNo || matchUnit
         }
 
         return true
       })
       .sort((a, b) => {
+        const dateA = parseStandardDate(a.date || a.AppointmentDate || '')?.getTime() || 0
+        const dateB = parseStandardDate(b.date || b.AppointmentDate || '')?.getTime() || 0
         if (sortOrder === 'newest') {
-          return b.date.localeCompare(a.date)
+          return dateB - dateA
         }
-        return a.date.localeCompare(b.date)
+        return dateA - dateB
       })
   }, [appointments, searchTerm, statusFilter, fromDate, toDate, sortOrder, today])
 
@@ -189,7 +240,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
     return filteredAppointments.slice(start, start + pageSize)
   }, [filteredAppointments, pageIndex, pageSize])
 
-  const isFiltered = searchTerm !== '' || statusFilter !== 'all' || fromDate !== '' || toDate !== ''
+  const isFiltered = searchTerm !== '' || statusFilter !== 'all' || fromDate !== undefined || toDate !== undefined
 
   // ERROR STATE
   if (error) {
@@ -316,8 +367,9 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
               currentPatient={currentPatient}
               onView={handleView}
               onDownloadReceipt={onViewReceipt}
+              onCancelAppointment={onCancelAppointment}
               showDownload={true}
-              showCancel={false}
+              showCancel={true}
             />
           ))}
         </div>
@@ -361,7 +413,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
         width="420px"
       >
         <div className="space-y-5">
-          {/* 1. Date Filter (From Date & To Date) */}
+          {/* 1. Date Filter (From Date & To Date) with custom Popover Calendar */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
               Date Range
@@ -371,22 +423,22 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
                 <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
                   From Date
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={tempFromDate}
-                  onChange={(e) => setTempFromDate(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  onChange={setTempFromDate}
+                  placeholder="Select From Date"
+                  defaultLabel="Select From Date"
                 />
               </div>
               <div>
                 <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
                   To Date
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={tempToDate}
-                  onChange={(e) => setTempToDate(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  onChange={setTempToDate}
+                  placeholder="Select To Date"
+                  defaultLabel="Select To Date"
                 />
               </div>
             </div>
@@ -399,12 +451,11 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
             </label>
             <NativeSelect
               value={tempStatusFilter}
-              onChange={(e) => setTempStatusFilter(e.target.value as any)}
+              onChange={(e) => setTempStatusFilter(e.target.value)}
               size="sm"
               className="w-full text-xs"
             >
               <option value="all">All Statuses</option>
-              <option value="completed">Completed</option>
               <option value="visited">Visited</option>
               <option value="not visited">Not Visited</option>
               <option value="cancelled">Cancelled</option>
@@ -412,13 +463,13 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
           </div>
 
           {/* Reset Action inside Panel */}
-          {(tempFromDate || tempToDate || tempStatusFilter !== 'all') && (
+          {(tempFromDate !== undefined || tempToDate !== undefined || tempStatusFilter !== 'all') && (
             <div className="pt-2">
               <button
                 type="button"
                 onClick={() => {
-                  setTempFromDate('')
-                  setTempToDate('')
+                  setTempFromDate(undefined)
+                  setTempToDate(undefined)
                   setTempStatusFilter('all')
                 }}
                 className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
