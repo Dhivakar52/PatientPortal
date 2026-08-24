@@ -49,12 +49,85 @@ export const isAppointmentDayEnabled = (date: Date): boolean => {
   return appointmentDayConfig[jsDay] === 1
 }
 
+// Data structure for 1-hour range UI grouping
+export interface HourRange {
+  label: string
+  slots: TimeSlot[]
+}
+
+// Dynamically group consecutive 10-minute slots (6 slots = 1 hour) into 1-hour ranges
+export const groupSlotsIntoHourRanges = (slots: TimeSlot[]): HourRange[] => {
+  const ranges: HourRange[] = []
+  const chunkSize = 6
+  for (let i = 0; i < slots.length; i += chunkSize) {
+    const chunk = slots.slice(i, i + chunkSize)
+    if (chunk.length === 0) continue
+    const first = chunk[0]
+    const last = chunk[chunk.length - 1]
+
+    const firstStart = first.Timeslot.includes('-') ? first.Timeslot.split('-')[0].trim() : first.Timeslot
+    const lastEnd = last.Timeslot.includes('-') ? last.Timeslot.split('-')[1].trim() : last.Timeslot
+
+    ranges.push({
+      label: `${firstStart} - ${lastEnd}`,
+      slots: chunk,
+    })
+  }
+  return ranges
+}
+
+// Fallback 36 slots (08:00 AM - 02:00 PM) for offline / fallback state
+const DEFAULT_36_TIMESLOTS: TimeSlot[] = [
+  // 08:00 AM - 09:00 AM
+  { TotalCount: 36, TimeSlotID: 1, Timeslot: '08:00 AM-08:10 AM' },
+  { TotalCount: 36, TimeSlotID: 2, Timeslot: '08:10 AM-08:20 AM' },
+  { TotalCount: 36, TimeSlotID: 3, Timeslot: '08:20 AM-08:30 AM' },
+  { TotalCount: 36, TimeSlotID: 4, Timeslot: '08:30 AM-08:40 AM' },
+  { TotalCount: 36, TimeSlotID: 5, Timeslot: '08:40 AM-08:50 AM' },
+  { TotalCount: 36, TimeSlotID: 6, Timeslot: '08:50 AM-09:00 AM' },
+  // 09:00 AM - 10:00 AM
+  { TotalCount: 36, TimeSlotID: 7, Timeslot: '09:00 AM-09:10 AM' },
+  { TotalCount: 36, TimeSlotID: 8, Timeslot: '09:10 AM-09:20 AM' },
+  { TotalCount: 36, TimeSlotID: 9, Timeslot: '09:20 AM-09:30 AM' },
+  { TotalCount: 36, TimeSlotID: 10, Timeslot: '09:30 AM-09:40 AM' },
+  { TotalCount: 36, TimeSlotID: 11, Timeslot: '09:40 AM-09:50 AM' },
+  { TotalCount: 36, TimeSlotID: 12, Timeslot: '09:50 AM-10:00 AM' },
+  // 10:00 AM - 11:00 AM
+  { TotalCount: 36, TimeSlotID: 13, Timeslot: '10:00 AM-10:10 AM' },
+  { TotalCount: 36, TimeSlotID: 14, Timeslot: '10:10 AM-10:20 AM' },
+  { TotalCount: 36, TimeSlotID: 15, Timeslot: '10:20 AM-10:30 AM' },
+  { TotalCount: 36, TimeSlotID: 16, Timeslot: '10:30 AM-10:40 AM' },
+  { TotalCount: 36, TimeSlotID: 17, Timeslot: '10:40 AM-10:50 AM' },
+  { TotalCount: 36, TimeSlotID: 18, Timeslot: '10:50 AM-11:00 AM' },
+  // 11:00 AM - 12:00 PM
+  { TotalCount: 36, TimeSlotID: 19, Timeslot: '11:00 AM-11:10 AM' },
+  { TotalCount: 36, TimeSlotID: 20, Timeslot: '11:10 AM-11:20 AM' },
+  { TotalCount: 36, TimeSlotID: 21, Timeslot: '11:20 AM-11:30 AM' },
+  { TotalCount: 36, TimeSlotID: 22, Timeslot: '11:30 AM-11:40 AM' },
+  { TotalCount: 36, TimeSlotID: 23, Timeslot: '11:40 AM-11:50 AM' },
+  { TotalCount: 36, TimeSlotID: 24, Timeslot: '11:50 AM-12:00 PM' },
+  // 12:00 PM - 01:00 PM
+  { TotalCount: 36, TimeSlotID: 25, Timeslot: '12:00 PM-12:10 PM' },
+  { TotalCount: 36, TimeSlotID: 26, Timeslot: '12:10 PM-12:20 PM' },
+  { TotalCount: 36, TimeSlotID: 27, Timeslot: '12:20 PM-12:30 PM' },
+  { TotalCount: 36, TimeSlotID: 28, Timeslot: '12:30 PM-12:40 PM' },
+  { TotalCount: 36, TimeSlotID: 29, Timeslot: '12:40 PM-12:50 PM' },
+  { TotalCount: 36, TimeSlotID: 30, Timeslot: '12:50 PM-01:00 PM' },
+  // 01:00 PM - 02:00 PM
+  { TotalCount: 36, TimeSlotID: 31, Timeslot: '01:00 PM-01:10 PM' },
+  { TotalCount: 36, TimeSlotID: 32, Timeslot: '01:10 PM-01:20 PM' },
+  { TotalCount: 36, TimeSlotID: 33, Timeslot: '01:20 PM-01:30 PM' },
+  { TotalCount: 36, TimeSlotID: 34, Timeslot: '01:30 PM-01:40 PM' },
+  { TotalCount: 36, TimeSlotID: 35, Timeslot: '01:40 PM-01:50 PM' },
+  { TotalCount: 36, TimeSlotID: 36, Timeslot: '01:50 PM-02:00 PM' },
+]
+
 // Skeleton Loader Component for Time Slots
 const TimeSlotsSkeleton: React.FC = () => {
-  const skeletonItems = Array(8).fill(null)
+  const skeletonItems = Array(6).fill(null)
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
       {skeletonItems.map((_, index) => (
         <div
           key={index}
@@ -131,6 +204,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
   const [internalDeptId, setInternalDeptId] = useState<string>('')
   const [internalTimeSlotId, setInternalTimeSlotId] = useState<string>('')
+  const [selectedHourRangeLabel, setSelectedHourRangeLabel] = useState<string>('')
 
   const selectedDepartmentId = parentDeptId !== undefined ? parentDeptId : internalDeptId
   const setSelectedDepartmentId = setParentDeptId || setInternalDeptId
@@ -144,6 +218,21 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState<boolean>(true)
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({})
 
+  // Compute dynamic 1-hour ranges from time slots list
+  const hourRanges = React.useMemo(() => groupSlotsIntoHourRanges(timeSlotsList), [timeSlotsList])
+
+  // Synchronize selectedHourRangeLabel if a timeSlot is already selected
+  useEffect(() => {
+    if (hourRanges.length > 0 && selectedTimeSlotId) {
+      const matchingRange = hourRanges.find((r) =>
+        r.slots.some((s) => String(s.TimeSlotID) === selectedTimeSlotId)
+      )
+      if (matchingRange) {
+        setSelectedHourRangeLabel(matchingRange.label)
+      }
+    }
+  }, [hourRanges, selectedTimeSlotId])
+
   // Auto-select the first available department from API list
   useEffect(() => {
     if (departmentsList.length > 0) {
@@ -155,7 +244,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     }
   }, [departmentsList, selectedDepartmentId, setSelectedDepartmentId])
 
-  // 1. Fetch Time Slots on mount with 1 second delay
+  // 1. Fetch Time Slots on mount with 1 second delay (calling GET /api/timeslot without hardcoded timeSlotId)
   useEffect(() => {
     let isMounted = true
     setIsLoadingTimeSlots(true)
@@ -168,41 +257,20 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
             if (Array.isArray(slots) && slots.length > 0) {
               setTimeSlotsList(slots)
             } else {
-              // Default fallback slots
-              setTimeSlotsList([
-                { TotalCount: 1, TimeSlotID: 1, Timeslot: '08:00 AM-08:10 AM' },
-                { TotalCount: 2, TimeSlotID: 2, Timeslot: '08:10 AM-08:20 AM' },
-                { TotalCount: 3, TimeSlotID: 3, Timeslot: '08:20 AM-08:30 AM' },
-                { TotalCount: 4, TimeSlotID: 4, Timeslot: '08:30 AM-08:40 AM' },
-                { TotalCount: 5, TimeSlotID: 5, Timeslot: '09:00 AM-09:10 AM' },
-                { TotalCount: 6, TimeSlotID: 6, Timeslot: '09:10 AM-09:20 AM' },
-                { TotalCount: 7, TimeSlotID: 7, Timeslot: '10:00 AM-10:10 AM' },
-                { TotalCount: 8, TimeSlotID: 8, Timeslot: '10:10 AM-10:20 AM' },
-                { TotalCount: 9, TimeSlotID: 9, Timeslot: '11:00 AM-11:10 AM' },
-                { TotalCount: 10, TimeSlotID: 10, Timeslot: '11:10 AM-11:20 AM' },
-              ])
+              setTimeSlotsList(DEFAULT_36_TIMESLOTS)
             }
           }
         })
         .catch((err) => {
           console.error('Failed to fetch time slots:', err)
           if (isMounted) {
-            setTimeSlotsList([
-              { TotalCount: 1, TimeSlotID: 1, Timeslot: '08:00 AM-08:10 AM' },
-              { TotalCount: 2, TimeSlotID: 2, Timeslot: '08:10 AM-08:20 AM' },
-              { TotalCount: 3, TimeSlotID: 3, Timeslot: '08:20 AM-08:30 AM' },
-              { TotalCount: 4, TimeSlotID: 4, Timeslot: '08:30 AM-08:40 AM' },
-              { TotalCount: 5, TimeSlotID: 5, Timeslot: '09:00 AM-09:10 AM' },
-              { TotalCount: 6, TimeSlotID: 6, Timeslot: '09:10 AM-09:20 AM' },
-              { TotalCount: 7, TimeSlotID: 7, Timeslot: '10:00 AM-10:10 AM' },
-              { TotalCount: 8, TimeSlotID: 8, Timeslot: '10:10 AM-10:20 AM' },
-            ])
+            setTimeSlotsList(DEFAULT_36_TIMESLOTS)
           }
         })
         .finally(() => {
           if (isMounted) setIsLoadingTimeSlots(false)
         })
-    }, 1000) // 1 second delay
+    }, 1000)
 
     return () => {
       isMounted = false
@@ -241,15 +309,38 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     }
   }
 
+  // Handle selecting a specific 10-minute time slot
   const handleTimeSlotChange = (val: string) => {
     setSelectedTimeSlotId(val)
     const slot = timeSlotsList.find((s) => String(s.TimeSlotID) === val)
     if (slot) {
       setSelectedSlot(slot.Timeslot)
+      // Keep dropdown in sync with selected slot's hour range
+      const matchingRange = hourRanges.find((r) =>
+        r.slots.some((s) => String(s.TimeSlotID) === val)
+      )
+      if (matchingRange) {
+        setSelectedHourRangeLabel(matchingRange.label)
+      }
     } else {
       setSelectedSlot(val)
     }
     setLocalErrors((prev) => ({ ...prev, slot: '' }))
+  }
+
+  // Handle changing the 1-hour range dropdown
+  const handleHourRangeChange = (rangeLabel: string) => {
+    setSelectedHourRangeLabel(rangeLabel)
+    const matchingRange = hourRanges.find((r) => r.label === rangeLabel)
+    if (matchingRange && matchingRange.slots.length > 0) {
+      const isCurrentSlotInRange = matchingRange.slots.some(
+        (s) => String(s.TimeSlotID) === selectedTimeSlotId
+      )
+      // Automatically select the first 10-minute slot of the new hour range
+      if (!isCurrentSlotInRange) {
+        handleTimeSlotChange(String(matchingRange.slots[0].TimeSlotID))
+      }
+    }
   }
 
   const firstDept = departmentsList.length > 0 ? departmentsList[0] : null
@@ -293,10 +384,15 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     })
   }
 
-  const timeSlotOptions = timeSlotsList.map((slot) => ({
-    value: String(slot.TimeSlotID),
-    label: slot.Timeslot,
+  // 1-Hour Range options for Dropdown UI
+  const hourRangeOptions = hourRanges.map((range) => ({
+    value: range.label,
+    label: range.label,
   }))
+
+  // Currently displayed 10-minute slots for the selected 1-hour range
+  const currentHourRange = hourRanges.find((r) => r.label === selectedHourRangeLabel) || hourRanges[0]
+  const currentAvailableSlots = currentHourRange ? currentHourRange.slots : timeSlotsList
 
   return (
     <div>
@@ -358,7 +454,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
               )}
             </div>
 
-            {/* Time Slot Dropdown with Skeleton */}
+            {/* 1-Hour Range Dropdown with Skeleton */}
             <div>
               <FieldLabel required>Time Slot</FieldLabel>
               <div className="relative">
@@ -366,10 +462,10 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                   <DropdownSkeleton />
                 ) : (
                   <SelectField
-                    options={timeSlotOptions}
+                    options={hourRangeOptions}
                     placeholder="Select Time Slot"
-                    value={selectedTimeSlotId}
-                    onChange={handleTimeSlotChange}
+                    value={selectedHourRangeLabel}
+                    onChange={handleHourRangeChange}
                     disabled={isLoadingTimeSlots}
                   />
                 )}
@@ -385,52 +481,59 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
             </div>
           </div>
 
-          {/* Time Slot Grid Selection with Skeleton */}
-          <div className="space-y-3 pt-6 mt-6 border-t border-slate-200 dark:border-slate-800">
-            <FieldLabel required>Available Time Slots</FieldLabel>
+          {/* Time Slot Grid Selection: Render ONLY when a Time Slot hour range has been selected */}
+          {selectedHourRangeLabel && (
+            <div className="space-y-3 pt-6 mt-6 border-t border-slate-200 dark:border-slate-800 animate-in fade-in-50 duration-300">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <FieldLabel required>Available Time Slots</FieldLabel>
+                <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-800">
+                  {selectedHourRangeLabel}
+                </span>
+              </div>
 
-            {isLoadingTimeSlots ? (
-              <TimeSlotsSkeleton />
-            ) : (
-              <>
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
-                  {timeSlotsList.map((slot) => {
-                    const isSelected =
-                      selectedTimeSlotId === String(slot.TimeSlotID) || selectedSlot === slot.Timeslot
-                    return (
-                      <button
-                        key={slot.TimeSlotID}
-                        type="button"
-                        onClick={() => handleTimeSlotChange(String(slot.TimeSlotID))}
-                        className={`
-                          px-3 py-2.5 text-center text-xs font-semibold rounded-lg border-2 
-                          transition-all duration-200 cursor-pointer
-                          ${isSelected
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100 dark:shadow-blue-900/30 scale-105'
-                            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800'
-                          }
-                        `}
-                      >
-                        {slot.Timeslot}
-                      </button>
-                    )
-                  })}
-                </div>
+              {isLoadingTimeSlots ? (
+                <TimeSlotsSkeleton />
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                    {currentAvailableSlots.map((slot) => {
+                      const isSelected =
+                        selectedTimeSlotId === String(slot.TimeSlotID) || selectedSlot === slot.Timeslot
+                      return (
+                        <button
+                          key={slot.TimeSlotID}
+                          type="button"
+                          onClick={() => handleTimeSlotChange(String(slot.TimeSlotID))}
+                          className={`
+                            px-3 py-2.5 text-center text-xs font-semibold rounded-lg border-2 
+                            transition-all duration-200 cursor-pointer
+                            ${isSelected
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100 dark:shadow-blue-900/30 scale-105'
+                              : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800'
+                            }
+                          `}
+                        >
+                          {slot.Timeslot}
+                        </button>
+                      )
+                    })}
+                  </div>
 
-                {/* Legend */}
-                <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-200 dark:border-slate-700">
-                  <span className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                    <span className="w-3.5 h-3.5 rounded border-2 border-slate-300 bg-white inline-block" />
-                    Available
-                  </span>
-                  <span className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                    <span className="w-3.5 h-3.5 rounded bg-blue-600 border-2 border-blue-600 inline-block" />
-                    Selected
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
+                  {/* Legend */}
+                  <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <span className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                      <span className="w-3.5 h-3.5 rounded border-2 border-slate-300 bg-white inline-block" />
+                      Available
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                      <span className="w-3.5 h-3.5 rounded bg-blue-600 border-2 border-blue-600 inline-block" />
+                      Selected
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer actions */}
