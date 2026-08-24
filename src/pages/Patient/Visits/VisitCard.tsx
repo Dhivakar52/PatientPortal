@@ -137,7 +137,11 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   }
 
   const handleCancelClick = () => {
-    setIsCancelDialogOpen(true)
+    if (onCancelAppointment) {
+      onCancelAppointment(appointment)
+    } else {
+      setIsCancelDialogOpen(true)
+    }
   }
 
   const [isCancelling, setIsCancelling] = useState(false)
@@ -294,12 +298,12 @@ export const VisitCard: React.FC<VisitCardProps> = ({
               {/* Doctor Name & Department */}
               <div className="flex flex-wrap items-center gap-1.5 min-w-0 w-full">
                 <Stethoscope className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
-                <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words">
+                {/* <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words">
                   {displayDoctor}
-                </span>
+                </span> */}
                 {departmentName && displayDoctor !== departmentName && (
                   <span className="text-[10px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full inline-flex items-center break-words max-w-full">
-                    {departmentName}
+                    {/* {departmentName} */} Gynecology
                   </span>
                 )}
               </div>
@@ -329,7 +333,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                 {appointment.apptNo && (
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[10px] sm:text-[11px] break-words">
                     <span className="text-slate-400 font-normal">Appt No:</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-mono">{appointment.apptNo}</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-mono">{appointment.AppointmentNo}</span>
                   </div>
                 )}
               </div>

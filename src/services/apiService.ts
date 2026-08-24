@@ -100,12 +100,13 @@ export const saveAppointment = async (data: SaveAppointmentRequest) => {
  * Validate OTP for the given phone number and OTP code
  * Calls GET /api/validateotp?PhoneNo={phoneNo}&otp={otp}
  */
-export const validateOtp = async (phoneNo: string, otp: string): Promise<ValidateOtpResponse> => {
+export const validateOtp = async (phoneNo: string, otp: string, patientID?: number): Promise<ValidateOtpResponse> => {
     try {
         const response = await axiosInstance.get<ValidateOtpResponse>('/api/validateotp', {
             params: {
                 PhoneNo: phoneNo,
                 otp: otp,
+                ...(patientID !== undefined && { PatientID: patientID }),
             },
         });
         console.log("Validate OTP", response.data)

@@ -10,6 +10,7 @@ import { PatientSelection } from './PatientSelection/PatientSelection'
 import { PatientDashboard } from './Dashboard/PatientDashboard'
 import { MobileProfilePage } from './Profile/MobileProfilePage'
 import { BookingOtpModal } from './Appointment/BookingOtpModal'
+import { CancelOtpModal } from './Appointment/CancelOtpModal'
 import { BookingSuccessModal } from './Appointment/BookingSuccessModal'
 import { ReceiptModal } from '@/common/ReceiptModal'
 
@@ -175,6 +176,20 @@ const PatientModule: React.FC = () => {
                 bookOtpErr={booking.bookOtpErr}
                 onVerify={() => booking.handleVerifyBookOtp(() => { })}
                 onResend={booking.handleResendBookOtp}
+            />
+
+            <CancelOtpModal
+                isOpen={booking.showCancelOtpModal}
+                onClose={() => booking.setShowCancelOtpModal(false)}
+                appointment={booking.selectedCancelAppt}
+                patientMobile={auth.currentPatient?.PhoneNo || auth.currentPatient?.mobile}
+                otpInput={booking.cancelOtpInput}
+                setOtpInput={booking.setCancelOtpInput}
+                otpErr={booking.cancelOtpErr}
+                isVerifying={booking.isVerifyingCancelOtp}
+                isResending={booking.isResendingCancelOtp}
+                onVerify={booking.handleVerifyCancelOtp}
+                onResend={booking.handleResendCancelOtp}
             />
 
             <BookingSuccessModal

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { DOCTORS } from '@/constants/patient.constants'
 import { genApptNo } from '@/utils/patient.utils'
-import { saveAppointment, generateOtp, cancelAppointment, fetchAppointments, type SaveAppointmentRequest } from '@/services/apiService'
+import { saveAppointment, generateOtp, validateOtp, cancelAppointment, fetchAppointments, type SaveAppointmentRequest } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
 import { todayStr } from '@/utils/patient.utils'
 import { queryClient } from '@/lib/queryClient'
@@ -125,6 +125,14 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
   const [showReceiptModal, setShowReceiptModal] = useState(false)
   const [selectedReceiptAppt, setSelectedReceiptAppt] = useState<Appointment | null>(null)
+
+  // Cancel Appointment OTP Modal States
+  const [showCancelOtpModal, setShowCancelOtpModal] = useState(false)
+  const [selectedCancelAppt, setSelectedCancelAppt] = useState<Appointment | null>(null)
+  const [cancelOtpInput, setCancelOtpInput] = useState('')
+  const [cancelOtpErr, setCancelOtpErr] = useState('')
+  const [isVerifyingCancelOtp, setIsVerifyingCancelOtp] = useState(false)
+  const [isResendingCancelOtp, setIsResendingCancelOtp] = useState(false)
 
   const handleConfirmBookingClick = async (bookingData?: {
     deptID: string
@@ -307,7 +315,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setShowReceiptModal(true)
   }
 
-  const handleCancelAppointment = async (apptToCancel: Appointment) => {
+  const handleInitiateCancelAppointment = async (apptToCancel: Appointment) => {
     const appointmentId = Number(
       apptToCancel.AppointmentID ??
       (apptToCancel as unknown as Record<string, unknown>).appointmentId ??
@@ -324,12 +332,86 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
     )
 
+    const targetMobile = currentPatient?.PhoneNo || currentPatient?.mobile || (apptToCancel as any).mobileNo || localStorage.getItem('srm_patient_current_mobile') || ''
+
     if (!appointmentId || !patientId) {
       toast.error('Cannot cancel: Invalid AppointmentID or PatientID.')
       return
     }
 
+    if (!targetMobile) {
+      toast.error('Registered mobile number not found for OTP verification.')
+      return
+    }
+
     try {
+      console.log(`📱 Generating OTP for cancellation: POST /api/generateotp?PhoneNo=${targetMobile}&PatientID=${patientId}`)
+      await generateOtp(targetMobile, patientId)
+      setSelectedCancelAppt(apptToCancel)
+      setCancelOtpInput('')
+      setCancelOtpErr('')
+      setShowCancelOtpModal(true)
+      toast.success(`OTP sent to registered mobile number +91 ${targetMobile}`)
+    } catch (err: unknown) {
+      console.error('Failed to generate OTP for cancel appointment:', err)
+      const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+      const resData = error.response?.data
+      let message = 'Failed to send OTP for cancellation.'
+      if (typeof resData === 'string' && resData.trim()) {
+        message = resData
+      } else if (resData && typeof resData === 'object') {
+        message = resData.message || resData.Result || message
+      } else if (error.message) {
+        message = error.message
+      }
+      toast.error(message)
+    }
+  }
+
+  const handleVerifyCancelOtp = async () => {
+    if (!selectedCancelAppt) return
+
+    const appointmentId = Number(
+      selectedCancelAppt.AppointmentID ??
+      (selectedCancelAppt as unknown as Record<string, unknown>).appointmentId ??
+      (selectedCancelAppt as unknown as Record<string, unknown>).id ??
+      (typeof selectedCancelAppt.apptNo === 'string' && selectedCancelAppt.apptNo.startsWith('APT-')
+        ? Number(selectedCancelAppt.apptNo.replace(/\D/g, '')) || 0
+        : Number(selectedCancelAppt.apptNo) || 0)
+    )
+
+    const patientId = Number(
+      selectedCancelAppt.PatientID ??
+      (selectedCancelAppt as unknown as Record<string, unknown>).patientId ??
+      currentPatient?.PatientID ??
+      (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
+    )
+
+    const targetMobile = currentPatient?.PhoneNo || currentPatient?.mobile || (selectedCancelAppt as any).mobileNo || localStorage.getItem('srm_patient_current_mobile') || ''
+
+    if (cancelOtpInput.length !== 4) {
+      setCancelOtpErr('Please enter the 4-digit OTP.')
+      return
+    }
+
+    setIsVerifyingCancelOtp(true)
+    setCancelOtpErr('')
+
+    try {
+      console.log(`🔐 Validating OTP for cancel: GET /api/validateotp?PhoneNo=${targetMobile}&PatientID=${patientId}&otp=${cancelOtpInput}`)
+      const validateRes = await validateOtp(targetMobile, cancelOtpInput, patientId)
+      
+      const isOtpValid = 
+        validateRes.Result?.toLowerCase() === 'success' ||
+        validateRes.Result?.toLowerCase() === 'valid' ||
+        validateRes.UserID > 0
+
+      if (!isOtpValid && validateRes.Result && validateRes.Result.toLowerCase().includes('fail')) {
+        setCancelOtpErr(validateRes.Result || 'Invalid OTP. Please try again.')
+        setIsVerifyingCancelOtp(false)
+        return
+      }
+
       console.log(`🗑️ Cancelling appointment: DELETE /api/cancelappointment/${appointmentId}?updatedBy=${patientId}`)
       await cancelAppointment(appointmentId, patientId)
 
@@ -337,7 +419,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       setAppointmentsDB((prev) => {
         const list = prev[patientKey] || []
         const updatedList = list.map((item: Appointment) =>
-          Number(item.AppointmentID) === appointmentId || item.apptNo === apptToCancel.apptNo
+          Number(item.AppointmentID) === appointmentId || item.apptNo === selectedCancelAppt.apptNo
             ? { ...item, status: 'Cancelled', Status: 'Cancelled', AppointmentStatus: 'Cancelled' }
             : item
         )
@@ -347,21 +429,25 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         }
       })
 
-      // Invalidate TanStack Query user-specific cache
+      // Invalidate TanStack Query user-specific cache and re-fetch real backend data
       const userId = useAuthStore.getState().userId
       queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.user(userId) })
       queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.user(userId) })
       if (patientId) {
         queryClient.invalidateQueries({ queryKey: ['appointments', userId, patientId] })
         queryClient.invalidateQueries({ queryKey: ['dashboard', userId, patientId] })
+        await refreshAppointments(patientId)
       }
 
-      toast.success(`Appointment ${apptToCancel.apptNo || `#${appointmentId}`} cancelled successfully!`)
+      toast.success(`Appointment ${selectedCancelAppt.AppointmentNo || selectedCancelAppt.apptNo || `#${appointmentId}`} cancelled successfully!`)
+      setShowCancelOtpModal(false)
+      setSelectedCancelAppt(null)
+      setCancelOtpInput('')
     } catch (err: unknown) {
-      console.error('Cancel appointment API error:', err)
+      console.error('Cancel appointment OTP verification/cancellation error:', err)
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
-      let message = 'Failed to cancel appointment. Please try again.'
+      let message = 'Failed to cancel appointment. Please check OTP and try again.'
       if (typeof resData === 'string' && resData.trim()) {
         message = resData
       } else if (resData && typeof resData === 'object') {
@@ -369,7 +455,45 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       } else if (error.message) {
         message = error.message
       }
-      toast.error(message)
+      setCancelOtpErr(message)
+    } finally {
+      setIsVerifyingCancelOtp(false)
+    }
+  }
+
+  const handleResendCancelOtp = async () => {
+    if (!selectedCancelAppt) return
+    const patientId = Number(
+      selectedCancelAppt.PatientID ??
+      currentPatient?.PatientID ??
+      (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
+    )
+    const targetMobile = currentPatient?.PhoneNo || currentPatient?.mobile || (selectedCancelAppt as any).mobileNo || localStorage.getItem('srm_patient_current_mobile') || ''
+
+    if (!targetMobile) {
+      setCancelOtpErr('Registered mobile number not found.')
+      return
+    }
+
+    setIsResendingCancelOtp(true)
+    try {
+      await generateOtp(targetMobile, patientId)
+      setCancelOtpErr('')
+      toast.success('Cancellation OTP resent successfully!')
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+      const resData = error.response?.data
+      let message = 'Failed to resend OTP.'
+      if (typeof resData === 'string' && resData.trim()) {
+        message = resData
+      } else if (resData && typeof resData === 'object') {
+        message = resData.message || resData.Result || message
+      } else if (error.message) {
+        message = error.message
+      }
+      setCancelOtpErr(message)
+    } finally {
+      setIsResendingCancelOtp(false)
     }
   }
 
@@ -405,12 +529,25 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setShowReceiptModal,
     selectedReceiptAppt,
 
+    // Cancel OTP States & Handlers
+    showCancelOtpModal,
+    setShowCancelOtpModal,
+    selectedCancelAppt,
+    cancelOtpInput,
+    setCancelOtpInput,
+    cancelOtpErr,
+    isVerifyingCancelOtp,
+    isResendingCancelOtp,
+
     handleConfirmBookingClick,
     handleVerifyBookOtp,
     handleResendBookOtp,
     handleSuccessClose,
     handleViewReceipt,
-    handleCancelAppointment,
+    handleCancelAppointment: handleInitiateCancelAppointment,
+    handleInitiateCancelAppointment,
+    handleVerifyCancelOtp,
+    handleResendCancelOtp,
     refreshAppointments,
   }
 }

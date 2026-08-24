@@ -3,8 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Home,
   CalendarClock,
-  FlaskConical,
-  FileText,
   Calendar as CalendarIcon,
   ChevronRight,
   Loader2,
@@ -15,8 +13,8 @@ import { PatientHeader } from '@/common/PatientHeader'
 import { UpcomingAppointments } from './UpcomingAppointments'
 import { PastVisits } from './PastVisits'
 import { VisitsTab } from '../Visits/VisitsTab'
-import { LaboratoryTab } from '../Laboratory/LaboratoryTab'
-import { BillsTab } from '../Bills/BillsTab'
+// import { LaboratoryTab } from '../Laboratory/LaboratoryTab'
+// import { BillsTab } from '../Bills/BillsTab'
 import { AppointmentBooking } from '../Appointment/AppointmentBooking'
 import { PatientProfileCard } from '../Profile/PatientProfileCard'
 
@@ -126,8 +124,8 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     setIsFabExpanded(false)
     if (tab === 'home' && location.pathname !== '/patient/dashboard') navigate('/patient/dashboard')
     else if (tab === 'visits' && location.pathname !== '/patient/visits') navigate('/patient/visits')
-    else if (tab === 'lab' && location.pathname !== '/patient/lab') navigate('/patient/lab')
-    else if (tab === 'bills' && location.pathname !== '/patient/bills') navigate('/patient/bills')
+    // else if (tab === 'lab' && location.pathname !== '/patient/lab') navigate('/patient/lab')
+    // else if (tab === 'bills' && location.pathname !== '/patient/bills') navigate('/patient/bills')
     else if (tab === 'book' && location.pathname !== '/patient/book') navigate('/patient/book')
   }
 
@@ -159,8 +157,13 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   }
 
   const today = todayStr()
+  const isCancelledAppt = (a: Appointment) => {
+    const s = (a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase()
+    return s === 'cancelled' || s === 'canceled'
+  }
+
   const localUpcomingAppointments = patientAppointments
-    .filter((a) => a.date >= today)
+    .filter((a) => a.date >= today && !isCancelledAppt(a))
     .sort((a, b) => {
       if (a.bookedOn && b.bookedOn) {
         return b.bookedOn.localeCompare(a.bookedOn)
@@ -183,24 +186,68 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     status: String(item.status || item.Status || 'Scheduled'),
   })
 
-  const apiUpcoming: Appointment[] = (dashboardData?.UpcomingAppointments as Record<string, unknown>[] | undefined)?.map((item, idx) =>
-    mapAppt(item, idx, 'APT')
-  ) || []
+  const apiUpcoming: Appointment[] = (dashboardData?.UpcomingAppointments as Record<string, unknown>[] | undefined)
+    ?.map((item, idx) => mapAppt(item, idx, 'APT'))
+    .filter((a) => !isCancelledAppt(a)) || []
 
   const apiPast: Appointment[] = (dashboardData?.PastVisits as Record<string, unknown>[] | undefined)?.map((item, idx) =>
     mapAppt(item, idx, 'VIS')
   ) || []
 
+  const parseAppointmentDate = (dateString: string): Date => {
+    if (!dateString) return new Date(0)
+    const ddMmMatch = dateString.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
+    if (ddMmMatch) {
+      const day = parseInt(ddMmMatch[1], 10)
+      const month = parseInt(ddMmMatch[2], 10)
+      const year = parseInt(ddMmMatch[3], 10)
+      return new Date(year, month - 1, day)
+    }
+    const ddMmmMatch = dateString.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
+    if (ddMmmMatch) {
+      const day = parseInt(ddMmmMatch[1], 10)
+      const monthStr = ddMmmMatch[2].toUpperCase()
+      const year = parseInt(ddMmmMatch[3], 10)
+      const monthIndex = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(monthStr)
+      if (monthIndex !== -1) {
+        return new Date(year, monthIndex, day)
+      }
+    }
+    const isoMatch = dateString.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10)
+      const month = parseInt(isoMatch[2], 10)
+      const day = parseInt(isoMatch[3], 10)
+      return new Date(year, month - 1, day)
+    }
+    const parsed = new Date(dateString)
+    return isNaN(parsed.getTime()) ? new Date(0) : parsed
+  }
+
   const fetchedUpcoming = fetchedAppointments.filter(
-    (a) => a.date >= today || a.status?.toLowerCase() === 'scheduled' || a.status?.toLowerCase() === 'confirmed'
+    (a) => !isCancelledAppt(a) && (a.date >= today || a.status?.toLowerCase() === 'scheduled' || a.status?.toLowerCase() === 'confirmed')
   )
   const fetchedPast = fetchedAppointments.filter(
     (a) => a.date < today && a.status?.toLowerCase() !== 'scheduled' && a.status?.toLowerCase() !== 'confirmed'
   )
 
-  const upcomingAppointments = fetchedAppointments.length > 0
-    ? (fetchedUpcoming.length > 0 ? fetchedUpcoming : fetchedAppointments)
-    : (dashboardData?.UpcomingAppointments?.length ? apiUpcoming : localUpcomingAppointments)
+  const rawUpcoming = (
+    fetchedAppointments.length > 0
+      ? fetchedUpcoming
+      : (dashboardData?.UpcomingAppointments?.length ? apiUpcoming : localUpcomingAppointments)
+  ).filter((a) => !isCancelledAppt(a))
+
+  // Sort Upcoming Appointments: Date ASC -> TimeSlot ASC (excluding Cancelled)
+  const upcomingAppointments = [...rawUpcoming].sort((a, b) => {
+    const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
+    const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')
+    const timeDiff = dateA.getTime() - dateB.getTime()
+    if (timeDiff !== 0) return timeDiff
+
+    const slotA = a.slot || a.TimeSlot || a.Timeslot || ''
+    const slotB = b.slot || b.TimeSlot || b.Timeslot || ''
+    return slotA.localeCompare(slotB)
+  })
 
   const pastAppointments = fetchedPast.length > 0
     ? fetchedPast
@@ -209,8 +256,8 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const tabs = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'visits', label: 'Visits', icon: CalendarClock },
-    { id: 'lab', label: 'Lab', icon: FlaskConical },
-    { id: 'bills', label: 'OP/IP Bill', icon: FileText },
+    // { id: 'lab', label: 'Lab', icon: FlaskConical },
+    // { id: 'bills', label: 'OP/IP Bill', icon: FileText },
   ]
 
   return (
@@ -307,7 +354,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                           <UpcomingAppointments
                             appointments={upcomingAppointments}
                             onViewReceipt={onViewReceipt}
-                            onCancelAppointment={handleCancelAppointmentAndRefresh}
                           />
                         </div>
                       )}
@@ -352,9 +398,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                 />
               )}
 
-              {activeTab === 'lab' && <LaboratoryTab />}
+              {/* {activeTab === 'lab' && <LaboratoryTab />}
 
-              {activeTab === 'bills' && <BillsTab />}
+              {activeTab === 'bills' && <BillsTab />} */}
 
               {activeTab === 'book' && (
                 <AppointmentBooking
