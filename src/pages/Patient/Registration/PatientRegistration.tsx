@@ -158,7 +158,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
               {/* Address */}
               <div>
-                <FieldLabel required>Address</FieldLabel>
+                <FieldLabel>Address</FieldLabel>
                 <TextField
                   value={regAddress}
                   onChange={setRegAddress}
@@ -169,7 +169,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
               {/* City */}
               <div>
-                <FieldLabel required>City</FieldLabel>
+                <FieldLabel>City</FieldLabel>
                 <TextField
                   value={regCity}
                   onChange={setRegCity}
@@ -180,7 +180,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
               {/* State */}
               <div>
-                <FieldLabel required>State</FieldLabel>
+                <FieldLabel>State</FieldLabel>
                 <TextField
                   value={regState}
                   onChange={setRegState}
@@ -191,7 +191,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
               {/* PIN Code */}
               <div>
-                <FieldLabel required>PIN Code</FieldLabel>
+                <FieldLabel>PIN Code</FieldLabel>
                 <TextField
                   value={regPincode}
                   onChange={(v) => setRegPincode(digitsOnly(v, 6))}

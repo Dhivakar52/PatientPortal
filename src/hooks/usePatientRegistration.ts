@@ -54,10 +54,11 @@ export function usePatientRegistration({
     const errs: Record<string, string> = {}
     if (!regName.trim()) errs.name = 'Name is required.'
     if (!regDob) errs.dob = 'Date of birth is required.'
-    if (!regAddress.trim()) errs.address = 'Address is required.'
-    if (!regCity.trim()) errs.city = 'City is required.'
-    if (!regState.trim()) errs.state = 'State is required.'
-    if (!/^\d{6}$/.test(regPincode)) errs.pincode = 'Enter a valid 6-digit PIN code.'
+
+    // Optional PIN Code: only validate if a value is entered
+    if (regPincode.trim() && !/^\d{6}$/.test(regPincode.trim())) {
+      errs.pincode = 'Enter a valid 6-digit PIN code.'
+    }
 
     const targetMobile = pendingMobile || localStorage.getItem('srm_patient_pending_mobile') || localStorage.getItem('srm_patient_current_mobile') || ''
     if (!/^[6-9]\d{9}$/.test(targetMobile)) {

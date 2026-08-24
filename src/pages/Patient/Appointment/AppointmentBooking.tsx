@@ -25,6 +25,30 @@ interface AppointmentBookingProps {
   onConfirm: (data?: { deptID: string; doctorID: string; timeSlotID: string }) => void
 }
 
+// Day-wise Appointment Availability Configuration (1 = Enabled, 0 = Disabled)
+// Mapping: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6
+// Sunday is always disabled and excluded from configuration
+export const appointmentDayConfig: Record<number, 0 | 1> = {
+  1: 0, // Monday
+  2: 1, // Tuesday
+  3: 0, // Wednesday
+  4: 1, // Thursday
+  5: 1, // Friday
+  6: 1, // Saturday
+}
+
+// Helper to verify if an appointment date is available
+export const isAppointmentDayEnabled = (date: Date): boolean => {
+  const jsDay = date.getDay()
+
+  // Sunday is always disabled
+  if (jsDay === 0) {
+    return false
+  }
+
+  return appointmentDayConfig[jsDay] === 1
+}
+
 // Skeleton Loader Component for Time Slots
 const TimeSlotsSkeleton: React.FC = () => {
   const skeletonItems = Array(8).fill(null)
@@ -82,15 +106,27 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   maxDate.setDate(maxDate.getDate() + 60)
   maxDate.setHours(23, 59, 59, 999)
 
-  // Initialize date with tomorrow if not already set or invalid
+  // Helper to find the first enabled date starting from tomorrow
+  const getFirstAvailableDate = () => {
+    const candidate = getTomorrowDate()
+    for (let i = 0; i < 60; i++) {
+      if (isAppointmentDayEnabled(candidate)) {
+        return candidate
+      }
+      candidate.setDate(candidate.getDate() + 1)
+    }
+    return getTomorrowDate()
+  }
+
+  // Initialize date with first available valid date
   const [dateValue, setDateValue] = useState<Date | undefined>(() => {
     if (bookDate) {
       const date = new Date(bookDate)
-      if (!isNaN(date.getTime()) && date >= tomorrow) {
+      if (!isNaN(date.getTime()) && date >= tomorrow && date <= maxDate && isAppointmentDayEnabled(date)) {
         return date
       }
     }
-    return tomorrow
+    return getFirstAvailableDate()
   })
 
   const [internalDeptId, setInternalDeptId] = useState<string>('')
@@ -174,19 +210,24 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     }
   }, [])
 
-  // 2. Set default date to tomorrow on mount
+  // 2. Set default date to first available valid date on mount
   useEffect(() => {
     if (!bookDate) {
-      const tomorrowDate = getTomorrowDate()
-      const year = tomorrowDate.getFullYear()
-      const month = String(tomorrowDate.getMonth() + 1).padStart(2, '0')
-      const day = String(tomorrowDate.getDate()).padStart(2, '0')
+      const initialDate = getFirstAvailableDate()
+      const year = initialDate.getFullYear()
+      const month = String(initialDate.getMonth() + 1).padStart(2, '0')
+      const day = String(initialDate.getDate()).padStart(2, '0')
       setBookDate(`${year}-${month}-${day}`)
+      setDateValue(initialDate)
     }
   }, [])
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
+      if (!isAppointmentDayEnabled(date)) {
+        setLocalErrors((prev) => ({ ...prev, date: 'Appointments are not available on this day' }))
+        return
+      }
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
@@ -226,6 +267,11 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
     if (!bookDate) {
       errors.date = 'Please select an appointment date'
+    } else {
+      const selectedDate = new Date(bookDate)
+      if (!isAppointmentDayEnabled(selectedDate)) {
+        errors.date = 'Appointments are not available on this day'
+      }
     }
 
     const effectiveDeptId = selectedDepartmentId || defaultFirstDeptId
@@ -275,7 +321,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-5">
-            {/* Appointment Date - Disabled today & before tomorrow */}
+            {/* Appointment Date - Disabled today, past dates, Sundays, and configured disabled days */}
             <div>
               <FieldLabel required>Appointment Date</FieldLabel>
               <DateField
@@ -283,9 +329,9 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 onChange={handleDateSelect}
                 placeholder="Select date"
                 defaultLabel="Select date"
-                disabled={{
-                  before: tomorrow,
-                  after: maxDate,
+                disabled={(date) => {
+                  if (date < tomorrow || date > maxDate) return true
+                  return !isAppointmentDayEnabled(date)
                 }}
               />
               {(bookErrors.date || localErrors.date) && (
