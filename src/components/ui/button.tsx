@@ -40,18 +40,28 @@ const buttonVariants = cva(
   }
 )
 
+export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+  }
+
+const PrimitiveButton = ButtonPrimitive as any
+
 function Button({
   className,
   variant = "default",
   size = "default",
+  children,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonProps) {
   return (
-    <ButtonPrimitive
+    <PrimitiveButton
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
-    />
+    >
+      {children}
+    </PrimitiveButton>
   )
 }
 

@@ -213,13 +213,15 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
             {/* Right: Status Badge & 3-dots Menu on Mobile */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <span
-                className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${getStatusColor(
-                  computedStatus
-                )}`}
-              >
-                {computedStatus}
-              </span>
+              {computedStatus.toLowerCase() !== 'upcoming' && (
+                <span
+                  className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${getStatusColor(
+                    computedStatus
+                  )}`}
+                >
+                  {computedStatus}
+                </span>
+              )}
 
               {hasMenuItems && (
                 <DropdownMenu>
@@ -337,13 +339,15 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
             {/* Desktop Right Side: Status Badge & 3-dots Menu */}
             <div className="hidden sm:flex items-center gap-2 shrink-0 self-center">
-              <span
-                className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${getStatusColor(
-                  computedStatus
-                )}`}
-              >
-                {computedStatus}
-              </span>
+              {computedStatus.toLowerCase() !== 'upcoming' && (
+                <span
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${getStatusColor(
+                    computedStatus
+                  )}`}
+                >
+                  {computedStatus}
+                </span>
+              )}
 
               {hasMenuItems && (
                 <DropdownMenu>

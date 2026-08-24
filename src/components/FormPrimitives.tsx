@@ -122,6 +122,7 @@ export function DateField({
   disabled?: React.ComponentProps<typeof Calendar>["disabled"];
 }) {
   const [internalDate, setInternalDate] = React.useState<Date | undefined>();
+  const [isOpen, setIsOpen] = React.useState(false);
   const date = value !== undefined ? value : internalDate;
 
   const handleSelect = (d: Date | undefined) => {
@@ -130,15 +131,18 @@ export function DateField({
     } else {
       setInternalDate(d);
     }
+    if (d) {
+      setIsOpen(false);
+    }
   };
 
   return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger className="w-full">
         <Button
           variant="outline"
           className={cn(
-            "h-9 w-full justify-start px-3 text-left text-[13px] font-normal text-slate-700 dark:text-slate-200 rounded-[4px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",  // ✅ Already 4px
+            "h-9 w-full justify-start px-3 text-left text-[13px] font-normal text-slate-700 dark:text-slate-200 rounded-[4px] border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors",
             !date && !defaultLabel && "text-slate-400 dark:text-slate-500"
           )}
         >

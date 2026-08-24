@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DateField } from '@/components/FormPrimitives'
 import Pagination from '@/common/Pagination'
 import Status from '@/common/Status'
 import CustomPanel from '@/common/CustomPanel'
@@ -25,6 +26,23 @@ interface VisitsTableProps {
 // Helper to parse date string into a Date object for range comparisons
 const parseStandardDate = (dateStr: string): Date | null => {
   if (!dateStr) return null
+  // DD-MM-YYYY or DD/MM/YYYY
+  const ddMmYyyy = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
+  if (ddMmYyyy) {
+    const day = parseInt(ddMmYyyy[1], 10)
+    const month = parseInt(ddMmYyyy[2], 10) - 1
+    const year = parseInt(ddMmYyyy[3], 10)
+    return new Date(year, month, day)
+  }
+  // YYYY-MM-DD
+  const yyyyMmDd = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
+  if (yyyyMmDd) {
+    const year = parseInt(yyyyMmDd[1], 10)
+    const month = parseInt(yyyyMmDd[2], 10) - 1
+    const day = parseInt(yyyyMmDd[3], 10)
+    return new Date(year, month, day)
+  }
+  // DD-MMM-YYYY
   const ddMmmMatch = dateStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
   if (ddMmmMatch) {
     const day = parseInt(ddMmmMatch[1], 10)
@@ -66,8 +84,6 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
 
   // Search Toggle State
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-
-  const today = todayStr()
 
   // Open Filter Panel with Current Applied Values
   const handleOpenFilterPanel = () => {
@@ -118,30 +134,41 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
   const filteredAppointments = useMemo(() => {
     return appointments
       .filter((appt) => {
-        const isPast = appt.date < today
-        const status = ((appt as any).status || (isPast ? 'Visited' : 'Scheduled')).toLowerCase()
+        const rawStatus = (
+          (appt as any).AppointmentStatus ||
+          (appt as any).status ||
+          (appt as any).Status ||
+          'Scheduled'
+        ).toString().toLowerCase().trim()
 
-        // Visits tab only shows Completed, Visited, Not Visited, and Cancelled
-        const allowedVisitsStatuses = ['completed', 'visited', 'not visited', 'cancelled']
-        if (!allowedVisitsStatuses.includes(status)) {
+        // Allowed visit & appointment statuses
+        const allowedVisitsStatuses = ['completed', 'visited', 'upcoming', 'scheduled', 'not visited', 'cancelled']
+        if (!allowedVisitsStatuses.includes(rawStatus)) {
           return false
         }
 
-        // Status filter
-        if (statusFilter !== 'all' && status !== statusFilter.toLowerCase()) {
-          return false
+        // Status filter logic
+        if (statusFilter !== 'all') {
+          const filterVal = statusFilter.toLowerCase()
+          if (filterVal === 'scheduled') {
+            if (rawStatus !== 'scheduled' && rawStatus !== 'upcoming') return false
+          } else if (filterVal === 'completed') {
+            if (rawStatus !== 'completed' && rawStatus !== 'visited') return false
+          } else if (rawStatus !== filterVal) {
+            return false
+          }
         }
 
         // Date filter logic
-        const apptDateObj = parseStandardDate(appt.date)
+        const apptDateObj = parseStandardDate(appt.date || (appt as any).AppointmentDate)
         if (apptDateObj) {
           if (fromDate) {
-            const fromObj = new Date(fromDate)
+            const fromObj = parseStandardDate(fromDate) || new Date(fromDate)
             fromObj.setHours(0, 0, 0, 0)
             if (apptDateObj < fromObj) return false
           }
           if (toDate) {
-            const toObj = new Date(toDate)
+            const toObj = parseStandardDate(toDate) || new Date(toDate)
             toObj.setHours(23, 59, 59, 999)
             if (apptDateObj > toObj) return false
           }
@@ -150,10 +177,10 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
         // Search term filter
         if (searchTerm.trim() !== '') {
           const q = searchTerm.toLowerCase().trim()
-          const matchDoctor = appt.doctor.toLowerCase().includes(q)
-          const matchDept = appt.department.toLowerCase().includes(q)
-          const matchApptNo = appt.apptNo.toLowerCase().includes(q)
-          const matchUnit = appt.unit.toLowerCase().includes(q)
+          const matchDoctor = (appt.doctor || (appt as any).DoctorName || '').toLowerCase().includes(q)
+          const matchDept = (appt.department || (appt as any).DeptName || '').toLowerCase().includes(q)
+          const matchApptNo = (appt.apptNo || (appt as any).AppointmentNo || '').toLowerCase().includes(q)
+          const matchUnit = (appt.unit || '').toLowerCase().includes(q)
           return matchDoctor || matchDept || matchApptNo || matchUnit
         }
 
@@ -161,11 +188,11 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
       })
       .sort((a, b) => {
         if (sortOrder === 'newest') {
-          return b.date.localeCompare(a.date)
+          return (b.date || '').localeCompare(a.date || '')
         }
-        return a.date.localeCompare(b.date)
+        return (a.date || '').localeCompare(b.date || '')
       })
-  }, [appointments, searchTerm, statusFilter, fromDate, toDate, sortOrder, today])
+  }, [appointments, searchTerm, statusFilter, fromDate, toDate, sortOrder])
 
   // Pagination Table Object
   const tableObject = {
@@ -371,22 +398,38 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
                 <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
                   From Date
                 </label>
-                <input
-                  type="date"
-                  value={tempFromDate}
-                  onChange={(e) => setTempFromDate(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                <DateField
+                  placeholder="From Date"
+                  value={tempFromDate ? new Date(tempFromDate) : undefined}
+                  onChange={(d) => {
+                    if (d) {
+                      const year = d.getFullYear()
+                      const month = String(d.getMonth() + 1).padStart(2, '0')
+                      const day = String(d.getDate()).padStart(2, '0')
+                      setTempFromDate(`${year}-${month}-${day}`)
+                    } else {
+                      setTempFromDate('')
+                    }
+                  }}
                 />
               </div>
               <div>
                 <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
                   To Date
                 </label>
-                <input
-                  type="date"
-                  value={tempToDate}
-                  onChange={(e) => setTempToDate(e.target.value)}
-                  className="w-full px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                <DateField
+                  placeholder="To Date"
+                  value={tempToDate ? new Date(tempToDate) : undefined}
+                  onChange={(d) => {
+                    if (d) {
+                      const year = d.getFullYear()
+                      const month = String(d.getMonth() + 1).padStart(2, '0')
+                      const day = String(d.getDate()).padStart(2, '0')
+                      setTempToDate(`${year}-${month}-${day}`)
+                    } else {
+                      setTempToDate('')
+                    }
+                  }}
                 />
               </div>
             </div>
