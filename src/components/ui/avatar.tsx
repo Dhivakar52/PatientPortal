@@ -5,15 +5,17 @@ import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar"
 
 import { cn } from "@/lib/utils"
 
+const Root = AvatarPrimitive.Root as any
+const Image = AvatarPrimitive.Image as any
+const Fallback = AvatarPrimitive.Fallback as any
+
 function Avatar({
   className,
   size = "default",
   ...props
-}: AvatarPrimitive.Root.Props & {
-  size?: "default" | "sm" | "lg"
-}) {
+}: any) {
   return (
-    <AvatarPrimitive.Root
+    <Root
       data-slot="avatar"
       data-size={size}
       className={cn(
@@ -25,9 +27,9 @@ function Avatar({
   )
 }
 
-function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
+function AvatarImage({ className, ...props }: any) {
   return (
-    <AvatarPrimitive.Image
+    <Image
       data-slot="avatar-image"
       className={cn(
         "aspect-square size-full rounded-full object-cover",
@@ -41,9 +43,9 @@ function AvatarImage({ className, ...props }: AvatarPrimitive.Image.Props) {
 function AvatarFallback({
   className,
   ...props
-}: AvatarPrimitive.Fallback.Props) {
+}: any) {
   return (
-    <AvatarPrimitive.Fallback
+    <Fallback
       data-slot="avatar-fallback"
       className={cn(
         "flex size-full items-center justify-center rounded-full bg-muted text-sm text-muted-foreground group-data-[size=sm]/avatar:text-xs",
