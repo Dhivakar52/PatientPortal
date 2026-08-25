@@ -32,6 +32,7 @@ const PatientModule: React.FC = () => {
         setScreen: auth.setScreen,
         fetchCurrentPatient: auth.fetchCurrentPatient,
         setApiPatient: auth.setApiPatient,
+        setApiPatientsList: auth.setApiPatientsList,
     })
 
     // 3. Appointment Booking Hook

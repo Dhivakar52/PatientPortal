@@ -279,6 +279,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
               currentPatient={currentPatient}
               isLoadingPatient={isLoadingPatient}
               patientError={patientError}
+              lastVisitedDate={apiPast[0]?.date || localPastAppointments[0]?.date}
               className="w-full"
             />
           </div>
@@ -353,7 +354,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                         <div>
                           <UpcomingAppointments
                             appointments={upcomingAppointments}
+                            onView={() => setActiveTab('visits')}
                             onViewReceipt={onViewReceipt}
+                            onCancelAppointment={handleCancelAppointmentAndRefresh}
                           />
                         </div>
                       )}

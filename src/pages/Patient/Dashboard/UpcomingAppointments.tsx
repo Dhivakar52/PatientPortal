@@ -4,12 +4,16 @@ import { type Appointment } from '@/types/patient.types'
 
 interface UpcomingAppointmentsProps {
   appointments: Appointment[]
+  onView?: (appt: Appointment) => void
   onViewReceipt?: (appt: Appointment) => void
+  onCancelAppointment?: (appt: Appointment) => void
 }
 
 export const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
   appointments,
+  onView,
   onViewReceipt,
+  onCancelAppointment,
 }) => {
   return (
     <div>
@@ -22,9 +26,11 @@ export const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
             <VisitCard
               key={appt.apptNo}
               appointment={appt}
+              onView={onView}
               onDownloadReceipt={onViewReceipt}
+              onCancelAppointment={onCancelAppointment}
               showDownload={false}
-              showCancel={false}
+              showCancel={true}
             />
           ))}
         </div>

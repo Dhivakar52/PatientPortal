@@ -134,6 +134,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const [isVerifyingCancelOtp, setIsVerifyingCancelOtp] = useState(false)
   const [isResendingCancelOtp, setIsResendingCancelOtp] = useState(false)
 
+  const [pendingBookingPayload, setPendingBookingPayload] = useState<SaveAppointmentRequest | null>(null)
+
   const handleConfirmBookingClick = async (bookingData?: {
     deptID: string
     doctorID: string
@@ -149,8 +151,6 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     if (!currentPatient?.id && !currentPatient?.PatientID) errs.patient = 'No active patient selected.'
     if (!bookDate) errs.date = 'Please select an appointment date.'
     if (!deptID) errs.department = 'Please select a department.'
-    // Doctor field is commented out in UI
-    // if (!doctorID) errs.doctor = 'Please select a doctor.'
     if (!timeSlotID && !selectedSlot) errs.slot = 'Please select a time slot.'
 
     if (Object.keys(errs).length > 0) {
@@ -180,36 +180,19 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       updatedBy: userId,
     }
 
-    try {
-      // 1. Call POST /api/saveappointment
-      await saveAppointment(payload)
+    setPendingBookingPayload(payload)
 
-      // 2. Immediately call POST /api/generateotp on success
-      try {
-        const targetMobile = currentPatient?.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
-        await generateOtp(targetMobile, numericPatientId)
-        setBookOtpInput('')
-        setBookOtpErr('')
-        setShowBookOtpModal(true)
-      } catch (otpErr: unknown) {
-        const error = otpErr as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
-        const resData = error.response?.data
-        let message = 'Appointment saved, but failed to generate OTP. Please click Resend OTP.'
-        if (typeof resData === 'string' && resData.trim()) {
-          message = resData
-        } else if (resData && typeof resData === 'object') {
-          message = resData.message || resData.Result || message
-        } else if (error.message) {
-          message = error.message
-        }
-        toast.error(message)
-        setBookOtpErr(message)
-        setShowBookOtpModal(true)
-      }
-    } catch (saveErr: unknown) {
-      const error = saveErr as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+    try {
+      // 1. Generate OTP (do NOT save appointment before OTP verification)
+      const targetMobile = currentPatient?.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
+      await generateOtp(targetMobile, numericPatientId)
+      setBookOtpInput('')
+      setBookOtpErr('')
+      setShowBookOtpModal(true)
+    } catch (otpErr: unknown) {
+      const error = otpErr as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
-      let message = 'Failed to save appointment. Please try again.'
+      let message = 'Failed to generate OTP. Please try again.'
       if (typeof resData === 'string' && resData.trim()) {
         message = resData
       } else if (resData && typeof resData === 'object') {
@@ -224,53 +207,85 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     }
   }
 
-  const handleVerifyBookOtp = (onSuccess: () => void) => {
+  const handleVerifyBookOtp = async (onSuccess: () => void) => {
     if (bookOtpInput.length !== 4) {
       setBookOtpErr('Enter the 4-digit OTP to continue.')
       return
     }
     setBookOtpErr('')
-    setShowBookOtpModal(false)
 
     if (!currentPatient) return
 
-    const selectedDoctorName = bookDoctor || 'Dr. Madhumitha'
-    const roomIndex = DOCTORS.indexOf(selectedDoctorName) + 1
-    const newAppt: Appointment = {
-      apptNo: genApptNo(),
-      date: bookDate,
-      doctor: selectedDoctorName,
-      department: 'Gynecology',
-      slot: selectedSlot || '08:00 AM-08:10 AM',
-      unit: bookUnit || 'Unit 1',
-      bookedOn: new Date().toISOString(),
-      room: `GYN-${200 + (roomIndex > 0 ? roomIndex : 1)}`,
-      status: 'Scheduled',
-    }
-
+    const targetMobile = currentPatient.PhoneNo || currentPatient.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
     const numericPatientId = currentPatient.PatientID
       ? Number(currentPatient.PatientID)
       : (currentPatient.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
 
-    const patientKey = String(numericPatientId || 'current')
-    setAppointmentsDB((prev) => ({
-      ...prev,
-      [patientKey]: [...(prev[patientKey] || []), newAppt],
-    }))
+    try {
+      // 1. Validate OTP first
+      const otpRes = await validateOtp(targetMobile, bookOtpInput)
+      const isSuccess =
+        otpRes?.Result &&
+        otpRes.Result.toLowerCase().trim() === 'otp successfully validated'
 
-    // Immediately re-fetch real appointments from backend API & invalidate query cache
-    if (numericPatientId > 0) {
-      refreshAppointments(numericPatientId)
-      const userId = useAuthStore.getState().userId
-      queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.user(userId) })
-      queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.user(userId) })
-      queryClient.invalidateQueries({ queryKey: ['appointments', userId, numericPatientId] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard', userId, numericPatientId] })
+      if (!isSuccess) {
+        setBookOtpErr(otpRes?.Result || 'Incorrect OTP. Please try again.')
+        return
+      }
+
+      // 2. Save appointment ONLY after successful OTP verification
+      if (pendingBookingPayload) {
+        await saveAppointment(pendingBookingPayload)
+      }
+
+      setShowBookOtpModal(false)
+
+      const selectedDoctorName = bookDoctor || 'Dr. Madhumitha'
+      const roomIndex = DOCTORS.indexOf(selectedDoctorName) + 1
+      const newAppt: Appointment = {
+        apptNo: genApptNo(),
+        date: bookDate,
+        doctor: selectedDoctorName,
+        department: 'Gynecology',
+        slot: selectedSlot || '08:00 AM-08:10 AM',
+        unit: bookUnit || 'Unit 1',
+        bookedOn: new Date().toISOString(),
+        room: `GYN-${200 + (roomIndex > 0 ? roomIndex : 1)}`,
+        status: 'Scheduled',
+      }
+
+      const patientKey = String(numericPatientId || 'current')
+      setAppointmentsDB((prev) => ({
+        ...prev,
+        [patientKey]: [...(prev[patientKey] || []), newAppt],
+      }))
+
+      // Immediately re-fetch real appointments from backend API & invalidate query cache
+      if (numericPatientId > 0) {
+        refreshAppointments(numericPatientId)
+        const userId = useAuthStore.getState().userId
+        queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.user(userId) })
+        queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.user(userId) })
+        queryClient.invalidateQueries({ queryKey: ['appointments', userId, numericPatientId] })
+        queryClient.invalidateQueries({ queryKey: ['dashboard', userId, numericPatientId] })
+      }
+
+      setLastBookedAppt(newAppt)
+      setShowSuccessModal(true)
+      onSuccess()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+      const resData = error.response?.data
+      let message = 'OTP validation or appointment save failed. Please try again.'
+      if (typeof resData === 'string' && resData.trim()) {
+        message = resData
+      } else if (resData && typeof resData === 'object') {
+        message = resData.Result || resData.message || message
+      } else if (error.message) {
+        message = error.message
+      }
+      setBookOtpErr(message)
     }
-
-    setLastBookedAppt(newAppt)
-    setShowSuccessModal(true)
-    onSuccess()
   }
 
   const handleResendBookOtp = async () => {

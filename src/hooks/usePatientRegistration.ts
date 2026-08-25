@@ -14,6 +14,7 @@ interface UsePatientRegistrationProps {
   setScreen: (s: 'login' | 'register' | 'select' | 'app') => void
   fetchCurrentPatient?: (patientId?: number | string, searchPhone?: string) => Promise<Patient | null>
   setApiPatient?: React.Dispatch<React.SetStateAction<Patient | null>>
+  setApiPatientsList?: React.Dispatch<React.SetStateAction<Patient[]>>
 }
 
 export function usePatientRegistration({
@@ -25,6 +26,7 @@ export function usePatientRegistration({
   setActivePatientId,
   setScreen,
   setApiPatient,
+  setApiPatientsList,
 }: UsePatientRegistrationProps) {
   const [regName, setRegName] = useState('')
   const [regGender, setRegGender] = useState<'Male' | 'Female' | 'Other'>('Male')
@@ -208,6 +210,10 @@ export function usePatientRegistration({
           )
         } else {
           updatedPatients = [...existingPatients, newP]
+        }
+
+        if (setApiPatientsList) {
+          setApiPatientsList(updatedPatients)
         }
 
         return {

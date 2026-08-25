@@ -114,12 +114,16 @@ export function DateField({
   value,
   onChange,
   disabled,
+  fromMonth,
+  toMonth,
 }: {
   placeholder?: string;
   defaultLabel?: string;
   value?: Date;
   onChange?: (date: Date | undefined) => void;
   disabled?: React.ComponentProps<typeof Calendar>["disabled"];
+  fromMonth?: Date;
+  toMonth?: Date;
 }) {
   const [internalDate, setInternalDate] = React.useState<Date | undefined>();
   const [open, setOpen] = React.useState(false);
@@ -153,7 +157,14 @@ export function DateField({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl" align="start">
-        <Calendar mode="single" selected={date} onSelect={handleSelect} disabled={disabled} />
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={handleSelect}
+          disabled={disabled}
+          startMonth={fromMonth}
+          endMonth={toMonth}
+        />
       </PopoverContent>
     </Popover>
   );
