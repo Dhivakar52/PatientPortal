@@ -174,24 +174,12 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
   const tomorrow = getTomorrowDate()
 
-  // Calculate date 60 days from tomorrow
+  // Calculate date 90 days from tomorrow
   const maxDate = new Date(tomorrow)
-  maxDate.setDate(maxDate.getDate() + 60)
+  maxDate.setDate(maxDate.getDate() + 90)
   maxDate.setHours(23, 59, 59, 999)
 
-  // Helper to find the first enabled date starting from tomorrow
-  const getFirstAvailableDate = () => {
-    const candidate = getTomorrowDate()
-    for (let i = 0; i < 60; i++) {
-      if (isAppointmentDayEnabled(candidate)) {
-        return candidate
-      }
-      candidate.setDate(candidate.getDate() + 1)
-    }
-    return getTomorrowDate()
-  }
-
-  // Initialize date with first available valid date
+  // Initialize date as undefined (no auto-selection on page load)
   const [dateValue, setDateValue] = useState<Date | undefined>(() => {
     if (bookDate) {
       const date = new Date(bookDate)
@@ -199,7 +187,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
         return date
       }
     }
-    return getFirstAvailableDate()
+    return undefined
   })
 
   const [internalDeptId, setInternalDeptId] = useState<string>('')
@@ -215,7 +203,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   // API Data States: Departments & Time Slots
   const { data: departmentsList = [], isLoading: isLoadingDepartments } = useDepartmentsQuery()
   const [timeSlotsList, setTimeSlotsList] = useState<TimeSlot[]>([])
-  const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState<boolean>(true)
+  const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState<boolean>(false)
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({})
 
   // Compute dynamic 1-hour ranges from time slots list
@@ -244,53 +232,46 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     }
   }, [departmentsList, selectedDepartmentId, setSelectedDepartmentId])
 
-  // 1. Fetch Time Slots on mount with 1 second delay (calling GET /api/timeslot without hardcoded timeSlotId)
+  // Fetch Time Slots ONLY after user selects an appointment date
   useEffect(() => {
+    if (!bookDate) {
+      setTimeSlotsList([])
+      setIsLoadingTimeSlots(false)
+      return
+    }
+
     let isMounted = true
     setIsLoadingTimeSlots(true)
 
-    // Add artificial delay to show skeleton (1 second)
-    const delay = setTimeout(() => {
-      getTimeSlots()
-        .then((slots) => {
-          if (isMounted) {
-            if (Array.isArray(slots) && slots.length > 0) {
-              setTimeSlotsList(slots)
-            } else {
-              setTimeSlotsList(DEFAULT_36_TIMESLOTS)
-            }
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to fetch time slots:', err)
-          if (isMounted) {
+    getTimeSlots()
+      .then((slots) => {
+        if (isMounted) {
+          if (Array.isArray(slots) && slots.length > 0) {
+            setTimeSlotsList(slots)
+          } else {
             setTimeSlotsList(DEFAULT_36_TIMESLOTS)
           }
-        })
-        .finally(() => {
-          if (isMounted) setIsLoadingTimeSlots(false)
-        })
-    }, 1000)
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to fetch time slots:', err)
+        if (isMounted) {
+          setTimeSlotsList(DEFAULT_36_TIMESLOTS)
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingTimeSlots(false)
+      })
 
     return () => {
       isMounted = false
-      clearTimeout(delay)
     }
-  }, [])
-
-  // 2. Set default date to first available valid date on mount
-  useEffect(() => {
-    if (!bookDate) {
-      const initialDate = getFirstAvailableDate()
-      const year = initialDate.getFullYear()
-      const month = String(initialDate.getMonth() + 1).padStart(2, '0')
-      const day = String(initialDate.getDate()).padStart(2, '0')
-      setBookDate(`${year}-${month}-${day}`)
-      setDateValue(initialDate)
-    }
-  }, [])
+  }, [bookDate])
 
   const handleDateSelect = (date: Date | undefined) => {
+    // Clear previously selected slot when changing date
+    setSelectedSlot('')
+    setSelectedTimeSlotId('')
     if (date) {
       if (!isAppointmentDayEnabled(date)) {
         setLocalErrors((prev) => ({ ...prev, date: 'Appointments are not available on this day' }))
@@ -425,6 +406,8 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 onChange={handleDateSelect}
                 placeholder="Select date"
                 defaultLabel="Select date"
+                fromMonth={tomorrow}
+                toMonth={maxDate}
                 disabled={(date) => {
                   if (date < tomorrow || date > maxDate) return true
                   return !isAppointmentDayEnabled(date)

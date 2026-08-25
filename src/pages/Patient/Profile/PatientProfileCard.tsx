@@ -8,6 +8,7 @@ interface PatientProfileCardProps {
   isLoadingPatient?: boolean
   patientError?: string | null
   className?: string
+  lastVisitedDate?: string
 }
 
 export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
@@ -15,7 +16,9 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   isLoadingPatient = false,
   patientError = null,
   className = '',
+  lastVisitedDate,
 }) => {
+  const displayLastVisited = lastVisitedDate || (currentPatient as any)?.LastVisitedDate || (currentPatient as any)?.lastVisitedDate || (currentPatient as any)?.LastVisitDate
   // Dynamic values directly from API response
   const rawName = currentPatient?.PatientName || currentPatient?.name || ''
   const gender = currentPatient?.Gender || currentPatient?.gender || '—'
@@ -140,6 +143,13 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
           <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">PIN Code</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{displayPinCode}</span>
         </div>
+
+        {displayLastVisited && (
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Last Visited Date</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{displayLastVisited}</span>
+          </div>
+        )}
 
         <div className="border-t border-dashed border-slate-200 dark:border-slate-800 my-2.5 pt-2 space-y-2">
           <div className="flex justify-between items-start gap-2">
