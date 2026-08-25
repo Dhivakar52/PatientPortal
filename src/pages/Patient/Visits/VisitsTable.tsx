@@ -1,16 +1,15 @@
 import React, { useState, useMemo } from 'react'
-import { Search, Filter, CalendarX, RotateCcw, X, Download, Eye } from 'lucide-react'
+import { Search, Filter, CalendarX, RotateCcw, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DateField } from '@/components/FormPrimitives'
 import Pagination from '@/common/Pagination'
-import Status from '@/common/Status'
 import CustomPanel from '@/common/CustomPanel'
+import { AppointmentDetailsPanel } from '@/common/AppointmentDetailsPanel'
 import { VisitCard } from './VisitCard'
 import { type Appointment, type Patient } from '@/types/patient.types'
-import { HOSPITAL_NAME } from '@/constants/patient.constants'
 import { todayStr } from '@/utils/patient.utils'
 
 interface VisitsTableProps {
@@ -482,122 +481,13 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
       </CustomPanel>
 
       {/* VIEW DETAILS PANEL MODAL */}
-      <CustomPanel
+      <AppointmentDetailsPanel
         isOpen={isViewPanelOpen}
-        title="Appointment Details"
+        appointment={selectedAppointment}
+        currentPatient={currentPatient}
         onClose={handleClosePanel}
-        onSave={handleClosePanel}
-        saveLabel="Close"
-        width="500px"
-      >
-        {selectedAppointment && (
-          <div className="space-y-4">
-            {/* Appointment Info Header */}
-            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-100 dark:border-blue-900/50">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Appointment No</span>
-                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                  #{selectedAppointment.apptNo}
-                </span>
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Status</span>
-                <Status status={selectedAppointment.date < todayStr() ? 'completed' : 'scheduled'} showLabel />
-              </div>
-            </div>
-
-            {/* Patient Details if available */}
-            {currentPatient && (
-              <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                  Patient Profile
-                </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">Name</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {currentPatient.name}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-400 dark:text-slate-500">Mobile</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 font-mono">
-                      +91 {currentPatient.mobile}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Appointment Details Grid */}
-            <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                Visit Breakdown
-              </h4>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Date</p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {selectedAppointment.date}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Time Slot</p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {selectedAppointment.slot}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Doctor</p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {selectedAppointment.doctor}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Department</p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {selectedAppointment.department}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Unit / Room</p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {selectedAppointment.unit} {selectedAppointment.room ? `(${selectedAppointment.room})` : ''}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Hospital</p>
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {HOSPITAL_NAME}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onViewReceipt(selectedAppointment)}
-                className="flex-1 text-xs cursor-pointer border-slate-300 dark:border-slate-700"
-              >
-                <Download className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                Download Receipt
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onViewReceipt(selectedAppointment)}
-                className="flex-1 text-xs cursor-pointer border-slate-300 dark:border-slate-700"
-              >
-                <Eye className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-                View Receipt
-              </Button>
-            </div>
-          </div>
-        )}
-      </CustomPanel>
+        onViewReceipt={onViewReceipt}
+      />
     </div>
   )
 }

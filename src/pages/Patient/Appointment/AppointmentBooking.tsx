@@ -398,6 +398,24 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-5">
+            {/* Department - Auto-selected First Available & Disabled / Read-only */}
+            <div>
+              <FieldLabel required>Department</FieldLabel>
+              <div className="relative">
+                {isLoadingDepartments ? (
+                  <DropdownSkeleton />
+                ) : (
+                  <TextField
+                    value={firstDeptName}
+                    disabled={true}
+                    placeholder="Department"
+                  />
+                )}
+              </div>
+              {(bookErrors.department || localErrors.department) && (
+                <p className="text-xs text-rose-600 mt-1">{bookErrors.department || localErrors.department}</p>
+              )}
+            </div>
             {/* Appointment Date - Disabled today, past dates, Sundays, and configured disabled days */}
             <div>
               <FieldLabel required>Appointment Date</FieldLabel>
@@ -418,24 +436,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
               )}
             </div>
 
-            {/* Department - Auto-selected First Available & Disabled / Read-only */}
-            <div>
-              <FieldLabel required>Department</FieldLabel>
-              <div className="relative">
-                {isLoadingDepartments ? (
-                  <DropdownSkeleton />
-                ) : (
-                  <TextField
-                    value={firstDeptName}
-                    disabled={true}
-                    placeholder="Department"
-                  />
-                )}
-              </div>
-              {(bookErrors.department || localErrors.department) && (
-                <p className="text-xs text-rose-600 mt-1">{bookErrors.department || localErrors.department}</p>
-              )}
-            </div>
+
 
             {/* 1-Hour Range Dropdown with Skeleton */}
             <div>
