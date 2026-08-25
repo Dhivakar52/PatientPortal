@@ -74,6 +74,8 @@ export function useAppointmentsQuery(
           apptNo: apptNo,
           bookedOn: bookedOn,
           BookedOn: bookedOn,
+          BookedMode: String(item.BookedMode || item.bookedMode || item.BookingMode || item.bookingMode || item.AppointmentType || 'Online'),
+          bookedMode: String(item.BookedMode || item.bookedMode || item.BookingMode || item.bookingMode || item.AppointmentType || 'Online'),
           date: apptDate,
           room: String(item.Room || item.room || 'OPD-101'),
         }
