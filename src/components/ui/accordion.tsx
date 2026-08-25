@@ -3,9 +3,15 @@ import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
-function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
+const Root = AccordionPrimitive.Root as any
+const Item = AccordionPrimitive.Item as any
+const Header = AccordionPrimitive.Header as any
+const Trigger = AccordionPrimitive.Trigger as any
+const Panel = AccordionPrimitive.Panel as any
+
+function Accordion({ className, ...props }: any) {
   return (
-    <AccordionPrimitive.Root
+    <Root
       data-slot="accordion"
       className={cn("flex w-full flex-col", className)}
       {...props}
@@ -13,9 +19,9 @@ function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
   )
 }
 
-function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
+function AccordionItem({ className, ...props }: any) {
   return (
-    <AccordionPrimitive.Item
+    <Item
       data-slot="accordion-item"
       className={cn("not-last:border-b", className)}
       {...props}
@@ -27,10 +33,10 @@ function AccordionTrigger({
   className,
   children,
   ...props
-}: AccordionPrimitive.Trigger.Props) {
+}: any) {
   return (
-    <AccordionPrimitive.Header className="flex">
-      <AccordionPrimitive.Trigger
+    <Header className="flex">
+      <Trigger
         data-slot="accordion-trigger"
         className={cn(
           "group/accordion-trigger relative flex flex-1 items-start justify-between rounded-lg border border-transparent py-2.5 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:after:border-ring aria-disabled:pointer-events-none aria-disabled:opacity-50 **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:size-4 **:data-[slot=accordion-trigger-icon]:text-muted-foreground",
@@ -41,8 +47,8 @@ function AccordionTrigger({
         {children}
         <ChevronDownIcon data-slot="accordion-trigger-icon" className="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden" />
         <ChevronUpIcon data-slot="accordion-trigger-icon" className="pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline" />
-      </AccordionPrimitive.Trigger>
-    </AccordionPrimitive.Header>
+      </Trigger>
+    </Header>
   )
 }
 
@@ -50,9 +56,9 @@ function AccordionContent({
   className,
   children,
   ...props
-}: AccordionPrimitive.Panel.Props) {
+}: any) {
   return (
-    <AccordionPrimitive.Panel
+    <Panel
       data-slot="accordion-content"
       className="overflow-hidden text-sm data-open:animate-accordion-down data-closed:animate-accordion-up"
       {...props}
@@ -65,7 +71,7 @@ function AccordionContent({
       >
         {children}
       </div>
-    </AccordionPrimitive.Panel>
+    </Panel>
   )
 }
 

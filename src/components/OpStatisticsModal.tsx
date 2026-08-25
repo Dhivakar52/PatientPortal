@@ -17,8 +17,9 @@ import {
   Activity,
   X,
   UserCheck,
-  type LucideIcon,
 } from "lucide-react";
+
+type LucideIcon = React.ComponentType<any>;
 
 interface OpStatisticsModalProps {
   isOpen: boolean;

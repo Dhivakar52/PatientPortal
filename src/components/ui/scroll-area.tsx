@@ -1,28 +1,33 @@
-// import * as React from "react"
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area"
 
 import { cn } from "@/lib/utils"
+
+const Root = ScrollAreaPrimitive.Root as any
+const Viewport = ScrollAreaPrimitive.Viewport as any
+const Scrollbar = ScrollAreaPrimitive.Scrollbar as any
+const Thumb = ScrollAreaPrimitive.Thumb as any
+const Corner = ScrollAreaPrimitive.Corner as any
 
 function ScrollArea({
   className,
   children,
   ...props
-}: ScrollAreaPrimitive.Root.Props) {
+}: any) {
   return (
-    <ScrollAreaPrimitive.Root
+    <Root
       data-slot="scroll-area"
       className={cn("relative", className)}
       {...props}
     >
-      <ScrollAreaPrimitive.Viewport
+      <Viewport
         data-slot="scroll-area-viewport"
         className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
       >
         {children}
-      </ScrollAreaPrimitive.Viewport>
+      </Viewport>
       <ScrollBar />
-      <ScrollAreaPrimitive.Corner />
-    </ScrollAreaPrimitive.Root>
+      <Corner />
+    </Root>
   )
 }
 
@@ -30,9 +35,9 @@ function ScrollBar({
   className,
   orientation = "vertical",
   ...props
-}: ScrollAreaPrimitive.Scrollbar.Props) {
+}: any) {
   return (
-    <ScrollAreaPrimitive.Scrollbar
+    <Scrollbar
       data-slot="scroll-area-scrollbar"
       data-orientation={orientation}
       orientation={orientation}
@@ -42,11 +47,11 @@ function ScrollBar({
       )}
       {...props}
     >
-      <ScrollAreaPrimitive.Thumb
+      <Thumb
         data-slot="scroll-area-thumb"
         className="relative flex-1 rounded-full bg-border"
       />
-    </ScrollAreaPrimitive.Scrollbar>
+    </Scrollbar>
   )
 }
 
