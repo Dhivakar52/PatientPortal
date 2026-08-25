@@ -4,10 +4,11 @@ import { type Appointment } from '@/types/patient.types'
 
 interface PastVisitsProps {
   appointments: Appointment[]
+  onView?: (appt: Appointment) => void
   onViewReceipt: (appt: Appointment) => void
 }
 
-export const PastVisits: React.FC<PastVisitsProps> = ({ appointments, onViewReceipt }) => {
+export const PastVisits: React.FC<PastVisitsProps> = ({ appointments, onView, onViewReceipt }) => {
   return (
     <div>
       <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3">Past Visits</h3>
@@ -17,8 +18,9 @@ export const PastVisits: React.FC<PastVisitsProps> = ({ appointments, onViewRece
             <VisitCard
               key={appt.apptNo}
               appointment={appt}
+              onView={onView}
               onDownloadReceipt={onViewReceipt}
-              showDownload={false}
+              showDownload={true}
               showCancel={false}
             />
           ))}

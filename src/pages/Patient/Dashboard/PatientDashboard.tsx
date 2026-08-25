@@ -17,13 +17,13 @@ import { VisitsTab } from '../Visits/VisitsTab'
 // import { BillsTab } from '../Bills/BillsTab'
 import { AppointmentBooking } from '../Appointment/AppointmentBooking'
 import { PatientProfileCard } from '../Profile/PatientProfileCard'
+import { AppointmentDetailsPanel } from '@/common/AppointmentDetailsPanel'
 
 import { type Patient, type Appointment, type ActiveTab } from '@/types/patient.types'
 import { todayStr } from '@/utils/patient.utils'
 import { useAuthStore } from '@/stores/authStore'
 import { useAppointmentsQuery } from '@/hooks/queries/useAppointmentsQuery'
 import { useDashboardQuery } from '@/hooks/queries/useDashboardQuery'
-import { useCancelAppointmentMutation } from '@/hooks/mutations/useAppointmentMutations'
 
 interface PatientDashboardProps {
   currentPatient: Patient | null
@@ -116,8 +116,14 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     refetch: refetchDashboard,
   } = useDashboardQuery(authUserId, patientNumericId || null)
 
-  const cancelMutation = useCancelAppointmentMutation()
   const [isFabExpanded, setIsFabExpanded] = useState<boolean>(false)
+  const [selectedHomeAppointment, setSelectedHomeAppointment] = useState<Appointment | null>(null)
+  const [isHomeViewPanelOpen, setIsHomeViewPanelOpen] = useState<boolean>(false)
+
+  const handleViewHomeAppointment = (appt: Appointment) => {
+    setSelectedHomeAppointment(appt)
+    setIsHomeViewPanelOpen(true)
+  }
 
   const setActiveTab = (tab: ActiveTab) => {
     setActiveTabState(tab)
@@ -148,11 +154,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const handleCancelAppointmentAndRefresh = async (appt: Appointment) => {
     if (onCancelAppointment) {
       await onCancelAppointment(appt)
-    }
-    const apptId = (appt as any).AppointmentID || Number(String(appt.apptNo).replace(/\D/g, ''))
-    const pId = (appt as any).PatientID || Number(patientNumericId)
-    if (apptId && pId) {
-      await cancelMutation.mutateAsync({ appointmentId: apptId, patientId: pId })
     }
   }
 
@@ -354,7 +355,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                         <div>
                           <UpcomingAppointments
                             appointments={upcomingAppointments}
-                            onView={() => setActiveTab('visits')}
+                            onView={handleViewHomeAppointment}
                             onViewReceipt={onViewReceipt}
                             onCancelAppointment={handleCancelAppointmentAndRefresh}
                           />
@@ -366,6 +367,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                         <div>
                           <PastVisits
                             appointments={pastAppointments}
+                            onView={handleViewHomeAppointment}
                             onViewReceipt={onViewReceipt}
                           />
                         </div>
@@ -477,6 +479,18 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
           </button>
         </div>
       )}
+
+      {/* Appointment Details Side Panel */}
+      <AppointmentDetailsPanel
+        isOpen={isHomeViewPanelOpen}
+        appointment={selectedHomeAppointment}
+        currentPatient={currentPatient}
+        onClose={() => {
+          setIsHomeViewPanelOpen(false)
+          setSelectedHomeAppointment(null)
+        }}
+        onViewReceipt={onViewReceipt}
+      />
     </div>
   )
 }
