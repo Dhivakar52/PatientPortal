@@ -25,51 +25,36 @@ interface VisitsTableProps {
 
 // Helper to parse date string into a Date object for range comparisons and sorting
 const parseStandardDate = (dateStr: string): Date | null => {
-  if (!dateStr || typeof dateStr !== 'string') return null
-  const cleanStr = dateStr.trim().split('T')[0].split(' ')[0]
-
-  // 1. DD-MM-YYYY or DD/MM/YYYY
-  const ddMmMatch = cleanStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
+  if (!dateStr) return null
+  // DD-MM-YYYY or DD/MM/YYYY
+  const ddMmMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
   if (ddMmMatch) {
     const day = parseInt(ddMmMatch[1], 10)
     const month = parseInt(ddMmMatch[2], 10)
     const year = parseInt(ddMmMatch[3], 10)
-    const d = new Date(year, month - 1, day)
-    d.setHours(0, 0, 0, 0)
-    return isNaN(d.getTime()) ? null : d
+    return new Date(year, month - 1, day)
   }
-
-  // 2. DD-MMM-YYYY (e.g. 24-AUG-2026 or 24-Aug-2026)
-  const ddMmmMatch = cleanStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
+  // DD-MMM-YYYY
+  const ddMmmMatch = dateStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
   if (ddMmmMatch) {
     const day = parseInt(ddMmmMatch[1], 10)
     const monthStr = ddMmmMatch[2].toUpperCase()
     const year = parseInt(ddMmmMatch[3], 10)
     const monthIndex = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(monthStr)
     if (monthIndex !== -1) {
-      const d = new Date(year, monthIndex, day)
-      d.setHours(0, 0, 0, 0)
-      return isNaN(d.getTime()) ? null : d
+      return new Date(year, monthIndex, day)
     }
   }
-
-  // 3. YYYY-MM-DD or YYYY/MM/DD
-  const isoMatch = cleanStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
+  // YYYY-MM-DD
+  const isoMatch = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
   if (isoMatch) {
     const year = parseInt(isoMatch[1], 10)
     const month = parseInt(isoMatch[2], 10)
     const day = parseInt(isoMatch[3], 10)
-    const d = new Date(year, month - 1, day)
-    d.setHours(0, 0, 0, 0)
-    return isNaN(d.getTime()) ? null : d
+    return new Date(year, month - 1, day)
   }
-
   const parsed = new Date(dateStr)
-  if (!isNaN(parsed.getTime())) {
-    parsed.setHours(0, 0, 0, 0)
-    return parsed
-  }
-  return null
+  return isNaN(parsed.getTime()) ? null : parsed
 }
 
 export const VisitsTable: React.FC<VisitsTableProps> = ({
@@ -180,10 +165,8 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
         }
 
         // Date filter logic
-        if (fromDate || toDate) {
-          const apptDateObj = parseStandardDate(appt.date || appt.AppointmentDate || '')
-          if (!apptDateObj) return false
-
+        const apptDateObj = parseStandardDate(appt.date || appt.AppointmentDate || '')
+        if (apptDateObj) {
           if (fromDate) {
             const fromObj = new Date(fromDate)
             fromObj.setHours(0, 0, 0, 0)

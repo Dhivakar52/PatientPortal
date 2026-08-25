@@ -157,13 +157,8 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   }
 
   const today = todayStr()
-  const isCancelledAppt = (a: Appointment) => {
-    const s = (a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase()
-    return s === 'cancelled' || s === 'canceled'
-  }
-
   const localUpcomingAppointments = patientAppointments
-    .filter((a) => a.date >= today && !isCancelledAppt(a))
+    .filter((a) => a.date >= today)
     .sort((a, b) => {
       if (a.bookedOn && b.bookedOn) {
         return b.bookedOn.localeCompare(a.bookedOn)
@@ -186,9 +181,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     status: String(item.status || item.Status || 'Scheduled'),
   })
 
-  const apiUpcoming: Appointment[] = (dashboardData?.UpcomingAppointments as Record<string, unknown>[] | undefined)
-    ?.map((item, idx) => mapAppt(item, idx, 'APT'))
-    .filter((a) => !isCancelledAppt(a)) || []
+  const apiUpcoming: Appointment[] = (dashboardData?.UpcomingAppointments as Record<string, unknown>[] | undefined)?.map((item, idx) =>
+    mapAppt(item, idx, 'APT')
+  ) || []
 
   const apiPast: Appointment[] = (dashboardData?.PastVisits as Record<string, unknown>[] | undefined)?.map((item, idx) =>
     mapAppt(item, idx, 'VIS')
@@ -225,19 +220,17 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   }
 
   const fetchedUpcoming = fetchedAppointments.filter(
-    (a) => !isCancelledAppt(a) && (a.date >= today || a.status?.toLowerCase() === 'scheduled' || a.status?.toLowerCase() === 'confirmed')
+    (a) => a.date >= today || a.status?.toLowerCase() === 'scheduled' || a.status?.toLowerCase() === 'confirmed'
   )
   const fetchedPast = fetchedAppointments.filter(
     (a) => a.date < today && a.status?.toLowerCase() !== 'scheduled' && a.status?.toLowerCase() !== 'confirmed'
   )
 
-  const rawUpcoming = (
-    fetchedAppointments.length > 0
-      ? fetchedUpcoming
-      : (dashboardData?.UpcomingAppointments?.length ? apiUpcoming : localUpcomingAppointments)
-  ).filter((a) => !isCancelledAppt(a))
+  const rawUpcoming = fetchedAppointments.length > 0
+    ? (fetchedUpcoming.length > 0 ? fetchedUpcoming : fetchedAppointments)
+    : (dashboardData?.UpcomingAppointments?.length ? apiUpcoming : localUpcomingAppointments)
 
-  // Sort Upcoming Appointments: Date ASC -> TimeSlot ASC (excluding Cancelled)
+  // Sort Upcoming Appointments: Date ASC -> TimeSlot ASC
   const upcomingAppointments = [...rawUpcoming].sort((a, b) => {
     const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
     const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')

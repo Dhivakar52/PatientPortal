@@ -123,8 +123,7 @@ export function DateField({
 }) {
   const [internalDate, setInternalDate] = React.useState<Date | undefined>();
   const [open, setOpen] = React.useState(false);
-  const isControlled = onChange !== undefined;
-  const date = isControlled ? value : internalDate;
+  const date = value !== undefined ? value : internalDate;
 
   const handleSelect = (d: Date | undefined) => {
     if (onChange) {
