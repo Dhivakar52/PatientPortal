@@ -122,6 +122,20 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   const departmentName = appointment.department || appointment.DeptName || appointment.Department || ''
   const displayDoctor = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : ('Specialist Consultation')
 
+  const rawBookingMode =
+    (appointment as any).BookingMode ||
+    (appointment as any).BookingModeName ||
+    (appointment as any).AppointmentMode ||
+    appointment.AppointmentType ||
+    (appointment as any).bookingMode ||
+    (appointment as any).bookingModeName ||
+    (appointment as any).mode ||
+    (appointment as any).Mode ||
+    (appointment as any).BookingType ||
+    (appointment as any).Source ||
+    'Online'
+  const bookingMode = String(rawBookingMode).replace(/booking/i, '').trim() || 'Online'
+
   const handleDownload = () => {
     if (onDownloadReceipt) {
       onDownloadReceipt(appointment)

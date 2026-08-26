@@ -12,6 +12,7 @@ import { Printer, X, Receipt as ReceiptIcon } from "lucide-react";
 import { ReceiptDocument } from "./ReceiptDocument";
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { capitalizeName, calcAge, formatDateTime, formatDateFull, todayStr } from '@/utils/patient.utils'
+import { useStatesQuery, useCitiesQuery } from '@/hooks/queries/useMasterDataQueries'
 
 interface ReceiptModalProps {
   isOpen: boolean
@@ -26,6 +27,21 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   appt,
   patient,
 }) => {
+  const { data: statesList = [] } = useStatesQuery()
+  const rawState = patient?.StateID ?? patient?.stateID ?? patient?.PatientState ?? patient?.State ?? patient?.state ?? ''
+  const matchedState = statesList.find(
+    (s) => String(s.StateID) === String(rawState) || s.StateName?.toLowerCase() === String(rawState).toLowerCase()
+  )
+  const resolvedStateId = matchedState?.StateID ? String(matchedState.StateID) : (String(rawState).match(/^\d+$/) ? String(rawState) : undefined)
+  const stateDisplayName = matchedState?.StateName || (String(rawState).match(/^\d+$/) ? '—' : (String(rawState) || '—'))
+
+  const { data: citiesList = [] } = useCitiesQuery(resolvedStateId)
+  const rawCity = patient?.CityID ?? patient?.cityID ?? patient?.City ?? patient?.city ?? ''
+  const matchedCity = citiesList.find(
+    (c) => String(c.CityID) === String(rawCity) || c.CityName?.toLowerCase() === String(rawCity).toLowerCase()
+  )
+  const cityDisplayName = matchedCity?.CityName || (String(rawCity).match(/^\d+$/) ? '—' : (String(rawCity) || '—'))
+
   React.useEffect(() => {
     if (isOpen) {
       if (typeof window !== "undefined") {
@@ -73,12 +89,25 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     }, 50);
   };
 
+  const resolvedEmail =
+    (patient.Email && String(patient.Email).trim() !== '') ? String(patient.Email).trim() :
+    (patient.email && String(patient.email).trim() !== '') ? String(patient.email).trim() :
+    ((patient as any).EmailID && String((patient as any).EmailID).trim() !== '') ? String((patient as any).EmailID).trim() :
+    ((patient as any).emailID && String((patient as any).emailID).trim() !== '') ? String((patient as any).emailID).trim() :
+    ((appt as any).email && String((appt as any).email).trim() !== '') ? String((appt as any).email).trim() :
+    ((appt as any).Email && String((appt as any).Email).trim() !== '') ? String((appt as any).Email).trim() :
+    '';
+
   const receiptData = {
     apptNo: appt.apptNo,
     patientName: capitalizeName(patient.PatientName || patient.name || ''),
     gender: patient.Gender || patient.gender || '—',
     age: patient.Age !== undefined ? `${patient.Age} Years` : (calcAge(patient.DOB || patient.dob || '') || '—'),
-    mobile: patient.PhoneNo || patient.mobile || '',
+    mobile: patient.PhoneNo || patient.phoneNo || patient.mobile || '',
+    email: resolvedEmail,
+    state: stateDisplayName,
+    city: cityDisplayName,
+    address: patient.PatientAddress || patient.Address || patient.address || '—',
     status: appt.date < today ? 'Visited' : 'Upcoming',
     bookedOn: formatDateTime(appt.bookedOn),
     appointmentDate: formatDateFull(appt.date),

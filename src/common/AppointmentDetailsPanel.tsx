@@ -1,8 +1,6 @@
 import React from 'react'
 import CustomPanel from '@/common/CustomPanel'
 import Status from '@/common/Status'
-import { Button } from '@/components/ui/button'
-import { Download, Eye } from 'lucide-react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { HOSPITAL_NAME } from '@/constants/patient.constants'
 import { todayStr } from '@/utils/patient.utils'
@@ -20,7 +18,6 @@ export const AppointmentDetailsPanel: React.FC<AppointmentDetailsPanelProps> = (
   appointment,
   currentPatient,
   onClose,
-  onViewReceipt,
 }) => {
   if (!appointment) return null
 
@@ -37,6 +34,7 @@ export const AppointmentDetailsPanel: React.FC<AppointmentDetailsPanelProps> = (
       onClose={onClose}
       onSave={onClose}
       saveLabel="Close"
+      hideCancel={true}
       width="500px"
     >
       <div className="space-y-4">
@@ -123,30 +121,6 @@ export const AppointmentDetailsPanel: React.FC<AppointmentDetailsPanelProps> = (
             </div>
           </div>
         </div>
-
-        {/* Action Buttons */}
-        {onViewReceipt && (
-          <div className="flex gap-2 pt-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onViewReceipt(appointment)}
-              className="flex-1 text-xs cursor-pointer border-slate-300 dark:border-slate-700"
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-              Download Receipt
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onViewReceipt(appointment)}
-              className="flex-1 text-xs cursor-pointer border-slate-300 dark:border-slate-700"
-            >
-              <Eye className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-              View Receipt
-            </Button>
-          </div>
-        )}
       </div>
     </CustomPanel>
   )

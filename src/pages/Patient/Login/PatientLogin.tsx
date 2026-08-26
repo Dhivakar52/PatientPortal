@@ -55,17 +55,15 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/5 rounded-full blur-2xl"></div>
 
               <div className="relative z-10">
-                <div className="flex items-center  mb-3 gap-4 min-w-0">
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="bg-white rounded p-1 w-12 h-12 flex items-center justify-center overflow-hidden shrink-0">
-                      <img src={srmLogo} alt="SRM Logo" className="w-10 h-auto object-contain" />
+                <div className="flex items-center mb-4 gap-3 min-w-0">
+                  <div className="bg-white rounded p-1 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center overflow-hidden shrink-0">
+                    <img src={srmLogo} alt="SRM Logo" className="w-9 sm:w-10 h-auto object-contain" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-white text-sm sm:text-base leading-snug">
+                      SRM Medical College Hospital and Research Centre
                     </div>
-                    <div>
-                      <div className="font-bold text-white md:text-xl sm:text-[10px] leading-snug">
-                        Patient Portal
-                      </div>
-                      <div className="text-xs text-blue-200">Doctor Appointment</div>
-                    </div>
+                    <div className="text-xs text-blue-200">Doctor Appointment</div>
                   </div>
                 </div>
 

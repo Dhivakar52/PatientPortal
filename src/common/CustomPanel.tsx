@@ -5,10 +5,12 @@ interface CustomPanelProps {
   isOpen: boolean;
   title: string;
   onClose: () => void;
-  onSave: () => void;
+  onSave?: () => void;
   children: React.ReactNode;
   saveLabel?: string;
   width?: string;
+  hideCancel?: boolean;
+  hideSave?: boolean;
 }
 
 const CustomPanel: React.FC<CustomPanelProps> = ({
@@ -19,6 +21,8 @@ const CustomPanel: React.FC<CustomPanelProps> = ({
   children,
   saveLabel = "Save",
   width = "560px",
+  hideCancel = false,
+  hideSave = false,
 }) => {
   if (!isOpen) return null;
 
@@ -51,18 +55,22 @@ const CustomPanel: React.FC<CustomPanelProps> = ({
 
         {/* Footer */}
         <div className="p-4 border-t border-border flex justify-end gap-3 shrink-0 bg-muted/50">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm border border-border rounded-lg text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onSave}
-            className="px-4 py-2 text-sm text-primary-foreground rounded-lg bg-primary hover:bg-primary/90 transition-colors"
-          >
-            {saveLabel}
-          </button>
+          {!hideCancel && (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm border border-border rounded-lg text-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+          )}
+          {!hideSave && (
+            <button
+              onClick={onSave || onClose}
+              className="px-4 py-2 text-sm text-primary-foreground rounded-lg bg-primary hover:bg-primary/90 transition-colors cursor-pointer"
+            >
+              {saveLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>
