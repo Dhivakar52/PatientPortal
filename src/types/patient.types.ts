@@ -79,6 +79,7 @@ export interface Appointment {
   Status?: string
   AppointmentNo?: string
   BookedOn?: string
+  BookedMode?: string
 
   // UI mapping fields
   apptNo: string
@@ -88,6 +89,7 @@ export interface Appointment {
   slot: string
   unit: string
   bookedOn: string
+  bookedMode?: string
   room: string
   status?: string
 }
