@@ -54,17 +54,15 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
   return (
     <header className="text-white px-4 sm:px-5 py-3 flex items-center justify-between shadow-md sticky top-0 z-50 overflow-visible" style={{ background: "var(--blue-text-color)" }}>
-      <div className="flex items-center gap-4 min-w-0">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="bg-white rounded p-1 w-12 h-12 flex items-center justify-center overflow-hidden shrink-0">
-            <img src={srmLogo} alt="SRM Logo" className="w-10 h-auto object-contain" />
+      <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="bg-white rounded p-1 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center overflow-hidden shrink-0">
+          <img src={srmLogo} alt="SRM Logo" className="w-9 sm:w-10 h-auto object-contain" />
+        </div>
+        <div className="min-w-0">
+          <div className="font-bold text-xs sm:text-sm md:text-base leading-snug text-white">
+            SRM Medical College Hospital and Research Centre
           </div>
-          <div>
-            <div className="font-bold md:text-sm sm:text-[10px] leading-snug">
-              Patient Portal
-            </div>
-            <div className="text-xs text-blue-200">Doctor Appointment</div>
-          </div>
+          <div className="text-[11px] sm:text-xs text-blue-200">Doctor Appointment</div>
         </div>
       </div>
 

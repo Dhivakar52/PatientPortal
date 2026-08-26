@@ -136,28 +136,15 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
   const [pendingBookingPayload, setPendingBookingPayload] = useState<SaveAppointmentRequest | null>(null)
 
-  const handleConfirmBookingClick = async (bookingData?: {
+  // Male Patient Confirmation Modal States
+  const [showMaleConfirmModal, setShowMaleConfirmModal] = useState(false)
+  const [pendingMaleBookingData, setPendingMaleBookingData] = useState<{
     deptID: string
     doctorID: string
     timeSlotID: string
-  }) => {
-    if (isConfirming) return
+  } | null>(null)
 
-    const deptID = bookingData?.deptID || selectedDepartmentId || '1'
-    const doctorID = bookingData?.doctorID || selectedDoctorId || '0'
-    const timeSlotID = bookingData?.timeSlotID || selectedTimeSlotId
-
-    const errs: Record<string, string> = {}
-    if (!currentPatient?.id && !currentPatient?.PatientID) errs.patient = 'No active patient selected.'
-    if (!bookDate) errs.date = 'Please select an appointment date.'
-    if (!deptID) errs.department = 'Please select a department.'
-    if (!timeSlotID && !selectedSlot) errs.slot = 'Please select a time slot.'
-
-    if (Object.keys(errs).length > 0) {
-      setBookErrors(errs)
-      return
-    }
-
+  const executeBookingFlow = async (deptID: string, doctorID: string, timeSlotID: string) => {
     setBookErrors({})
     setIsConfirming(true)
 
@@ -204,6 +191,56 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       setBookErrors((prev) => ({ ...prev, form: message }))
     } finally {
       setIsConfirming(false)
+    }
+  }
+
+  const handleConfirmBookingClick = async (bookingData?: {
+    deptID: string
+    doctorID: string
+    timeSlotID: string
+  }) => {
+    if (isConfirming) return
+
+    const deptID = bookingData?.deptID || selectedDepartmentId || '1'
+    const doctorID = bookingData?.doctorID || selectedDoctorId || '0'
+    const timeSlotID = bookingData?.timeSlotID || selectedTimeSlotId
+
+    const errs: Record<string, string> = {}
+    if (!currentPatient?.id && !currentPatient?.PatientID) errs.patient = 'No active patient selected.'
+    if (!bookDate) errs.date = 'Please select an appointment date.'
+    if (!deptID) errs.department = 'Please select a department.'
+    if (!timeSlotID && !selectedSlot) errs.slot = 'Please select a time slot.'
+
+    if (Object.keys(errs).length > 0) {
+      setBookErrors(errs)
+      return
+    }
+
+    // Check if patient is Male
+    const rawGender = String(currentPatient?.Gender ?? currentPatient?.gender ?? '').trim().toLowerCase()
+    const genderId = currentPatient?.GenderID
+    const isMale = rawGender === 'male' || rawGender === 'm' || genderId === 1 || rawGender === '1'
+
+    if (isMale) {
+      setPendingMaleBookingData({ deptID, doctorID, timeSlotID: timeSlotID || '' })
+      setShowMaleConfirmModal(true)
+      return
+    }
+
+    await executeBookingFlow(deptID, doctorID, timeSlotID || '')
+  }
+
+  const handleCancelMaleBooking = () => {
+    setShowMaleConfirmModal(false)
+    setPendingMaleBookingData(null)
+  }
+
+  const handleConfirmMaleBooking = async () => {
+    setShowMaleConfirmModal(false)
+    if (pendingMaleBookingData) {
+      const { deptID, doctorID, timeSlotID } = pendingMaleBookingData
+      setPendingMaleBookingData(null)
+      await executeBookingFlow(deptID, doctorID, timeSlotID)
     }
   }
 
@@ -530,6 +567,11 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setSelectedTimeSlotId,
     bookErrors,
     isConfirming,
+
+    showMaleConfirmModal,
+    setShowMaleConfirmModal,
+    handleConfirmMaleBooking,
+    handleCancelMaleBooking,
 
     showBookOtpModal,
     setShowBookOtpModal,

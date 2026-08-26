@@ -7,6 +7,10 @@ export interface ReceiptData {
   gender?: string;
   age?: string | number;
   mobile?: string;
+  email?: string;
+  state?: string;
+  city?: string;
+  address?: string;
   status?: string;
   bookedOn?: string;
   appointmentDate?: string;
@@ -30,6 +34,9 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
   const gender = data?.gender ?? "—";
   const age = data?.age ?? "—";
   const mobile = data?.mobile ?? "—";
+  const email = (data?.email && String(data.email).trim() !== '' && String(data.email).trim() !== '—') ? String(data.email).trim() : '—';
+  const state = (data?.state && String(data.state).trim() !== '' && String(data.state).trim() !== '—') ? String(data.state).trim() : '—';
+  const city = (data?.city && String(data.city).trim() !== '' && String(data.city).trim() !== '—') ? String(data.city).trim() : '—';
   const status = data?.status ?? "Upcoming";
   const bookedOn = data?.bookedOn ?? "—";
   const appointmentDate = data?.appointmentDate ?? "—";
@@ -58,7 +65,7 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
           <img
             src={srmLogo}
             alt="SRM Hospital Logo"
-            className="h-16 w-auto object-contain"
+            className="h-16 w-auto object-contain grayscale"
           />
         </div>
 
@@ -106,6 +113,21 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
           <div className="flex items-baseline">
             <span className="font-bold w-28 shrink-0">Mobile:</span>
             <span className="font-normal">+91 {mobile}</span>
+          </div>
+
+          <div className="flex items-baseline">
+            <span className="font-bold w-28 shrink-0">Email Address:</span>
+            <span className="font-normal">{email && email !== '—' ? email : '—'}</span>
+          </div>
+
+          <div className="flex items-baseline">
+            <span className="font-bold w-28 shrink-0">State:</span>
+            <span className="font-normal">{state}</span>
+          </div>
+
+          <div className="flex items-baseline">
+            <span className="font-bold w-28 shrink-0">City:</span>
+            <span className="font-normal">{city}</span>
           </div>
         </div>
 

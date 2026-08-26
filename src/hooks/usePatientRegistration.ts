@@ -35,6 +35,7 @@ export function usePatientRegistration({
   const [regCity, setRegCity] = useState('')
   const [regState, setRegState] = useState('')
   const [regPincode, setRegPincode] = useState('')
+  const [regEmail, setRegEmail] = useState('')
   const [regErrors, setRegErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -46,6 +47,7 @@ export function usePatientRegistration({
     setRegCity('')
     setRegState('')
     setRegPincode('')
+    setRegEmail('')
     setRegErrors({})
   }
 
@@ -56,6 +58,11 @@ export function usePatientRegistration({
     const errs: Record<string, string> = {}
     if (!regName.trim()) errs.name = 'Name is required.'
     if (!regDob) errs.dob = 'Date of birth is required.'
+
+    // Optional Email: validate format only when a value is entered
+    if (regEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) {
+      errs.email = 'Please enter a valid email address.'
+    }
 
     // Optional PIN Code: only validate if a value is entered
     if (regPincode.trim() && !/^\d{6}$/.test(regPincode.trim())) {
@@ -85,19 +92,32 @@ export function usePatientRegistration({
 
     // IMPORTANT: For new patient creation, userID should be the logged-in user ID
     // This links the new patient to the existing user account
+    const emailVal = regEmail.trim() || undefined
+    const stateIdNum = regState ? Number(regState) : undefined
+    const cityIdNum = regCity ? Number(regCity) : undefined
+
     const payload: RegisterPatientRequest = {
       userID: loggedInUserId || 0,  // Link to existing user
       name: regName.trim(),
+      email: emailVal,
       gender: genderCode,
       dob: regDob,
       age: ageValue,
       mobileNo: targetMobile,
       address: regAddress.trim(),
-      city: regCity.trim(),
-      state: regState.trim(),
       pinCode: regPincode.trim(),
       createdBy: loggedInUserId || 0,
       updatedBy: loggedInUserId || 0,
+      countryID: 1,
+      stateID: stateIdNum,
+      cityID: cityIdNum,
+      StateID: stateIdNum,
+      CityID: cityIdNum,
+      state: regState.trim(),
+      city: regCity.trim(),
+      Email: emailVal,
+      EmailID: emailVal,
+      emailID: emailVal,
     }
 
     console.log('📤 Registering new patient with payload:', payload)
@@ -155,7 +175,22 @@ export function usePatientRegistration({
       console.log('🎯 Active patient ID to set:', activePatientId)
 
       // Create patient object
-      const newP: Patient = backendPatient || {
+      // Merge email from registration form since API may not return it yet
+      const registeredEmail = regEmail.trim() || null
+      const newP: Patient = backendPatient
+        ? {
+            ...backendPatient,
+            Email: backendPatient.Email || backendPatient.email || registeredEmail,
+            email: backendPatient.email || backendPatient.Email || registeredEmail,
+            StateID: backendPatient.StateID ?? backendPatient.stateID ?? stateIdNum,
+            stateID: backendPatient.stateID ?? backendPatient.StateID ?? stateIdNum,
+            State: backendPatient.State || backendPatient.PatientState || regState.trim(),
+            PatientState: backendPatient.PatientState || backendPatient.State || regState.trim(),
+            CityID: backendPatient.CityID ?? backendPatient.cityID ?? cityIdNum,
+            cityID: backendPatient.cityID ?? backendPatient.CityID ?? cityIdNum,
+            City: backendPatient.City || regCity.trim(),
+          }
+        : {
         PatientID: finalPatientId,
         PatientName: regName.trim(),
         UHID: null,
@@ -167,12 +202,18 @@ export function usePatientRegistration({
         Gender: regGender,
         PatientAddress: regAddress.trim(),
         Address: regAddress.trim(),
+        CityID: cityIdNum,
+        cityID: cityIdNum,
         City: regCity.trim(),
+        StateID: stateIdNum,
+        stateID: stateIdNum,
         PatientState: regState.trim(),
         State: regState.trim(),
         PinCode: regPincode.trim(),
         PhoneNo: targetMobile,
         phoneNo: targetMobile,
+        Email: registeredEmail,
+        email: registeredEmail,
         id: activePatientId || undefined,
         mobile: targetMobile,
         name: regName.trim(),
@@ -286,6 +327,8 @@ export function usePatientRegistration({
     setRegState,
     regPincode,
     setRegPincode,
+    regEmail,
+    setRegEmail,
     regErrors,
     isSubmitting,
     handleRegisterSubmit,

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { usePatientAuth } from '@/hooks/usePatientAuth'
 import { usePatientRegistration } from '@/hooks/usePatientRegistration'
@@ -13,6 +13,16 @@ import { BookingOtpModal } from './Appointment/BookingOtpModal'
 import { CancelOtpModal } from './Appointment/CancelOtpModal'
 import { BookingSuccessModal } from './Appointment/BookingSuccessModal'
 import { ReceiptModal } from '@/common/ReceiptModal'
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogCancel,
+    AlertDialogAction,
+} from '@/components/ui/alert-dialog'
 
 const PatientModule: React.FC = () => {
     const navigate = useNavigate()
@@ -41,6 +51,20 @@ const PatientModule: React.FC = () => {
     // Derive appointments for active patient
     const patientKey = auth.currentPatient ? String(auth.currentPatient.PatientID || auth.currentPatient.id || '') : ''
     const patientAppointments = patientKey ? booking.appointmentsDB[patientKey] || [] : []
+
+    const receiptPatient = useMemo(() => {
+        if (!booking.selectedReceiptAppt) return auth.currentPatient
+        const apptPid = booking.selectedReceiptAppt.PatientID
+        if (apptPid && auth.apiPatientsList && auth.apiPatientsList.length > 0) {
+            const found = auth.apiPatientsList.find(p => Number(p.PatientID) === Number(apptPid))
+            if (found) return found
+        }
+        if (apptPid && auth.currentUserRecord?.patients) {
+            const found = auth.currentUserRecord.patients.find(p => Number(p.PatientID || p.id) === Number(apptPid))
+            if (found) return found
+        }
+        return auth.currentPatient
+    }, [booking.selectedReceiptAppt, auth.currentPatient, auth.apiPatientsList, auth.currentUserRecord])
 
     return (
         <>
@@ -80,6 +104,8 @@ const PatientModule: React.FC = () => {
                     setRegState={reg.setRegState}
                     regPincode={reg.regPincode}
                     setRegPincode={reg.setRegPincode}
+                    regEmail={reg.regEmail}
+                    setRegEmail={reg.setRegEmail}
                     regErrors={reg.regErrors}
                     isSubmitting={reg.isSubmitting}
                     onSubmit={reg.handleRegisterSubmit}
@@ -206,8 +232,28 @@ const PatientModule: React.FC = () => {
                 isOpen={booking.showReceiptModal}
                 onClose={() => booking.setShowReceiptModal(false)}
                 appt={booking.selectedReceiptAppt}
-                patient={auth.currentPatient}
+                patient={receiptPatient}
             />
+
+            {/* Male Patient Appointment Confirmation Alert */}
+            <AlertDialog open={booking.showMaleConfirmModal} onOpenChange={booking.setShowMaleConfirmModal}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirm Appointment</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Please confirm that you want to book this appointment for the selected male patient.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={booking.handleCancelMaleBooking}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction onClick={booking.handleConfirmMaleBooking}>
+                            Confirm & Proceed
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     )
 }

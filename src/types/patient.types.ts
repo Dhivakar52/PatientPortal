@@ -12,12 +12,22 @@ export interface Patient {
   Gender?: string
   Address?: string
   PatientAddress?: string
+  StateID?: number
+  stateID?: number
+  CityID?: number
+  cityID?: number
+  CountryID?: number
+  countryID?: number
   City?: string
   State?: string
   PatientState?: string
   PinCode?: string
   PhoneNo?: string
   phoneNo?: string
+  Email?: string | null
+  email?: string | null
+  EmailID?: string | null
+  emailID?: string | null
 
   // Convenience aliases for existing components
   id?: string

@@ -157,27 +157,79 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     }
   }
 
-  const today = todayStr()
+  const parseAppointmentDate = (dateString: string): Date => {
+    if (!dateString) return new Date(0)
+    const ddMmMatch = dateString.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/)
+    if (ddMmMatch) {
+      const day = parseInt(ddMmMatch[1], 10)
+      const month = parseInt(ddMmMatch[2], 10)
+      const year = parseInt(ddMmMatch[3], 10)
+      return new Date(year, month - 1, day)
+    }
+    const ddMmmMatch = dateString.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})/)
+    if (ddMmmMatch) {
+      const day = parseInt(ddMmmMatch[1], 10)
+      const monthStr = ddMmmMatch[2].toUpperCase()
+      const year = parseInt(ddMmmMatch[3], 10)
+      const monthIndex = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(monthStr)
+      if (monthIndex !== -1) {
+        return new Date(year, monthIndex, day)
+      }
+    }
+    const isoMatch = dateString.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10)
+      const month = parseInt(isoMatch[2], 10)
+      const day = parseInt(isoMatch[3], 10)
+      return new Date(year, month - 1, day)
+    }
+    const parsed = new Date(dateString)
+    return isNaN(parsed.getTime()) ? new Date(0) : parsed
+  }
+
+  const isUpcomingDate = (dateString: string): boolean => {
+    if (!dateString) return false
+    const d = parseAppointmentDate(dateString)
+    if (isNaN(d.getTime()) || d.getTime() === 0) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const apptDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    return apptDateOnly.getTime() >= today.getTime()
+  }
+
+  const isPastDate = (dateString: string): boolean => {
+    if (!dateString) return false
+    const d = parseAppointmentDate(dateString)
+    if (isNaN(d.getTime()) || d.getTime() === 0) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const apptDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    return apptDateOnly.getTime() < today.getTime()
+  }
+
   const isCancelledAppt = (a: Appointment) => {
     const s = (a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase()
     return s === 'cancelled' || s === 'canceled'
   }
 
-  const localUpcomingAppointments = patientAppointments
-    .filter((a) => a.date >= today && !isCancelledAppt(a))
-    .sort((a, b) => {
-      if (a.bookedOn && b.bookedOn) {
-        return b.bookedOn.localeCompare(a.bookedOn)
-      }
-      return b.date.localeCompare(a.date)
-    })
-  const localPastAppointments = patientAppointments
-    .filter((a) => a.date < today)
-    .sort((a, b) => b.date.localeCompare(a.date))
+  const isUpcomingAppt = (a: Appointment) => {
+    if (isCancelledAppt(a)) return false
+    const s = (a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase()
+    if (s === 'visited' || s === 'completed') return false
+    if (s === 'upcoming' || s === 'scheduled' || s === 'confirmed' || s === 'pending') return true
+    return isUpcomingDate(a.date || a.AppointmentDate || '')
+  }
+
+  const isPastAppt = (a: Appointment) => {
+    const s = (a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase()
+    if (s === 'visited' || s === 'completed') return true
+    if (isUpcomingAppt(a)) return false
+    return isPastDate(a.date || a.AppointmentDate || '')
+  }
 
   const mapAppt = (item: Record<string, unknown>, idx: number, defaultPrefix: string): Appointment => ({
     apptNo: String(item.apptNo || item.ApptNo || `${defaultPrefix}-${idx + 1}`),
-    date: String(item.date || item.AppointmentDate || item.Date || today),
+    date: String(item.date || item.AppointmentDate || item.Date || todayStr()),
     doctor: String(item.doctor || item.Doctor_Name || item.DoctorName || 'Doctor'),
     department: String(item.department || item.DepartmentName || item.Department || 'General'),
     slot: String(item.slot || item.Timeslot || item.TimeSlot || '08:00 AM-08:10 AM'),
@@ -195,64 +247,61 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     mapAppt(item, idx, 'VIS')
   ) || []
 
-  const parseAppointmentDate = (dateString: string): Date => {
-    if (!dateString) return new Date(0)
-    const ddMmMatch = dateString.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
-    if (ddMmMatch) {
-      const day = parseInt(ddMmMatch[1], 10)
-      const month = parseInt(ddMmMatch[2], 10)
-      const year = parseInt(ddMmMatch[3], 10)
-      return new Date(year, month - 1, day)
-    }
-    const ddMmmMatch = dateString.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
-    if (ddMmmMatch) {
-      const day = parseInt(ddMmmMatch[1], 10)
-      const monthStr = ddMmmMatch[2].toUpperCase()
-      const year = parseInt(ddMmmMatch[3], 10)
-      const monthIndex = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(monthStr)
-      if (monthIndex !== -1) {
-        return new Date(year, monthIndex, day)
+  // Combine and deduplicate across API appointments, dashboard data, and local booking DB
+  const allAppointmentsList = React.useMemo(() => {
+    const list: Appointment[] = []
+    const seenKeys = new Set<string>()
+
+    const addAppt = (appt: Appointment) => {
+      const key = String(appt.AppointmentID || appt.AppointmentNo || appt.apptNo || `${appt.date}-${appt.slot}-${appt.doctor}`)
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key)
+        list.push(appt)
       }
     }
-    const isoMatch = dateString.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
-    if (isoMatch) {
-      const year = parseInt(isoMatch[1], 10)
-      const month = parseInt(isoMatch[2], 10)
-      const day = parseInt(isoMatch[3], 10)
-      return new Date(year, month - 1, day)
+
+    if (Array.isArray(fetchedAppointments) && fetchedAppointments.length > 0) {
+      fetchedAppointments.forEach(addAppt)
     }
-    const parsed = new Date(dateString)
-    return isNaN(parsed.getTime()) ? new Date(0) : parsed
-  }
+    if (Array.isArray(apiUpcoming) && apiUpcoming.length > 0) {
+      apiUpcoming.forEach(addAppt)
+    }
+    if (Array.isArray(apiPast) && apiPast.length > 0) {
+      apiPast.forEach(addAppt)
+    }
+    if (Array.isArray(patientAppointments) && patientAppointments.length > 0) {
+      patientAppointments.forEach(addAppt)
+    }
 
-  const fetchedUpcoming = fetchedAppointments.filter(
-    (a) => !isCancelledAppt(a) && (a.date >= today || a.status?.toLowerCase() === 'scheduled' || a.status?.toLowerCase() === 'confirmed')
-  )
-  const fetchedPast = fetchedAppointments.filter(
-    (a) => a.date < today && a.status?.toLowerCase() !== 'scheduled' && a.status?.toLowerCase() !== 'confirmed'
-  )
-
-  const rawUpcoming = (
-    fetchedAppointments.length > 0
-      ? fetchedUpcoming
-      : (dashboardData?.UpcomingAppointments?.length ? apiUpcoming : localUpcomingAppointments)
-  ).filter((a) => !isCancelledAppt(a))
+    return list
+  }, [fetchedAppointments, apiUpcoming, apiPast, patientAppointments])
 
   // Sort Upcoming Appointments: Date ASC -> TimeSlot ASC (excluding Cancelled)
-  const upcomingAppointments = [...rawUpcoming].sort((a, b) => {
-    const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
-    const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')
-    const timeDiff = dateA.getTime() - dateB.getTime()
-    if (timeDiff !== 0) return timeDiff
+  const upcomingAppointments = React.useMemo(() => {
+    return allAppointmentsList
+      .filter(isUpcomingAppt)
+      .sort((a, b) => {
+        const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
+        const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')
+        const timeDiff = dateA.getTime() - dateB.getTime()
+        if (timeDiff !== 0) return timeDiff
 
-    const slotA = a.slot || a.TimeSlot || a.Timeslot || ''
-    const slotB = b.slot || b.TimeSlot || b.Timeslot || ''
-    return slotA.localeCompare(slotB)
-  })
+        const slotA = a.slot || a.TimeSlot || a.Timeslot || ''
+        const slotB = b.slot || b.TimeSlot || b.Timeslot || ''
+        return slotA.localeCompare(slotB)
+      })
+  }, [allAppointmentsList])
 
-  const pastAppointments = fetchedPast.length > 0
-    ? fetchedPast
-    : (dashboardData?.PastVisits?.length ? apiPast : localPastAppointments)
+  // Sort Past Visits: Date DESC
+  const pastAppointments = React.useMemo(() => {
+    return allAppointmentsList
+      .filter(isPastAppt)
+      .sort((a, b) => {
+        const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
+        const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')
+        return dateB.getTime() - dateA.getTime()
+      })
+  }, [allAppointmentsList])
 
   const tabs = [
     { id: 'home', label: 'Home', icon: Home },
@@ -280,7 +329,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
               currentPatient={currentPatient}
               isLoadingPatient={isLoadingPatient}
               patientError={patientError}
-              lastVisitedDate={apiPast[0]?.date || localPastAppointments[0]?.date}
+              lastVisitedDate={pastAppointments[0]?.date || apiPast[0]?.date}
               className="w-full"
             />
           </div>

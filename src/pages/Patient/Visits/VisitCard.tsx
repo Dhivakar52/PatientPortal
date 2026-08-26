@@ -122,6 +122,20 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   const departmentName = appointment.department || appointment.DeptName || appointment.Department || ''
   const displayDoctor = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : ('Specialist Consultation')
 
+  const rawBookingMode =
+    (appointment as any).BookingMode ||
+    (appointment as any).BookingModeName ||
+    (appointment as any).AppointmentMode ||
+    appointment.AppointmentType ||
+    (appointment as any).bookingMode ||
+    (appointment as any).bookingModeName ||
+    (appointment as any).mode ||
+    (appointment as any).Mode ||
+    (appointment as any).BookingType ||
+    (appointment as any).Source ||
+    'Online'
+  const bookingMode = String(rawBookingMode).replace(/booking/i, '').trim() || 'Online'
+
   const handleDownload = () => {
     if (onDownloadReceipt) {
       onDownloadReceipt(appointment)
@@ -308,10 +322,13 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                     {departmentName}
                   </span>
                 )}
-                {/* Appointment Type */}
-                <span className="text-[10px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full inline-flex items-center">
-                  {appointment.AppointmentType || (appointment as any).appointmentType || (appointment as any).BookingType || (appointment as any).Source || 'Online Booking'}
-                </span>
+                {/* Appointment Type / Booking Mode */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full inline-flex items-center">
+                    Booking mode: {bookingMode}
+                  </span>
+
+                </div>
               </div>
 
               {/* Hospital / Clinic Name on Desktop */}
