@@ -13,16 +13,7 @@ import { BookingOtpModal } from './Appointment/BookingOtpModal'
 import { CancelOtpModal } from './Appointment/CancelOtpModal'
 import { BookingSuccessModal } from './Appointment/BookingSuccessModal'
 import { ReceiptModal } from '@/common/ReceiptModal'
-import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogCancel,
-    AlertDialogAction,
-} from '@/components/ui/alert-dialog'
+import { MaleConfirmModal } from './Appointment/MaleConfirmModal'
 
 const PatientModule: React.FC = () => {
     const navigate = useNavigate()
@@ -235,25 +226,12 @@ const PatientModule: React.FC = () => {
                 patient={receiptPatient}
             />
 
-            {/* Male Patient Appointment Confirmation Alert */}
-            <AlertDialog open={booking.showMaleConfirmModal} onOpenChange={booking.setShowMaleConfirmModal}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Appointment</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Please confirm that you want to book this appointment for the selected male patient.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel onClick={booking.handleCancelMaleBooking}>
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction onClick={booking.handleConfirmMaleBooking}>
-                            Confirm & Proceed
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            {/* Male Patient Appointment Warning Confirmation Modal */}
+            <MaleConfirmModal
+                isOpen={booking.showMaleConfirmModal}
+                onClose={booking.handleCancelMaleBooking}
+                onConfirm={booking.handleConfirmMaleBooking}
+            />
         </>
     )
 }
