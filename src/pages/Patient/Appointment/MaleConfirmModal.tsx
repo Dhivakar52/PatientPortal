@@ -1,4 +1,5 @@
 import React from 'react'
+import { Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface MaleConfirmModalProps {
@@ -16,23 +17,38 @@ export const MaleConfirmModal: React.FC<MaleConfirmModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8 shadow-2xl text-center transform transition-all">
-        {/* Warning Caution Symbol ⚠️ */}
-        <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 flex items-center justify-center mx-auto mb-4 text-3xl shadow-xs">
-          <span role="img" aria-label="warning">⚠️</span>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8 shadow-2xl text-center relative transform transition-all">
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1 rounded-md transition-colors"
+          title="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* Confirmation Icon */}
+        <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 shadow-xs">
+          <Check className="w-7 h-7 stroke-[2.5]" />
         </div>
 
         {/* Title */}
-        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+        <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
           Confirm Appointment
         </h3>
 
-        {/* Message */}
-        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6">
-          Please confirm that you want to book this appointment for the selected male patient.
-        </p>
+        {/* Exact Message */}
+        <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6 space-y-2">
+          <p>
+            This appointment is for a Gynecology department, but the patient is registered as Male.
+          </p>
+          <p className="font-medium text-slate-800 dark:text-slate-200">
+            Do you want to proceed with the booking?
+          </p>
+        </div>
 
-        {/* Actions */}
+        {/* Action Buttons */}
         <div className="flex items-center justify-center gap-3">
           <Button
             type="button"

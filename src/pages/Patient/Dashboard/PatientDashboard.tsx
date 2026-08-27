@@ -53,7 +53,7 @@ interface PatientDashboardProps {
   setSelectedTimeSlotId?: (v: string) => void
   isConfirming?: boolean
   bookErrors: Record<string, string>
-  onConfirmBooking: (data?: { deptID: string; doctorID: string; timeSlotID: string }) => void
+  onConfirmBooking: (data?: { deptID: string; doctorID: string; timeSlotID: string; deptName?: string }) => void
   onViewReceipt: (appt: Appointment) => void
   onCancelAppointment: (appt: Appointment) => void
 }
