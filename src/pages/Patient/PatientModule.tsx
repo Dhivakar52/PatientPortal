@@ -122,18 +122,7 @@ const PatientModule: React.FC = () => {
                     isLoadingPatient={auth.isLoadingPatient}
                     patientError={auth.patientError}
                     patients={auth.patientsList}
-                    onSelectPatient={async (id) => {
-                        auth.setActivePatientId(id)
-                        auth.setSpSelectedId(id)
-                        await auth.fetchCurrentPatient(id)
-                        auth.setUsersDB((prev) => ({
-                            ...prev,
-                            [auth.currentMobile]: {
-                                ...prev[auth.currentMobile],
-                                activePatientId: id,
-                            },
-                        }))
-                    }}
+                    onSelectPatient={auth.selectPatientProfile}
                     onSelectPatientClick={() => auth.setScreen('select')}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
                     onLogout={auth.handleLogout}
@@ -146,18 +135,7 @@ const PatientModule: React.FC = () => {
                     isLoadingPatient={auth.isLoadingPatient}
                     patientError={auth.patientError}
                     patients={auth.patientsList}
-                    onSelectPatient={async (id) => {
-                        auth.setActivePatientId(id)
-                        auth.setSpSelectedId(id)
-                        await auth.fetchCurrentPatient(id)
-                        auth.setUsersDB((prev) => ({
-                            ...prev,
-                            [auth.currentMobile]: {
-                                ...prev[auth.currentMobile],
-                                activePatientId: id,
-                            },
-                        }))
-                    }}
+                    onSelectPatient={auth.selectPatientProfile}
                     patientAppointments={patientAppointments}
                     onSelectPatientClick={() => auth.setScreen('select')}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}

@@ -515,16 +515,18 @@ export const fetchAppointments = async (params?: FetchAppointmentParams) => {
 
 /**
  * Cancel Appointment
- * Calls DELETE /api/cancelappointment/{id}?updatedBy={patientId}
+ * Calls PUT /api/cancelappointment/{appointmentid}?updatedBy={patientId}&cancelledReason={reason}
  */
 export const cancelAppointment = async (
     appointmentId: number,
-    patientId: number
+    updatedBy?: number,
+    cancelledReason?: string
 ) => {
     try {
-        const response = await axiosInstance.delete(`/api/cancelappointment/${appointmentId}`, {
+        const response = await axiosInstance.put(`/api/cancelappointment/${appointmentId}`, null, {
             params: {
-                updatedBy: patientId,
+                ...(updatedBy !== undefined && { updatedBy }),
+                ...(cancelledReason !== undefined && { cancelledReason }),
             },
         });
         return response.data;
