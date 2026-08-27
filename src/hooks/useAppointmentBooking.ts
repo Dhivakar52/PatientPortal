@@ -222,12 +222,14 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     deptID: string
     doctorID: string
     timeSlotID: string
+    deptName?: string
   }) => {
     if (isConfirming) return
 
     const deptID = bookingData?.deptID || selectedDepartmentId || '1'
     const doctorID = bookingData?.doctorID || selectedDoctorId || '0'
     const timeSlotID = bookingData?.timeSlotID || selectedTimeSlotId
+    const deptName = String(bookingData?.deptName || '').trim()
 
     const errs: Record<string, string> = {}
     if (!currentPatient?.id && !currentPatient?.PatientID) errs.patient = 'No active patient selected.'
@@ -245,7 +247,15 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     const genderId = currentPatient?.GenderID
     const isMale = rawGender === 'male' || rawGender === 'm' || genderId === 1 || rawGender === '1'
 
-    if (isMale) {
+    // Check if selected department is Gynecology
+    const isGynecology =
+      deptName.toLowerCase().includes('gynec') ||
+      deptName.toLowerCase().includes('gynaec') ||
+      deptName.toLowerCase().includes('gynae') ||
+      deptID === '1' ||
+      !deptName
+
+    if (isMale && isGynecology) {
       setPendingMaleBookingData({ deptID, doctorID, timeSlotID: timeSlotID || '' })
       setShowMaleConfirmModal(true)
       return

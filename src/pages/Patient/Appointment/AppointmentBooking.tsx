@@ -21,7 +21,7 @@ interface AppointmentBookingProps {
   setSelectedTimeSlotId?: (v: string) => void
   isConfirming?: boolean
   bookErrors: Record<string, string>
-  onConfirm: (data?: { deptID: string; doctorID: string; timeSlotID: string }) => void
+  onConfirm: (data?: { deptID: string; doctorID: string; timeSlotID: string; deptName?: string }) => void
 }
 
 // Day-wise Appointment Availability Configuration (1 = Enabled, 0 = Disabled)
@@ -251,6 +251,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       deptID: effectiveDeptId,
       doctorID: '0',
       timeSlotID: selectedTimeSlotId || '1',
+      deptName: firstDeptName,
     })
   }
 
