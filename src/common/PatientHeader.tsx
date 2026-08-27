@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, UserPlus, CheckCircle2, LayoutGrid, Sun, Moon, LogOut, User, Users } from 'lucide-react'
+import { ChevronDown, CheckCircle2, LayoutGrid, Sun, Moon, LogOut, User, Users } from 'lucide-react'
 import srmLogo from '@/assets/images/srm_logo.png'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
@@ -30,7 +30,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   patients = [],
   onSelectPatient,
   onSelectPatientClick,
-  onAddPatient,
+  // onAddPatient,
   onLogout,
 }) => {
   const navigate = useNavigate()
@@ -176,13 +176,13 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                     className="flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg"
                   >
                     <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span>View All Patients ({patientList.length}) — Card View</span>
+                    <span>View All Patients ({patientList.length})</span>
                   </DropdownMenuItem>
                 </>
               )}
 
               {/* Add New Patient Action */}
-              {onAddPatient && (
+              {/* {onAddPatient && (
                 <>
                   <DropdownMenuSeparator className="my-1.5" />
                   <DropdownMenuItem
@@ -193,7 +193,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                     <span>+ Add New Patient</span>
                   </DropdownMenuItem>
                 </>
-              )}
+              )} */}
 
               {/* Switch Account Section (Multi-user accounts without logout) */}
               {otherAccounts.length > 0 && (
