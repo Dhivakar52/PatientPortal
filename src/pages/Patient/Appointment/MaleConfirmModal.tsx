@@ -1,5 +1,5 @@
 import React from 'react'
-import { Check, X } from 'lucide-react'
+import { Info, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface MaleConfirmModalProps {
@@ -28,9 +28,9 @@ export const MaleConfirmModal: React.FC<MaleConfirmModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Confirmation Icon */}
+        {/* Information Icon (ⓘ) */}
         <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 shadow-xs">
-          <Check className="w-7 h-7 stroke-[2.5]" />
+          <Info className="w-7 h-7 stroke-[2.2]" />
         </div>
 
         {/* Title */}
