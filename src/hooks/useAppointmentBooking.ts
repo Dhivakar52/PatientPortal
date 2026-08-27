@@ -144,6 +144,30 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     timeSlotID: string
   } | null>(null)
 
+  // Reset all modal states and active inputs when switching patient profile
+  useEffect(() => {
+    setShowCancelOtpModal(false)
+    setSelectedCancelAppt(null)
+    setCancelOtpInput('')
+    setCancelOtpErr('')
+    setIsVerifyingCancelOtp(false)
+    setIsResendingCancelOtp(false)
+
+    setShowBookOtpModal(false)
+    setBookOtpInput('')
+    setBookOtpErr('')
+    setPendingBookingPayload(null)
+
+    setShowMaleConfirmModal(false)
+    setPendingMaleBookingData(null)
+
+    setShowReceiptModal(false)
+    setSelectedReceiptAppt(null)
+
+    setBookErrors({})
+    setIsConfirming(false)
+  }, [currentPatient?.PatientID, currentPatient?.id])
+
   const executeBookingFlow = async (deptID: string, doctorID: string, timeSlotID: string) => {
     setBookErrors({})
     setIsConfirming(true)
@@ -464,8 +488,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         return
       }
 
-      console.log(`🗑️ Cancelling appointment: DELETE /api/cancelappointment/${appointmentId}?updatedBy=${patientId}`)
-      await cancelAppointment(appointmentId, patientId)
+      console.log(`🗑️ Cancelling appointment: PUT /api/cancelappointment/${appointmentId}?updatedBy=${patientId}&cancelledReason=Cancelled%20by%20patient`)
+      await cancelAppointment(appointmentId, patientId, 'Cancelled by patient')
 
       const patientKey = String(patientId)
       setAppointmentsDB((prev) => {

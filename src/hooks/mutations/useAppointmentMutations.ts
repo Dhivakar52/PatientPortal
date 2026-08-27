@@ -48,11 +48,13 @@ export function useCancelAppointmentMutation() {
     mutationFn: async ({
       appointmentId,
       patientId,
+      cancelledReason,
     }: {
       appointmentId: number
       patientId: number
+      cancelledReason?: string
     }) => {
-      return cancelAppointment(appointmentId, patientId)
+      return cancelAppointment(appointmentId, patientId, cancelledReason)
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({

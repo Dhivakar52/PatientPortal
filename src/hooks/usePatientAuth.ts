@@ -1,8 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { UserRecord, Patient, FlowScreen, RegisterContext } from '@/types/patient.types'
 import { generateOtp, validateOtp, fetchPatient, getUsers, type UserData } from '@/services/apiService'
 import { useAuthStore } from '@/stores/authStore'
+import { queryClient } from '@/lib/queryClient'
+import { appointmentsQueryKeys } from './queries/useAppointmentsQuery'
+import { dashboardQueryKeys } from './queries/useDashboardQuery'
 
 const getScreenFromPath = (path: string): FlowScreen => {
   if (path === '/patient/register') return 'register'
@@ -188,6 +191,8 @@ export function usePatientAuth() {
     return []
   }
 
+  const fetchPatientReqRef = useRef<string | number | null>(null)
+
   // Fetch patient from GET /api/fetchpatient
   const fetchCurrentPatient = async (id?: number | string) => {
     const storedUid = Number(localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')) || undefined
@@ -195,10 +200,16 @@ export function usePatientAuth() {
 
     if (!targetId) return null
 
+    fetchPatientReqRef.current = targetId
     setIsLoadingPatient(true)
     setPatientError(null)
     try {
       const list = await fetchPatient({ patientID: targetId })
+
+      // Discard stale responses if active target changed while request was in-flight
+      if (fetchPatientReqRef.current !== targetId) {
+        return null
+      }
 
       if (Array.isArray(list) && list.length > 0) {
         const rawMatched = list.find((p) => String(p.PatientID) === String(targetId)) || list[0]
@@ -240,18 +251,30 @@ export function usePatientAuth() {
           CityID: rawMatched.CityID ?? rawMatched.cityID ?? existingCityId,
           cityID: rawMatched.cityID ?? rawMatched.CityID ?? existingCityId,
         }
-        setApiPatient(matched)
+        if (fetchPatientReqRef.current === targetId) {
+          setApiPatient(matched)
+        }
         return matched
       } else {
-        setApiPatient(null)
-        return null
+        const fallback = apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId)) ||
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId)) || null
+        if (fetchPatientReqRef.current === targetId) {
+          setApiPatient(fallback || null)
+        }
+        return fallback || null
       }
     } catch (err: unknown) {
-      console.error('Fetch Patient Error:', err)
-      setPatientError('Failed to fetch patient data.')
+      if (fetchPatientReqRef.current === targetId) {
+        console.error('Fetch Patient Error:', err)
+        setPatientError('Failed to fetch patient data.')
+        const fallback = apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId)) || null
+        setApiPatient(fallback)
+      }
       return null
     } finally {
-      setIsLoadingPatient(false)
+      if (fetchPatientReqRef.current === targetId) {
+        setIsLoadingPatient(false)
+      }
     }
   }
 
@@ -779,6 +802,32 @@ export function usePatientAuth() {
     setScreenState('app')
   }
 
+  const selectPatientProfile = async (id: string | number) => {
+    const stringId = String(id)
+    setActivePatientId(stringId)
+    setSpSelectedId(stringId)
+    useAuthStore.getState().setActivePatient(stringId)
+
+    // Clear previous patient details to avoid showing stale patient info
+    setApiPatient(null)
+
+    // Invalidate TanStack query cache for appointments & dashboard so fresh data loads for the new patient
+    queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.all })
+    queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all })
+
+    const matched = await fetchCurrentPatient(stringId)
+
+    setUsersDB((prev) => ({
+      ...prev,
+      [currentMobile]: {
+        ...prev[currentMobile],
+        activePatientId: stringId,
+      },
+    }))
+
+    return matched
+  }
+
   const switchAccount = async (targetPhone: string, targetPatientId?: string | number) => {
     useAuthStore.getState().switchAccount(targetPhone, targetPatientId)
     setCurrentMobile(targetPhone)
@@ -862,6 +911,7 @@ export function usePatientAuth() {
     // Actions
     openRegisterForm,
     handleSelectPatientContinue,
+    selectPatientProfile,
     handleLogout,
     switchAccount,
   }
