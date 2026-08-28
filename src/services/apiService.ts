@@ -10,18 +10,29 @@ export interface ValidateOtpResponse {
 }
 
 export interface RegisterPatientRequest {
-    userID: number;
-    name: string;
-    gender: number;
-    dob: string;
-    age: number;
-    mobileNo: string;
-    address: string;
-    city: string;
-    state: string;
-    pinCode: string;
-    createdBy: number;
-    updatedBy: number;
+    userID?: number;
+    name?: string;
+    email?: string;
+    gender?: number;
+    dob?: string;
+    age?: number;
+    mobileNo?: string;
+    address?: string;
+    pinCode?: string;
+    createdBy?: number;
+    updatedBy?: number;
+    countryID?: number;
+    cityID?: number;
+    stateID?: number;
+    area?: string;
+    // Compatibility fields
+    StateID?: number;
+    CityID?: number;
+    state?: string;
+    city?: string;
+    Email?: string;
+    EmailID?: string;
+    emailID?: string;
 }
 
 export interface DashboardParams {
@@ -36,10 +47,51 @@ export interface DashboardResponse {
     PastVisits: unknown[];
 }
 
+export interface StateOption {
+    TotalCount?: number;
+    StateID: number;
+    StateName: string;
+    StateCode?: string;
+    countryID?: number;
+    CountryName?: string;
+}
+
+export interface CityOption {
+    TotalCount?: number;
+    CityID: number;
+    CityName: string;
+    StateID?: number;
+    StateName?: string;
+    StateCode?: string;
+}
+
+export interface TimeSlotHour {
+    TotalCount?: number;
+    TimeSlotHoursID?: number;
+    timeSlotHoursID?: number;
+    TimeSlotHours?: string;
+    timeSlotHours?: string;
+    SlotHours?: string;
+    slotHours?: string;
+    id?: number | string;
+    name?: string;
+}
+
 export interface TimeSlot {
-    TotalCount: number;
+    TotalCount?: number;
     TimeSlotID: number;
+    timeSlotID?: number;
     Timeslot: string;
+    TimeSlot?: string;
+    timeslot?: string;
+    Slot?: string;
+    slot?: string;
+    TimeSlotHoursID?: number;
+    timeSlotHoursID?: number;
+    SlotTypeID?: number;
+    slotTypeID?: number;
+    IsAvailable?: boolean | number;
+    isAvailable?: boolean | number;
 }
 
 export interface Doctor {
@@ -156,17 +208,56 @@ export const getDashboard = async (params?: DashboardParams): Promise<DashboardR
 };
 
 /**
+ * Get time slot hours ranges
+ * Calls GET /api/timeslothours
+ */
+export const getTimeSlotHours = async (timeSlotHoursId?: number | string): Promise<TimeSlotHour[]> => {
+    try {
+        const response = await axiosInstance.get<TimeSlotHour[]>('/api/timeslothours', {
+            params: {
+                ...(timeSlotHoursId !== undefined && timeSlotHoursId !== '' && { timeSlotHoursID: Number(timeSlotHoursId) }),
+            },
+        });
+        const raw = response.data;
+        return Array.isArray(raw) ? raw : [];
+    } catch (error) {
+        console.error('Get TimeSlotHours Error:', error);
+        throw error;
+    }
+};
+
+export interface GetTimeSlotsParams {
+    timeSlotHoursID?: number | string;
+    timeSlotID?: number | string;
+    slotTypeID?: number | string;
+}
+
+/**
  * Get available appointment time slots
  * Calls GET /api/timeslot
  */
-export const getTimeSlots = async (timeSlotId?: number): Promise<TimeSlot[]> => {
+export const getTimeSlots = async (params?: GetTimeSlotsParams | number): Promise<TimeSlot[]> => {
     try {
+        let queryParams: Record<string, unknown> = {};
+        if (typeof params === 'number') {
+            queryParams = { timeSlotID: params };
+        } else if (params && typeof params === 'object') {
+            if (params.timeSlotHoursID !== undefined && params.timeSlotHoursID !== '') {
+                queryParams.timeSlotHoursID = Number(params.timeSlotHoursID);
+            }
+            if (params.timeSlotID !== undefined && params.timeSlotID !== '') {
+                queryParams.timeSlotID = Number(params.timeSlotID);
+            }
+            if (params.slotTypeID !== undefined && params.slotTypeID !== '') {
+                queryParams.slotTypeID = Number(params.slotTypeID);
+            }
+        }
+
         const response = await axiosInstance.get<TimeSlot[]>('/api/timeslot', {
-            params: {
-                ...(timeSlotId !== undefined && { TimeSlotID: timeSlotId }),
-            },
+            params: queryParams,
         });
-        return response.data;
+        const raw = response.data;
+        return Array.isArray(raw) ? raw : [];
     } catch (error) {
         console.error('Get Time Slots Error:', error);
         throw error;
@@ -188,6 +279,40 @@ export const getDoctors = async (departmentId?: number, doctorId?: number): Prom
         return response.data;
     } catch (error) {
         console.error('Get Doctors Error:', error);
+        throw error;
+    }
+};
+
+/**
+ * Get states list
+ * Calls GET /api/states
+ */
+export const getStates = async (): Promise<StateOption[]> => {
+    try {
+        const response = await axiosInstance.get<StateOption[]>('/api/states');
+        console.log("States response:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Get States Error:', error);
+        throw error;
+    }
+};
+
+/**
+ * Get cities list, optionally filtered by StateID
+ * Calls GET /api/cities
+ */
+export const getCities = async (stateId?: number | string): Promise<CityOption[]> => {
+    try {
+        const response = await axiosInstance.get<CityOption[]>('/api/cities', {
+            params: {
+                ...(stateId !== undefined && stateId !== '' && { StateID: stateId }),
+            },
+        });
+        console.log("Cities response:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Get Cities Error:', error);
         throw error;
     }
 };
@@ -262,13 +387,22 @@ export const fetchPatient = async (params?: FetchPatientParams): Promise<Patient
             const gender = String(p.Gender || p.gender || 'Male');
             const genderId = Number(p.GenderID || p.genderID || (gender.toLowerCase() === 'female' ? 2 : 1));
             const address = String(p.Address || p.PatientAddress || p.address || '');
-            const city = String(p.City || p.city || '');
-            const state = String(p.State || p.PatientState || p.state || '');
+            const stateRaw = p.StateID ?? p.stateID ?? p.State ?? p.PatientState ?? p.state ?? '';
+            const state = String(stateRaw);
+            const stateId = typeof p.StateID === 'number' ? p.StateID : (typeof p.stateID === 'number' ? p.stateID : (Number(stateRaw) || undefined));
+
+            const cityRaw = p.CityID ?? p.cityID ?? p.City ?? p.PatientCity ?? p.city ?? '';
+            const city = String(cityRaw);
+            const cityId = typeof p.CityID === 'number' ? p.CityID : (typeof p.cityID === 'number' ? p.cityID : (Number(cityRaw) || undefined));
+            const countryId = typeof p.CountryID === 'number' ? p.CountryID : (typeof p.countryID === 'number' ? p.countryID : (Number(p.CountryID || p.countryID) || 1));
+
             const pinCode = String(p.PinCode || p.pinCode || p.pincode || '');
             const phoneNo = String(p.PhoneNo || p.phoneNo || p.mobile || '');
             const uhid = p.UHID != null ? String(p.UHID) : null;
             const registerNo = p.RegisterNo != null ? String(p.RegisterNo) : null;
             const abhaId = p.AbhaID != null ? String(p.AbhaID) : null;
+            const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? null;
+            const email = emailRaw != null && String(emailRaw).trim() !== '' ? String(emailRaw).trim() : null;
 
             return {
                 TotalPatients: typeof p.TotalPatients === 'number' ? p.TotalPatients : undefined,
@@ -284,11 +418,19 @@ export const fetchPatient = async (params?: FetchPatientParams): Promise<Patient
                 Gender: gender,
                 Address: address,
                 PatientAddress: address,
+                StateID: stateId,
+                stateID: stateId,
+                CityID: cityId,
+                cityID: cityId,
+                CountryID: countryId,
+                countryID: countryId,
                 City: city,
                 State: state,
                 PatientState: state,
                 PinCode: pinCode,
                 PhoneNo: phoneNo,
+                Email: email,
+                email: email,
 
                 // Convenience aliases for existing components
                 id: String(patientId),
@@ -373,16 +515,18 @@ export const fetchAppointments = async (params?: FetchAppointmentParams) => {
 
 /**
  * Cancel Appointment
- * Calls DELETE /api/cancelappointment/{id}?updatedBy={patientId}
+ * Calls PUT /api/cancelappointment/{appointmentid}?updatedBy={patientId}&cancelledReason={reason}
  */
 export const cancelAppointment = async (
     appointmentId: number,
-    patientId: number
+    updatedBy?: number,
+    cancelledReason?: string
 ) => {
     try {
-        const response = await axiosInstance.delete(`/api/cancelappointment/${appointmentId}`, {
+        const response = await axiosInstance.put(`/api/cancelappointment/${appointmentId}`, null, {
             params: {
-                updatedBy: patientId,
+                ...(updatedBy !== undefined && { updatedBy }),
+                ...(cancelledReason !== undefined && { cancelledReason }),
             },
         });
         return response.data;

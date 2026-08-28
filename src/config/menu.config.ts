@@ -4,9 +4,10 @@ import {
   FlaskConical,
   Receipt,
   Building2,
-  type LucideIcon,
 } from "lucide-react"
 import { lazy } from "react"
+
+export type LucideIcon = React.ComponentType<any>
 
 export interface SubMenuItem {
   title: string

@@ -4,134 +4,7 @@ import { FieldLabel, TextField, DobDateField, SelectField } from '@/components/F
 import { PatientHeader } from '@/common/PatientHeader'
 import { calcAge, digitsOnly } from '@/utils/patient.utils'
 import { Loader2 } from 'lucide-react'
-
-// Indian States and Cities options for Dropdowns
-export const INDIAN_STATES = [
-  { value: 'Tamil Nadu', label: 'Tamil Nadu' },
-  { value: 'Andhra Pradesh', label: 'Andhra Pradesh' },
-  { value: 'Karnataka', label: 'Karnataka' },
-  { value: 'Kerala', label: 'Kerala' },
-  { value: 'Telangana', label: 'Telangana' },
-  { value: 'Maharashtra', label: 'Maharashtra' },
-  { value: 'Delhi', label: 'Delhi' },
-  { value: 'Gujarat', label: 'Gujarat' },
-  { value: 'Uttar Pradesh', label: 'Uttar Pradesh' },
-  { value: 'West Bengal', label: 'West Bengal' },
-  { value: 'Rajasthan', label: 'Rajasthan' },
-  { value: 'Madhya Pradesh', label: 'Madhya Pradesh' },
-  { value: 'Punjab', label: 'Punjab' },
-  { value: 'Haryana', label: 'Haryana' },
-  { value: 'Bihar', label: 'Bihar' },
-  { value: 'Odisha', label: 'Odisha' },
-  { value: 'Puducherry', label: 'Puducherry' },
-]
-
-export const STATE_CITIES_MAP: Record<string, { value: string; label: string }[]> = {
-  'Tamil Nadu': [
-    { value: 'Chennai', label: 'Chennai' },
-    { value: 'Chengalpattu', label: 'Chengalpattu' },
-    { value: 'Kancheepuram', label: 'Kancheepuram' },
-    { value: 'Thiruvallur', label: 'Thiruvallur' },
-    { value: 'Coimbatore', label: 'Coimbatore' },
-    { value: 'Madurai', label: 'Madurai' },
-    { value: 'Tiruchirappalli', label: 'Tiruchirappalli' },
-    { value: 'Salem', label: 'Salem' },
-    { value: 'Tirunelveli', label: 'Tirunelveli' },
-    { value: 'Vellore', label: 'Vellore' },
-    { value: 'Erode', label: 'Erode' },
-    { value: 'Thanjavur', label: 'Thanjavur' },
-    { value: 'Dindigul', label: 'Dindigul' },
-    { value: 'Cuddalore', label: 'Cuddalore' },
-    { value: 'Kanyakumari', label: 'Kanyakumari' },
-    { value: 'Tiruppur', label: 'Tiruppur' },
-    { value: 'Tuticorin', label: 'Tuticorin' },
-    { value: 'Nagercoil', label: 'Nagercoil' },
-    { value: 'Hosur', label: 'Hosur' },
-  ],
-  'Karnataka': [
-    { value: 'Bengaluru', label: 'Bengaluru' },
-    { value: 'Mysuru', label: 'Mysuru' },
-    { value: 'Mangaluru', label: 'Mangaluru' },
-    { value: 'Hubballi', label: 'Hubballi' },
-    { value: 'Belagavi', label: 'Belagavi' },
-    { value: 'Davanagere', label: 'Davanagere' },
-  ],
-  'Andhra Pradesh': [
-    { value: 'Visakhapatnam', label: 'Visakhapatnam' },
-    { value: 'Vijayawada', label: 'Vijayawada' },
-    { value: 'Guntur', label: 'Guntur' },
-    { value: 'Tirupati', label: 'Tirupati' },
-    { value: 'Nellore', label: 'Nellore' },
-    { value: 'Kurnool', label: 'Kurnool' },
-    { value: 'Rajahmundry', label: 'Rajahmundry' },
-    { value: 'Kakinada', label: 'Kakinada' },
-  ],
-  'Kerala': [
-    { value: 'Thiruvananthapuram', label: 'Thiruvananthapuram' },
-    { value: 'Kochi', label: 'Kochi' },
-    { value: 'Kozhikode', label: 'Kozhikode' },
-    { value: 'Thrissur', label: 'Thrissur' },
-    { value: 'Kollam', label: 'Kollam' },
-    { value: 'Kannur', label: 'Kannur' },
-    { value: 'Palakkad', label: 'Palakkad' },
-    { value: 'Alappuzha', label: 'Alappuzha' },
-  ],
-  'Telangana': [
-    { value: 'Hyderabad', label: 'Hyderabad' },
-    { value: 'Warangal', label: 'Warangal' },
-    { value: 'Nizamabad', label: 'Nizamabad' },
-    { value: 'Karimnagar', label: 'Karimnagar' },
-    { value: 'Khammam', label: 'Khammam' },
-  ],
-  'Maharashtra': [
-    { value: 'Mumbai', label: 'Mumbai' },
-    { value: 'Pune', label: 'Pune' },
-    { value: 'Nagpur', label: 'Nagpur' },
-    { value: 'Nashik', label: 'Nashik' },
-    { value: 'Thane', label: 'Thane' },
-    { value: 'Aurangabad', label: 'Aurangabad' },
-    { value: 'Navi Mumbai', label: 'Navi Mumbai' },
-  ],
-  'Delhi': [
-    { value: 'New Delhi', label: 'New Delhi' },
-    { value: 'North Delhi', label: 'North Delhi' },
-    { value: 'South Delhi', label: 'South Delhi' },
-    { value: 'West Delhi', label: 'West Delhi' },
-    { value: 'East Delhi', label: 'East Delhi' },
-  ],
-  'Gujarat': [
-    { value: 'Ahmedabad', label: 'Ahmedabad' },
-    { value: 'Surat', label: 'Surat' },
-    { value: 'Vadodara', label: 'Vadodara' },
-    { value: 'Rajkot', label: 'Rajkot' },
-  ],
-  'Puducherry': [
-    { value: 'Puducherry', label: 'Puducherry' },
-    { value: 'Karaikal', label: 'Karaikal' },
-    { value: 'Mahe', label: 'Mahe' },
-    { value: 'Yanam', label: 'Yanam' },
-  ],
-}
-
-export const ALL_MAJOR_CITIES = [
-  { value: 'Chennai', label: 'Chennai' },
-  { value: 'Chengalpattu', label: 'Chengalpattu' },
-  { value: 'Kancheepuram', label: 'Kancheepuram' },
-  { value: 'Thiruvallur', label: 'Thiruvallur' },
-  { value: 'Coimbatore', label: 'Coimbatore' },
-  { value: 'Madurai', label: 'Madurai' },
-  { value: 'Tiruchirappalli', label: 'Tiruchirappalli' },
-  { value: 'Salem', label: 'Salem' },
-  { value: 'Bengaluru', label: 'Bengaluru' },
-  { value: 'Hyderabad', label: 'Hyderabad' },
-  { value: 'Visakhapatnam', label: 'Visakhapatnam' },
-  { value: 'Vijayawada', label: 'Vijayawada' },
-  { value: 'Thiruvananthapuram', label: 'Thiruvananthapuram' },
-  { value: 'Kochi', label: 'Kochi' },
-  { value: 'Mumbai', label: 'Mumbai' },
-  { value: 'New Delhi', label: 'New Delhi' },
-  { value: 'Puducherry', label: 'Puducherry' },
-]
+import { useStatesQuery, useCitiesQuery } from '@/hooks/queries/useMasterDataQueries'
 
 interface PatientRegistrationProps {
   pendingMobile: string
@@ -149,6 +22,8 @@ interface PatientRegistrationProps {
   setRegState: (v: string) => void
   regPincode: string
   setRegPincode: (v: string) => void
+  regEmail?: string
+  setRegEmail?: (v: string) => void
   regErrors: Record<string, string>
   isSubmitting?: boolean
   onSubmit: () => void
@@ -171,29 +46,44 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   setRegState,
   regPincode,
   setRegPincode,
+  regEmail = '',
+  setRegEmail,
   regErrors,
   isSubmitting = false,
   onSubmit,
   onBack,
 }) => {
-  const calculatedAge = calcAge(regDob)
+  const { data: statesList = [] } = useStatesQuery()
 
-  const dobDate = regDob ? new Date(regDob) : undefined
+  // Resolve State ID for cities query in case regState is a name or ID
+  const resolvedStateId = React.useMemo(() => {
+    if (!regState) return ''
+    if (/^\d+$/.test(regState)) return regState
+    const found = statesList.find(
+      (s) => s.StateName?.toLowerCase() === regState.toLowerCase() || String(s.StateID) === regState
+    )
+    return found ? String(found.StateID) : regState
+  }, [regState, statesList])
 
-  // Filter cities based on selected State
-  const availableCityOptions = regState && STATE_CITIES_MAP[regState]
-    ? STATE_CITIES_MAP[regState]
-    : ALL_MAJOR_CITIES
+  const { data: citiesList = [] } = useCitiesQuery(resolvedStateId)
+
+  const stateOptions = statesList.map((s) => ({
+    value: String(s.StateID),
+    label: s.StateName,
+  }))
+
+  const cityOptions = citiesList.map((c) => ({
+    value: String(c.CityID),
+    label: c.CityName,
+  }))
 
   const handleStateChange = (val: string) => {
     setRegState(val)
-    if (val && STATE_CITIES_MAP[val]) {
-      const cities = STATE_CITIES_MAP[val]
-      if (regCity && !cities.some((c) => c.value === regCity)) {
-        setRegCity('')
-      }
-    }
+    setRegCity('')
   }
+
+  const calculatedAge = calcAge(regDob)
+  const dobDate = regDob ? new Date(regDob) : undefined
 
   // ✅ FIX: Use local date to avoid timezone issues
   const handleDateSelect = (date: Date | undefined) => {
@@ -314,7 +204,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
               <div>
                 <FieldLabel>State</FieldLabel>
                 <SelectField
-                  options={INDIAN_STATES}
+                  options={stateOptions}
                   value={regState}
                   onChange={handleStateChange}
                   placeholder="Select State"
@@ -326,7 +216,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
               <div>
                 <FieldLabel>City</FieldLabel>
                 <SelectField
-                  options={availableCityOptions}
+                  options={cityOptions}
                   value={regCity}
                   onChange={setRegCity}
                   placeholder="Select City"
@@ -343,6 +233,18 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   placeholder="6-digit PIN"
                 />
                 {regErrors.pincode && <p className="text-xs text-rose-600 mt-1">{regErrors.pincode}</p>}
+              </div>
+
+              {/* Email Address */}
+              <div>
+                <FieldLabel>Email Address</FieldLabel>
+                <TextField
+                  value={regEmail}
+                  onChange={(v) => setRegEmail && setRegEmail(v)}
+                  placeholder="e.g. user@example.com"
+                  type="email"
+                />
+                {regErrors.email && <p className="text-xs text-rose-600 mt-1">{regErrors.email}</p>}
               </div>
             </div>
           </div>

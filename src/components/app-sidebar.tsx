@@ -230,19 +230,18 @@ export function AppSidebar() {
                                 <DropdownMenuItem
                                   key={sub.title}
                                   className={cn("p-0 cursor-pointer", subActive && "bg-slate-100")}
-                                  render={
-                                    <NavLink
-                                      to={sub.url}
-                                      className={cn(
-                                        "flex items-center gap-2.5 px-3 py-2 text-xs w-full text-slate-700 hover:text-slate-900",
-                                        subActive && "font-semibold text-blue-700"
-                                      )}
-                                    >
-                                      <sub.icon className="h-3.5 w-3.5 shrink-0" />
-                                      <span>{sub.title}</span>
-                                    </NavLink>
-                                  }
-                                />
+                                >
+                                  <NavLink
+                                    to={sub.url}
+                                    className={cn(
+                                      "flex items-center gap-2.5 px-3 py-2 text-xs w-full text-slate-700 hover:text-slate-900",
+                                      subActive && "font-semibold text-blue-700"
+                                    )}
+                                  >
+                                    <sub.icon className="h-3.5 w-3.5 shrink-0" />
+                                    <span>{sub.title}</span>
+                                  </NavLink>
+                                </DropdownMenuItem>
                               )
                             })}
                           </DropdownMenuContent>
@@ -256,7 +255,7 @@ export function AppSidebar() {
                     <Collapsible
                       key={item.title}
                       open={isOpen}
-                      onOpenChange={(next) => toggleItem(item.title, next)}
+                      onOpenChange={(next: boolean) => toggleItem(item.title, next)}
                       className="group/collapsible"
                     >
                       <SidebarMenuItem>

@@ -122,6 +122,20 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   const departmentName = appointment.department || appointment.DeptName || appointment.Department || ''
   const displayDoctor = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : ('Specialist Consultation')
 
+  const rawBookingMode =
+    (appointment as any).BookingMode ||
+    (appointment as any).BookingModeName ||
+    (appointment as any).AppointmentMode ||
+    appointment.AppointmentType ||
+    (appointment as any).bookingMode ||
+    (appointment as any).bookingModeName ||
+    (appointment as any).mode ||
+    (appointment as any).Mode ||
+    (appointment as any).BookingType ||
+    (appointment as any).Source ||
+    'Online'
+  const bookingMode = String(rawBookingMode).replace(/booking/i, '').trim() || 'Online'
+
   const handleDownload = () => {
     if (onDownloadReceipt) {
       onDownloadReceipt(appointment)
@@ -298,14 +312,18 @@ export const VisitCard: React.FC<VisitCardProps> = ({
               {/* Doctor Name & Department */}
               <div className="flex flex-wrap items-center gap-1.5 min-w-0 w-full">
                 <Stethoscope className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
-                {/* <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words">
+                <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words">
                   {displayDoctor}
-                </span> */}
-                {departmentName && displayDoctor !== departmentName && (
+                </span>
+                {departmentName && (
                   <span className="text-[10px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full inline-flex items-center break-words max-w-full">
-                    {/* {departmentName} */} Gynecology
+                    {departmentName}
                   </span>
                 )}
+                {/* Appointment Type / Booking Mode */}
+                <span className="text-[10px] sm:text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full inline-flex items-center">
+                  Booking mode: {bookingMode}
+                </span>
               </div>
 
               {/* Hospital / Clinic Name on Desktop */}
@@ -330,10 +348,12 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                     {appointment.slot || '12:42:15 PM'}
                   </span>
                 </div>
-                {appointment.apptNo && (
+                {(appointment.apptNo || appointment.AppointmentNo || (appointment as any).ApptNo) && (
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-[10px] sm:text-[11px] break-words">
                     <span className="text-slate-400 font-normal">Appt No:</span>
-                    <span className="text-blue-600 dark:text-blue-400 font-mono">{appointment.AppointmentNo}</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-mono">
+                      {appointment.apptNo || appointment.AppointmentNo || (appointment as any).ApptNo}
+                    </span>
                   </div>
                 )}
               </div>

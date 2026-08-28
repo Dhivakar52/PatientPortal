@@ -4,10 +4,16 @@ import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label as ShadLabel } from "@/components/ui/label";
-import { NativeSelect } from "@/components/ui/native-select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DatePickerDob } from "@/components/ui/date-picker-dob";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
@@ -42,18 +48,21 @@ export function Field({
 export function TextField({
   placeholder,
   disabled,
+  type,
   value,
   defaultValue,
   onChange,
 }: {
   placeholder?: string;
   disabled?: boolean;
+  type?: string;
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
 }) {
   return (
     <Input
+      type={type}
       placeholder={placeholder}
       disabled={disabled}
       value={value}
@@ -66,7 +75,7 @@ export function TextField({
 
 export type SelectOption = string | { value: string | number; label: string };
 
-// ✅ Controlled SelectField - accepts value/onChange so it can be wired into filter state
+// ✅ Controlled SelectField - uses floating Portal select with downward orientation
 export function SelectField({
   options,
   placeholder = "Select",
@@ -80,29 +89,45 @@ export function SelectField({
   onChange?: (value: string) => void;
   disabled?: boolean;
 }) {
+  const strVal = value !== undefined && value !== null && String(value) !== "" ? String(value) : undefined;
+
+  // Resolve ID/value to human-readable label if available
+  const selectedOpt = strVal !== undefined
+    ? options.find((opt) => {
+        if (typeof opt === "object") {
+          return String(opt.value) === strVal || opt.label.toLowerCase() === strVal.toLowerCase();
+        }
+        return String(opt).toLowerCase() === strVal.toLowerCase();
+      })
+    : undefined;
+
+  const displayLabel = selectedOpt
+    ? (typeof selectedOpt === "object" ? selectedOpt.label : String(selectedOpt))
+    : (strVal && !/^\d+$/.test(strVal) ? strVal : undefined);
+
   return (
-    <NativeSelect
-      value={value !== undefined ? String(value) : ""}
-      onChange={(e) => onChange?.(e.target.value)}
+    <Select
+      value={strVal}
+      onValueChange={(val: string) => onChange?.(val ?? "")}
       disabled={disabled}
-      className="h-9 text-[13px] w-full rounded-[4px]"
-      style={{
-        borderRadius: "4px !important"
-      }}
     >
-      <option value="" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-        {placeholder}
-      </option>
-      {options.map((opt) => {
-        const optValue = typeof opt === "object" ? String(opt.value) : opt;
-        const optLabel = typeof opt === "object" ? opt.label : opt;
-        return (
-          <option key={optValue} value={optValue} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-            {optLabel}
-          </option>
-        );
-      })}
-    </NativeSelect>
+      <SelectTrigger className="h-9 text-[13px] w-full rounded-[4px] bg-background border border-input">
+        <SelectValue placeholder={placeholder}>
+          {displayLabel}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent side="bottom" align="start" sideOffset={4} className="max-h-60 overflow-y-auto z-[100]">
+        {options.map((opt) => {
+          const optValue = typeof opt === "object" ? String(opt.value) : opt;
+          const optLabel = typeof opt === "object" ? opt.label : opt;
+          return (
+            <SelectItem key={optValue} value={optValue}>
+              {optLabel}
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -114,12 +139,16 @@ export function DateField({
   value,
   onChange,
   disabled,
+  fromMonth,
+  toMonth,
 }: {
   placeholder?: string;
   defaultLabel?: string;
   value?: Date;
   onChange?: (date: Date | undefined) => void;
   disabled?: React.ComponentProps<typeof Calendar>["disabled"];
+  fromMonth?: Date;
+  toMonth?: Date;
 }) {
   const [internalDate, setInternalDate] = React.useState<Date | undefined>();
   const [open, setOpen] = React.useState(false);
@@ -152,7 +181,14 @@ export function DateField({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl" align="start">
-        <Calendar mode="single" selected={date} onSelect={handleSelect} disabled={disabled} />
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={handleSelect}
+          disabled={disabled}
+          startMonth={fromMonth}
+          endMonth={toMonth}
+        />
       </PopoverContent>
     </Popover>
   );

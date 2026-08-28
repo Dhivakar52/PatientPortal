@@ -1,8 +1,11 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { UserRecord, Patient, FlowScreen, RegisterContext } from '@/types/patient.types'
 import { generateOtp, validateOtp, fetchPatient, getUsers, type UserData } from '@/services/apiService'
 import { useAuthStore } from '@/stores/authStore'
+import { queryClient } from '@/lib/queryClient'
+import { appointmentsQueryKeys } from './queries/useAppointmentsQuery'
+import { dashboardQueryKeys } from './queries/useDashboardQuery'
 
 const getScreenFromPath = (path: string): FlowScreen => {
   if (path === '/patient/register') return 'register'
@@ -130,10 +133,18 @@ export function usePatientAuth() {
             const gender = String(p.Gender || p.gender || 'Male')
             const genderId = Number(p.GenderID || p.genderID || (gender.toLowerCase() === 'female' ? 2 : 1))
             const address = String(p.Address || p.PatientAddress || p.address || '')
-            const city = String(p.City || p.city || '')
-            const state = String(p.State || p.PatientState || p.state || '')
+            const stateRaw = p.StateID ?? p.stateID ?? p.State ?? p.PatientState ?? p.state ?? ''
+            const state = String(stateRaw)
+            const stateId = typeof p.StateID === 'number' ? p.StateID : (typeof p.stateID === 'number' ? p.stateID : (Number(stateRaw) || undefined))
+
+            const cityRaw = p.CityID ?? p.cityID ?? p.City ?? p.PatientCity ?? p.city ?? ''
+            const city = String(cityRaw)
+            const cityId = typeof p.CityID === 'number' ? p.CityID : (typeof p.cityID === 'number' ? p.cityID : (Number(cityRaw) || undefined))
+
             const pinCode = String(p.PinCode || p.pinCode || p.pincode || '')
             const phoneNo = String(p.PhoneNo || p.phoneNo || matchedUser.phoneNo || targetMobile)
+            const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? null
+            const email = emailRaw != null && String(emailRaw).trim() !== '' ? String(emailRaw).trim() : null
 
             userPatients.push({
               ...p,
@@ -148,11 +159,17 @@ export function usePatientAuth() {
               Gender: gender,
               Address: address,
               PatientAddress: address,
+              StateID: stateId,
+              stateID: stateId,
+              CityID: cityId,
+              cityID: cityId,
               City: city,
               State: state,
               PatientState: state,
               PinCode: pinCode,
               PhoneNo: phoneNo,
+              Email: email,
+              email: email,
               id: String(patientId),
               name: patientName,
               mobile: phoneNo,
@@ -174,6 +191,8 @@ export function usePatientAuth() {
     return []
   }
 
+  const fetchPatientReqRef = useRef<string | number | null>(null)
+
   // Fetch patient from GET /api/fetchpatient
   const fetchCurrentPatient = async (id?: number | string) => {
     const storedUid = Number(localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')) || undefined
@@ -181,25 +200,81 @@ export function usePatientAuth() {
 
     if (!targetId) return null
 
+    fetchPatientReqRef.current = targetId
     setIsLoadingPatient(true)
     setPatientError(null)
     try {
       const list = await fetchPatient({ patientID: targetId })
 
-      if (Array.isArray(list) && list.length > 0) {
-        const matched = list.find((p) => String(p.PatientID) === String(targetId)) || list[0]
-        setApiPatient(matched)
-        return matched
-      } else {
-        setApiPatient(null)
+      // Discard stale responses if active target changed while request was in-flight
+      if (fetchPatientReqRef.current !== targetId) {
         return null
       }
+
+      if (Array.isArray(list) && list.length > 0) {
+        const rawMatched = list.find((p) => String(p.PatientID) === String(targetId)) || list[0]
+        const existingEmail = rawMatched.Email || rawMatched.email ||
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.Email ||
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.email ||
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId))?.Email ||
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId))?.email ||
+          (apiPatient && String(apiPatient.PatientID || apiPatient.id) === String(targetId) ? (apiPatient.Email || apiPatient.email) : null) ||
+          null
+
+        const existingState = rawMatched.State || rawMatched.PatientState ||
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.State ||
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId))?.State ||
+          null
+        const existingStateId = rawMatched.StateID ?? rawMatched.stateID ??
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.StateID ??
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId))?.StateID ??
+          undefined
+
+        const existingCity = rawMatched.City || rawMatched.city ||
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.City ||
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId))?.City ||
+          null
+        const existingCityId = rawMatched.CityID ?? rawMatched.cityID ??
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.CityID ??
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId))?.CityID ??
+          undefined
+
+        const matched: Patient = {
+          ...rawMatched,
+          Email: existingEmail,
+          email: existingEmail,
+          State: rawMatched.State || existingState || '',
+          PatientState: rawMatched.PatientState || rawMatched.State || existingState || '',
+          StateID: rawMatched.StateID ?? rawMatched.stateID ?? existingStateId,
+          stateID: rawMatched.stateID ?? rawMatched.StateID ?? existingStateId,
+          City: rawMatched.City || existingCity || '',
+          CityID: rawMatched.CityID ?? rawMatched.cityID ?? existingCityId,
+          cityID: rawMatched.cityID ?? rawMatched.CityID ?? existingCityId,
+        }
+        if (fetchPatientReqRef.current === targetId) {
+          setApiPatient(matched)
+        }
+        return matched
+      } else {
+        const fallback = apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId)) ||
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId)) || null
+        if (fetchPatientReqRef.current === targetId) {
+          setApiPatient(fallback || null)
+        }
+        return fallback || null
+      }
     } catch (err: unknown) {
-      console.error('Fetch Patient Error:', err)
-      setPatientError('Failed to fetch patient data.')
+      if (fetchPatientReqRef.current === targetId) {
+        console.error('Fetch Patient Error:', err)
+        setPatientError('Failed to fetch patient data.')
+        const fallback = apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId)) || null
+        setApiPatient(fallback)
+      }
       return null
     } finally {
-      setIsLoadingPatient(false)
+      if (fetchPatientReqRef.current === targetId) {
+        setIsLoadingPatient(false)
+      }
     }
   }
 
@@ -291,29 +366,111 @@ export function usePatientAuth() {
   // Derived active record & patient
   const currentUserRecord = usersDB[currentMobile] || null
   const currentPatient: Patient | null = useMemo(() => {
-    if (apiPatient) {
+    const targetActiveId = String(activePatientId || currentUserRecord?.activePatientId || '')
+
+    // 1. If apiPatient is loaded and matches the active patient ID, return it
+    if (apiPatient && (!targetActiveId || String(apiPatient.PatientID || apiPatient.id) === targetActiveId)) {
+      const email = apiPatient.Email || apiPatient.email || null
       return {
         ...apiPatient,
-        id: String(apiPatient.PatientID),
-        name: apiPatient.PatientName,
-        mobile: apiPatient.PhoneNo,
-        gender: apiPatient.Gender,
-        dob: apiPatient.DOB,
-        address: apiPatient.PatientAddress,
-        city: apiPatient.City,
-        state: apiPatient.PatientState,
-        pincode: apiPatient.PinCode,
+        id: String(apiPatient.PatientID || apiPatient.id),
+        name: apiPatient.PatientName || apiPatient.name,
+        mobile: apiPatient.PhoneNo || apiPatient.mobile,
+        gender: apiPatient.Gender || apiPatient.gender,
+        dob: apiPatient.DOB || apiPatient.dob,
+        address: apiPatient.PatientAddress || apiPatient.address,
+        city: apiPatient.City || apiPatient.city,
+        state: apiPatient.PatientState || apiPatient.state,
+        StateID: apiPatient.StateID ?? apiPatient.stateID,
+        stateID: apiPatient.stateID ?? apiPatient.StateID,
+        CityID: apiPatient.CityID ?? apiPatient.cityID,
+        cityID: apiPatient.cityID ?? apiPatient.CityID,
+        pincode: apiPatient.PinCode || apiPatient.pincode,
+        Email: email,
+        email: email,
       }
     }
-    if (!currentUserRecord || !Array.isArray(currentUserRecord.patients) || currentUserRecord.patients.length === 0) {
-      return null
+
+    // 2. Look in apiPatientsList (from GET /api/getusers)
+    if (apiPatientsList && apiPatientsList.length > 0) {
+      const matched = targetActiveId
+        ? apiPatientsList.find((p) => String(p.PatientID || p.id) === targetActiveId) || apiPatientsList[0]
+        : apiPatientsList[0]
+      if (matched) {
+        const email = matched.Email || matched.email || null
+        return {
+          ...matched,
+          id: String(matched.PatientID || matched.id),
+          name: matched.PatientName || matched.name,
+          mobile: matched.PhoneNo || matched.mobile || matched.phoneNo,
+          gender: matched.Gender || matched.gender,
+          dob: matched.DOB || matched.dob,
+          address: matched.PatientAddress || matched.address,
+          city: matched.City || matched.city,
+          state: matched.PatientState || matched.state,
+          StateID: matched.StateID ?? matched.stateID,
+          stateID: matched.stateID ?? matched.StateID,
+          CityID: matched.CityID ?? matched.cityID,
+          cityID: matched.cityID ?? matched.CityID,
+          pincode: matched.PinCode || matched.pincode,
+          Email: email,
+          email: email,
+        }
+      }
     }
-    return (
-      currentUserRecord.patients.find((p) => String(p.id) === String(activePatientId || currentUserRecord.activePatientId)) ||
-      currentUserRecord.patients[0] ||
-      null
-    )
-  }, [apiPatient, currentUserRecord, activePatientId])
+
+    // 3. Fallback to currentUserRecord from usersDB
+    if (currentUserRecord && Array.isArray(currentUserRecord.patients) && currentUserRecord.patients.length > 0) {
+      const matched = targetActiveId
+        ? currentUserRecord.patients.find((p) => String(p.PatientID || p.id) === targetActiveId) || currentUserRecord.patients[0]
+        : currentUserRecord.patients[0]
+      if (matched) {
+        const email = matched.Email || matched.email || null
+        return {
+          ...matched,
+          id: String(matched.PatientID || matched.id),
+          name: matched.PatientName || matched.name,
+          mobile: matched.PhoneNo || matched.mobile || matched.phoneNo,
+          gender: matched.Gender || matched.gender,
+          dob: matched.DOB || matched.dob,
+          address: matched.PatientAddress || matched.address,
+          city: matched.City || matched.city,
+          state: matched.PatientState || matched.state,
+          StateID: matched.StateID ?? matched.stateID,
+          stateID: matched.stateID ?? matched.StateID,
+          CityID: matched.CityID ?? matched.cityID,
+          cityID: matched.cityID ?? matched.CityID,
+          pincode: matched.PinCode || matched.pincode,
+          Email: email,
+          email: email,
+        }
+      }
+    }
+
+    if (apiPatient) {
+      const email = apiPatient.Email || apiPatient.email || null
+      return {
+        ...apiPatient,
+        id: String(apiPatient.PatientID || apiPatient.id),
+        name: apiPatient.PatientName || apiPatient.name,
+        mobile: apiPatient.PhoneNo || apiPatient.mobile,
+        gender: apiPatient.Gender || apiPatient.gender,
+        dob: apiPatient.DOB || apiPatient.dob,
+        address: apiPatient.PatientAddress || apiPatient.address,
+        city: apiPatient.City || apiPatient.city,
+        state: apiPatient.PatientState || apiPatient.state,
+        StateID: apiPatient.StateID ?? apiPatient.stateID,
+        stateID: apiPatient.stateID ?? apiPatient.StateID,
+        CityID: apiPatient.CityID ?? apiPatient.cityID,
+        cityID: apiPatient.cityID ?? apiPatient.CityID,
+        pincode: apiPatient.PinCode || apiPatient.pincode,
+        Email: email,
+        email: email,
+      }
+    }
+
+    return null
+  }, [apiPatient, apiPatientsList, currentUserRecord, activePatientId])
 
   const patientsList: Patient[] = useMemo(() => {
     if (apiPatientsList && apiPatientsList.length > 0) {
@@ -460,6 +617,8 @@ export function usePatientAuth() {
                 const state = String(p.State || p.PatientState || p.state || '')
                 const pinCode = String(p.PinCode || p.pinCode || p.pincode || '')
                 const phoneNo = String(p.PhoneNo || p.phoneNo || matchedUser.phoneNo || targetMobile)
+                const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? null
+                const email = emailRaw != null && String(emailRaw).trim() !== '' ? String(emailRaw).trim() : null
 
                 userPatients.push({
                   ...p,
@@ -479,6 +638,8 @@ export function usePatientAuth() {
                   PatientState: state,
                   PinCode: pinCode,
                   PhoneNo: phoneNo,
+                  Email: email,
+                  email: email,
                   id: String(patientId),
                   name: patientName,
                   mobile: phoneNo,
@@ -641,6 +802,32 @@ export function usePatientAuth() {
     setScreenState('app')
   }
 
+  const selectPatientProfile = async (id: string | number) => {
+    const stringId = String(id)
+    setActivePatientId(stringId)
+    setSpSelectedId(stringId)
+    useAuthStore.getState().setActivePatient(stringId)
+
+    // Clear previous patient details to avoid showing stale patient info
+    setApiPatient(null)
+
+    // Invalidate TanStack query cache for appointments & dashboard so fresh data loads for the new patient
+    queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.all })
+    queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all })
+
+    const matched = await fetchCurrentPatient(stringId)
+
+    setUsersDB((prev) => ({
+      ...prev,
+      [currentMobile]: {
+        ...prev[currentMobile],
+        activePatientId: stringId,
+      },
+    }))
+
+    return matched
+  }
+
   const switchAccount = async (targetPhone: string, targetPatientId?: string | number) => {
     useAuthStore.getState().switchAccount(targetPhone, targetPatientId)
     setCurrentMobile(targetPhone)
@@ -724,6 +911,7 @@ export function usePatientAuth() {
     // Actions
     openRegisterForm,
     handleSelectPatientContinue,
+    selectPatientProfile,
     handleLogout,
     switchAccount,
   }

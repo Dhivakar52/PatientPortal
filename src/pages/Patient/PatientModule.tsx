@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { usePatientAuth } from '@/hooks/usePatientAuth'
 import { usePatientRegistration } from '@/hooks/usePatientRegistration'
@@ -13,6 +13,7 @@ import { BookingOtpModal } from './Appointment/BookingOtpModal'
 import { CancelOtpModal } from './Appointment/CancelOtpModal'
 import { BookingSuccessModal } from './Appointment/BookingSuccessModal'
 import { ReceiptModal } from '@/common/ReceiptModal'
+import { MaleConfirmModal } from './Appointment/MaleConfirmModal'
 
 const PatientModule: React.FC = () => {
     const navigate = useNavigate()
@@ -32,6 +33,7 @@ const PatientModule: React.FC = () => {
         setScreen: auth.setScreen,
         fetchCurrentPatient: auth.fetchCurrentPatient,
         setApiPatient: auth.setApiPatient,
+        setApiPatientsList: auth.setApiPatientsList,
     })
 
     // 3. Appointment Booking Hook
@@ -40,6 +42,20 @@ const PatientModule: React.FC = () => {
     // Derive appointments for active patient
     const patientKey = auth.currentPatient ? String(auth.currentPatient.PatientID || auth.currentPatient.id || '') : ''
     const patientAppointments = patientKey ? booking.appointmentsDB[patientKey] || [] : []
+
+    const receiptPatient = useMemo(() => {
+        if (!booking.selectedReceiptAppt) return auth.currentPatient
+        const apptPid = booking.selectedReceiptAppt.PatientID
+        if (apptPid && auth.apiPatientsList && auth.apiPatientsList.length > 0) {
+            const found = auth.apiPatientsList.find(p => Number(p.PatientID) === Number(apptPid))
+            if (found) return found
+        }
+        if (apptPid && auth.currentUserRecord?.patients) {
+            const found = auth.currentUserRecord.patients.find(p => Number(p.PatientID || p.id) === Number(apptPid))
+            if (found) return found
+        }
+        return auth.currentPatient
+    }, [booking.selectedReceiptAppt, auth.currentPatient, auth.apiPatientsList, auth.currentUserRecord])
 
     return (
         <>
@@ -79,6 +95,8 @@ const PatientModule: React.FC = () => {
                     setRegState={reg.setRegState}
                     regPincode={reg.regPincode}
                     setRegPincode={reg.setRegPincode}
+                    regEmail={reg.regEmail}
+                    setRegEmail={reg.setRegEmail}
                     regErrors={reg.regErrors}
                     isSubmitting={reg.isSubmitting}
                     onSubmit={reg.handleRegisterSubmit}
@@ -104,18 +122,7 @@ const PatientModule: React.FC = () => {
                     isLoadingPatient={auth.isLoadingPatient}
                     patientError={auth.patientError}
                     patients={auth.patientsList}
-                    onSelectPatient={async (id) => {
-                        auth.setActivePatientId(id)
-                        auth.setSpSelectedId(id)
-                        await auth.fetchCurrentPatient(id)
-                        auth.setUsersDB((prev) => ({
-                            ...prev,
-                            [auth.currentMobile]: {
-                                ...prev[auth.currentMobile],
-                                activePatientId: id,
-                            },
-                        }))
-                    }}
+                    onSelectPatient={auth.selectPatientProfile}
                     onSelectPatientClick={() => auth.setScreen('select')}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
                     onLogout={auth.handleLogout}
@@ -128,18 +135,7 @@ const PatientModule: React.FC = () => {
                     isLoadingPatient={auth.isLoadingPatient}
                     patientError={auth.patientError}
                     patients={auth.patientsList}
-                    onSelectPatient={async (id) => {
-                        auth.setActivePatientId(id)
-                        auth.setSpSelectedId(id)
-                        await auth.fetchCurrentPatient(id)
-                        auth.setUsersDB((prev) => ({
-                            ...prev,
-                            [auth.currentMobile]: {
-                                ...prev[auth.currentMobile],
-                                activePatientId: id,
-                            },
-                        }))
-                    }}
+                    onSelectPatient={auth.selectPatientProfile}
                     patientAppointments={patientAppointments}
                     onSelectPatientClick={() => auth.setScreen('select')}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
@@ -205,7 +201,14 @@ const PatientModule: React.FC = () => {
                 isOpen={booking.showReceiptModal}
                 onClose={() => booking.setShowReceiptModal(false)}
                 appt={booking.selectedReceiptAppt}
-                patient={auth.currentPatient}
+                patient={receiptPatient}
+            />
+
+            {/* Male Patient Appointment Warning Confirmation Modal */}
+            <MaleConfirmModal
+                isOpen={booking.showMaleConfirmModal}
+                onClose={booking.handleCancelMaleBooking}
+                onConfirm={booking.handleConfirmMaleBooking}
             />
         </>
     )

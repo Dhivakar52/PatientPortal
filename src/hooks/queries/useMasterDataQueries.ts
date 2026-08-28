@@ -1,10 +1,27 @@
 import { useQuery } from '@tanstack/react-query'
-import { getDepartments, getDoctors, getTimeSlots, type Department, type Doctor, type TimeSlot } from '@/services/apiService'
+import {
+  getDepartments,
+  getDoctors,
+  getTimeSlotHours,
+  getTimeSlots,
+  getStates,
+  getCities,
+  type Department,
+  type Doctor,
+  type TimeSlotHour,
+  type TimeSlot,
+  type GetTimeSlotsParams,
+  type StateOption,
+  type CityOption,
+} from '@/services/apiService'
 
 export const masterDataQueryKeys = {
   departments: ['departments'] as const,
   doctors: (deptId?: number, docId?: number) => ['doctors', deptId, docId] as const,
-  timeSlots: (slotId?: number) => ['timeSlots', slotId] as const,
+  timeSlotHours: (timeSlotHoursId?: number | string) => ['timeSlotHours', timeSlotHoursId] as const,
+  timeSlots: (params?: GetTimeSlotsParams | number) => ['timeSlots', params] as const,
+  states: ['states'] as const,
+  cities: (stateId?: number | string) => ['cities', stateId] as const,
 }
 
 export function useDepartmentsQuery(options?: { enabled?: boolean }) {
@@ -29,13 +46,46 @@ export function useDoctorsQuery(deptId?: number, docId?: number, options?: { ena
   })
 }
 
-export function useTimeSlotsQuery(slotId?: number, options?: { enabled?: boolean }) {
-  return useQuery<TimeSlot[]>({
-    queryKey: masterDataQueryKeys.timeSlots(slotId),
+export function useTimeSlotHoursQuery(timeSlotHoursId?: number | string, options?: { enabled?: boolean }) {
+  return useQuery<TimeSlotHour[]>({
+    queryKey: masterDataQueryKeys.timeSlotHours(timeSlotHoursId),
     queryFn: async () => {
-      return getTimeSlots(slotId)
+      return getTimeSlotHours(timeSlotHoursId)
     },
     enabled: options?.enabled !== false,
-    staleTime: 1000 * 60 * 15, // 15 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  })
+}
+
+export function useTimeSlotsQuery(params?: GetTimeSlotsParams | number, options?: { enabled?: boolean }) {
+  return useQuery<TimeSlot[]>({
+    queryKey: masterDataQueryKeys.timeSlots(params),
+    queryFn: async () => {
+      return getTimeSlots(params)
+    },
+    enabled: options?.enabled !== false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  })
+}
+
+export function useStatesQuery(options?: { enabled?: boolean }) {
+  return useQuery<StateOption[]>({
+    queryKey: masterDataQueryKeys.states,
+    queryFn: async () => {
+      return getStates()
+    },
+    enabled: options?.enabled !== false,
+    staleTime: 1000 * 60 * 60, // 1 hour
+  })
+}
+
+export function useCitiesQuery(stateId?: number | string, options?: { enabled?: boolean }) {
+  return useQuery<CityOption[]>({
+    queryKey: masterDataQueryKeys.cities(stateId),
+    queryFn: async () => {
+      return getCities(stateId)
+    },
+    enabled: options?.enabled !== false,
+    staleTime: 1000 * 60 * 30, // 30 minutes
   })
 }

@@ -12,12 +12,22 @@ export interface Patient {
   Gender?: string
   Address?: string
   PatientAddress?: string
+  StateID?: number
+  stateID?: number
+  CityID?: number
+  cityID?: number
+  CountryID?: number
+  countryID?: number
   City?: string
   State?: string
   PatientState?: string
   PinCode?: string
   PhoneNo?: string
   phoneNo?: string
+  Email?: string | null
+  email?: string | null
+  EmailID?: string | null
+  emailID?: string | null
 
   // Convenience aliases for existing components
   id?: string
@@ -69,6 +79,7 @@ export interface Appointment {
   Status?: string
   AppointmentNo?: string
   BookedOn?: string
+  BookedMode?: string
 
   // UI mapping fields
   apptNo: string
@@ -78,6 +89,7 @@ export interface Appointment {
   slot: string
   unit: string
   bookedOn: string
+  bookedMode?: string
   room: string
   status?: string
 }

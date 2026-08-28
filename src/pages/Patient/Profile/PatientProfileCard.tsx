@@ -2,12 +2,14 @@ import React from 'react'
 import { User, Venus, Mars, Loader2 } from 'lucide-react'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, formatDateLong, calcAge } from '@/utils/patient.utils'
+import { useStatesQuery, useCitiesQuery } from '@/hooks/queries/useMasterDataQueries'
 
 interface PatientProfileCardProps {
   currentPatient: Patient | null
   isLoadingPatient?: boolean
   patientError?: string | null
   className?: string
+  lastVisitedDate?: string
 }
 
 export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
@@ -15,7 +17,25 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   isLoadingPatient = false,
   patientError = null,
   className = '',
+  lastVisitedDate,
 }) => {
+  const { data: statesList = [] } = useStatesQuery()
+
+  const rawState = currentPatient?.StateID ?? currentPatient?.stateID ?? currentPatient?.State ?? currentPatient?.PatientState ?? currentPatient?.state ?? ''
+  const matchedState = statesList.find(
+    (s) => String(s.StateID) === String(rawState) || s.StateName?.toLowerCase() === String(rawState).toLowerCase()
+  )
+  const displayState = matchedState ? matchedState.StateName : (String(rawState).match(/^\d+$/) ? '—' : (String(rawState) || '—'))
+
+  const stateIdForCity = matchedState ? String(matchedState.StateID) : (String(rawState).match(/^\d+$/) ? String(rawState) : '')
+  const { data: citiesList = [] } = useCitiesQuery(stateIdForCity)
+  const rawCity = currentPatient?.CityID ?? currentPatient?.cityID ?? currentPatient?.City ?? currentPatient?.city ?? ''
+  const matchedCity = citiesList.find(
+    (c) => String(c.CityID) === String(rawCity) || c.CityName?.toLowerCase() === String(rawCity).toLowerCase()
+  )
+  const displayCity = matchedCity ? matchedCity.CityName : (String(rawCity).match(/^\d+$/) ? '—' : (String(rawCity) || '—'))
+
+  const displayLastVisited = lastVisitedDate || (currentPatient as any)?.LastVisitedDate || (currentPatient as any)?.lastVisitedDate || (currentPatient as any)?.LastVisitDate
   // Dynamic values directly from API response
   const rawName = currentPatient?.PatientName || currentPatient?.name || ''
   const gender = currentPatient?.Gender || currentPatient?.gender || '—'
@@ -31,9 +51,8 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
     : (currentPatient?.dob ? calcAge(currentPatient.dob) : '—')
 
   const displayPhone = currentPatient?.PhoneNo || currentPatient?.phoneNo || currentPatient?.mobile || '—'
+  const displayEmail = currentPatient?.Email || currentPatient?.email || '—'
   const displayAddress = currentPatient?.Address || currentPatient?.PatientAddress || currentPatient?.address || '—'
-  const displayCity = currentPatient?.City || currentPatient?.city || '—'
-  const displayState = currentPatient?.State || currentPatient?.PatientState || currentPatient?.state || '—'
   const displayPinCode = currentPatient?.PinCode || currentPatient?.pincode || '—'
   const displayUhid = currentPatient?.UHID || '—'
   const displayRegisterNo = currentPatient?.RegisterNo || '—'
@@ -120,8 +139,15 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
         </div>
 
         <div className="flex justify-between items-start gap-2">
+          <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Email</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200 text-right break-all">
+            {displayEmail}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-start gap-2">
           <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Address</span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200 text-right break-words max-w-[180px]">
+          <span className="font-semibold text-slate-800 dark:text-slate-200 text-right break-words">
             {displayAddress}
           </span>
         </div>
@@ -140,6 +166,13 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
           <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">PIN Code</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{displayPinCode}</span>
         </div>
+
+        {displayLastVisited && (
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Last Visited Date</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">{displayLastVisited}</span>
+          </div>
+        )}
 
         <div className="border-t border-dashed border-slate-200 dark:border-slate-800 my-2.5 pt-2 space-y-2">
           <div className="flex justify-between items-start gap-2">
