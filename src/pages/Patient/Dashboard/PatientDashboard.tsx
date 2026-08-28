@@ -239,9 +239,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     status: String(item.status || item.Status || 'Scheduled'),
   })
 
-  const apiUpcoming: Appointment[] = (dashboardData?.UpcomingAppointments as Record<string, unknown>[] | undefined)
-    ?.map((item, idx) => mapAppt(item, idx, 'APT'))
-    .filter((a) => !isCancelledAppt(a)) || []
+  const apiUpcoming: Appointment[] = (dashboardData?.UpcomingAppointments as Record<string, unknown>[] | undefined)?.map((item, idx) =>
+    mapAppt(item, idx, 'APT')
+  ) || []
 
   const apiPast: Appointment[] = (dashboardData?.PastVisits as Record<string, unknown>[] | undefined)?.map((item, idx) =>
     mapAppt(item, idx, 'VIS')
