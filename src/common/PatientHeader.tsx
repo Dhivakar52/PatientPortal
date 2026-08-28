@@ -85,20 +85,14 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
         {currentPatient && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              render={
-                <button
-                  type="button"
-                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 text-xs font-semibold cursor-pointer text-white transition-colors outline-none"
-                  style={{ borderRadius: '4px' }}
-                >
-                  <div className="w-6 h-6 rounded-full bg-blue-200 text-[#14213D] flex items-center justify-center font-bold text-xs">
-                    {initials(rawName)}
-                  </div>
-                  <span className="hidden sm:inline">{displayName}</span>
-                  <ChevronDown className="w-3.5 h-3.5 opacity-80" />
-                </button>
-              }
-            />
+              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 text-xs font-semibold cursor-pointer text-white transition-colors outline-none rounded-[4px]"
+            >
+              <div className="w-6 h-6 rounded-full bg-blue-200 text-[#14213D] flex items-center justify-center font-bold text-xs">
+                {initials(rawName)}
+              </div>
+              <span className="hidden sm:inline">{displayName}</span>
+              <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+            </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" className="w-72 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-xl max-h-[400px] overflow-y-auto">
               <DropdownMenuGroup>

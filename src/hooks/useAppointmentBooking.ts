@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
-import { DOCTORS } from '@/constants/patient.constants'
 import { genApptNo } from '@/utils/patient.utils'
 import { saveAppointment, generateOtp, validateOtp, cancelAppointment, fetchAppointments, type SaveAppointmentRequest } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
@@ -41,7 +40,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       })
       if (Array.isArray(res)) {
         const mapped: Appointment[] = res.map((item: Record<string, unknown>, idx: number) => {
-          const apptStatus = String(item.AppointmentStatus || item.Status || item.status || 'Scheduled')
+          const apptStatus = String(item.AppointmentStatus || item.Status || item.status || '')
           const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : `APT-${item.AppointmentID || idx + 1}`
           const apptDate = String(item.AppointmentDate || item.date || item.Date || todayStr())
           const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || 'General')
@@ -305,24 +304,35 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       }
 
       // 2. Save appointment ONLY after successful OTP verification
+      let saveRes: Record<string, unknown> | null = null
       if (pendingBookingPayload) {
-        await saveAppointment(pendingBookingPayload)
+        saveRes = (await saveAppointment(pendingBookingPayload)) as Record<string, unknown>
       }
 
       setShowBookOtpModal(false)
 
-      const selectedDoctorName = bookDoctor || 'Dr. Madhumitha'
-      const roomIndex = DOCTORS.indexOf(selectedDoctorName) + 1
+      const selectedDoctorName = bookDoctor && bookDoctor !== '--Select--' ? bookDoctor : 'Specialist Consultation'
+      const apptNoVal = String(saveRes?.AppointmentNo || saveRes?.appointmentNo || genApptNo())
       const newAppt: Appointment = {
-        apptNo: genApptNo(),
+        AppointmentID: saveRes?.AppointmentID ? Number(saveRes.AppointmentID) : undefined,
+        apptNo: apptNoVal,
+        AppointmentNo: apptNoVal,
         date: bookDate,
+        AppointmentDate: bookDate,
         doctor: selectedDoctorName,
+        DoctorName: selectedDoctorName,
         department: 'Gynecology',
-        slot: selectedSlot || '08:00 AM-08:10 AM',
+        DeptName: 'Gynecology',
+        slot: selectedSlot || '08:00 AM - 08:10 AM',
+        TimeSlot: selectedSlot || '08:00 AM - 08:10 AM',
+        Timeslot: selectedSlot || '08:00 AM - 08:10 AM',
         unit: bookUnit || 'Unit 1',
+        Unit: bookUnit || 'Unit 1',
         bookedOn: new Date().toISOString(),
-        room: `GYN-${200 + (roomIndex > 0 ? roomIndex : 1)}`,
-        status: 'Scheduled',
+        room: 'OPD-101',
+        status: 'Confirmed',
+        AppointmentStatus: 'Confirmed',
+        PatientName: currentPatient.PatientName || currentPatient.name || '',
       }
 
       const patientKey = String(numericPatientId || 'current')
@@ -332,16 +342,38 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       }))
 
       // Immediately re-fetch real appointments from backend API & invalidate query cache
+      let confirmedAppt = newAppt
       if (numericPatientId > 0) {
-        refreshAppointments(numericPatientId)
+        const freshList = await refreshAppointments(numericPatientId)
         const userId = useAuthStore.getState().userId
         queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.user(userId) })
         queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.user(userId) })
         queryClient.invalidateQueries({ queryKey: ['appointments', userId, numericPatientId] })
         queryClient.invalidateQueries({ queryKey: ['dashboard', userId, numericPatientId] })
+
+        if (Array.isArray(freshList) && freshList.length > 0) {
+          // Find the exact matching upcoming appointment from backend
+          const matched =
+            freshList.find(
+              (a) =>
+                (a.date === bookDate || a.AppointmentDate === bookDate) &&
+                (a.slot === selectedSlot || a.TimeSlot === selectedSlot || a.Timeslot === selectedSlot)
+            ) ||
+            freshList.find((a) => a.date === bookDate || a.AppointmentDate === bookDate) ||
+            freshList[0]
+
+          if (matched) {
+            confirmedAppt = {
+              ...newAppt,
+              ...matched,
+              apptNo: matched.apptNo || matched.AppointmentNo || newAppt.apptNo,
+              AppointmentNo: matched.AppointmentNo || matched.apptNo || newAppt.AppointmentNo,
+            }
+          }
+        }
       }
 
-      setLastBookedAppt(newAppt)
+      setLastBookedAppt(confirmedAppt)
       setShowSuccessModal(true)
       onSuccess()
     } catch (err: unknown) {

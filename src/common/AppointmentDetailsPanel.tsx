@@ -23,7 +23,7 @@ export const AppointmentDetailsPanel: React.FC<AppointmentDetailsPanelProps> = (
 
   const apptNo = appointment.apptNo || appointment.AppointmentNo || `APT-${appointment.AppointmentID}`
   const rawStatus = appointment.AppointmentStatus || appointment.status || appointment.Status || ''
-  const computedStatus = rawStatus ? String(rawStatus).toLowerCase() : (appointment.date < todayStr() ? 'completed' : 'scheduled')
+  const computedStatus = rawStatus ? String(rawStatus).toLowerCase() : (appointment.date < todayStr() ? 'completed' : '')
   const patientName = currentPatient?.name || currentPatient?.PatientName || appointment.PatientName || 'Patient'
   const patientMobile = currentPatient?.mobile || currentPatient?.PhoneNo || (appointment as any).PhoneNo || ''
 

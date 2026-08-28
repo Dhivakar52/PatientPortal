@@ -1,7 +1,9 @@
-import React from 'react'
-import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield } from 'lucide-react'
+import React, { useState } from 'react'
+import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Edit3, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PatientHeader } from '@/common/PatientHeader'
+import { DeleteConfirmationDialog } from '@/common/DeleteConfirmationDialog'
+import { EditPatientModal } from '../Profile/EditPatientModal'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
 
@@ -11,6 +13,9 @@ interface PatientSelectionProps {
   setSpSelectedId: (id: string) => void
   onAddPatient: () => void
   onContinue: () => void
+  onEditSuccess?: (updatedPatient: Patient) => void
+  onDeletePatient?: (patientId: string | number) => Promise<boolean | void>
+  currentUserId?: number | null
 }
 
 export const PatientSelection: React.FC<PatientSelectionProps> = ({
@@ -19,7 +24,46 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
   setSpSelectedId,
   onAddPatient,
   onContinue,
+  onEditSuccess,
+  onDeletePatient,
+  currentUserId,
 }) => {
+  // State for Edit Patient Modal
+  const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  // State for Delete Confirmation Dialog
+  const [deletingPatient, setDeletingPatient] = useState<Patient | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleOpenEdit = (p: Patient, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingPatient(p)
+    setIsEditModalOpen(true)
+  }
+
+  const handleOpenDelete = (p: Patient, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeletingPatient(p)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deletingPatient || !onDeletePatient) return
+    const pid = deletingPatient.PatientID || deletingPatient.id
+    if (!pid) return
+
+    setIsDeleting(true)
+    try {
+      await onDeletePatient(pid)
+      setIsDeleteDialogOpen(false)
+      setDeletingPatient(null)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0f4f8] to-[#e2e8f0] dark:from-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 font-sans">
       <PatientHeader />
@@ -45,54 +89,91 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
 
           {/* Patient List */}
           <div className="max-h-[340px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-            {patients.map((p, idx) => {
-              const pId = String(p.PatientID || p.id || idx)
-              const pRawName = p.PatientName || p.name || `Patient #${pId}`
-              const pDob = p.DOB || p.dob || ''
-              const pGender = p.Gender || p.gender || '—'
-              const age = p.Age !== undefined ? p.Age : (pDob ? calcAge(pDob) : '')
-              const isActive = pId === spSelectedId
-              return (
-                <div
-                  key={pId}
-                  onClick={() => setSpSelectedId(pId)}
-                  className={`flex items-center gap-3 px-6 py-4 cursor-pointer transition-all duration-200 ${isActive
-                      ? 'bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-600'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                    }`}
-                >
+            {patients.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-500">
+                No patient profiles found. Please register a new patient.
+              </div>
+            ) : (
+              patients.map((p, idx) => {
+                const pId = String(p.PatientID || p.id || idx)
+                const pRawName = p.PatientName || p.name || `Patient #${pId}`
+                const pDob = p.DOB || p.dob || ''
+                const pGender = p.Gender || p.gender || '—'
+                const age = p.Age !== undefined ? p.Age : (pDob ? calcAge(pDob) : '')
+                const isActive = pId === spSelectedId
+                return (
                   <div
-                    className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all duration-200 ${isActive
-                        ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700'
-                      }`}
+                    key={pId}
+                    onClick={() => setSpSelectedId(pId)}
+                    className={`flex items-center gap-3 px-6 py-4 cursor-pointer transition-all duration-200 group ${
+                      isActive
+                        ? 'bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-600'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                    }`}
                   >
-                    {initials(pRawName)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`font-bold text-sm truncate ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
-                        }`}>
-                        {capitalizeName(pRawName)}
-                      </span>
+                    <div
+                      className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all duration-200 ${
+                        isActive
+                          ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      {initials(pRawName)}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {age !== '' ? `${age} Years` : '—'}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {pGender}
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`font-bold text-sm truncate ${
+                            isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
+                          }`}
+                        >
+                          {capitalizeName(pRawName)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {age !== '' ? `${age} Years` : '—'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {pGender}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action buttons: Edit, Delete, Selected Checkmark */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Edit Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenEdit(p, e)}
+                        title="Edit Patient"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+
+                      {/* Delete Button */}
+                      {onDeletePatient && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleOpenDelete(p, e)}
+                          title="Delete Patient"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {isActive && (
+                        <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 animate-in fade-in zoom-in duration-200 ml-1" />
+                      )}
                     </div>
                   </div>
-                  {isActive && (
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 animate-in fade-in zoom-in duration-200" />
-                  )}
-                </div>
-              )
-            })}
+                )
+              })
+            )}
           </div>
 
           {/* Register New Patient Button */}
@@ -116,7 +197,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
           {/* Continue Button */}
           <div className="p-6 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800">
             <Button
-              disabled={!spSelectedId}
+              disabled={!spSelectedId || patients.length === 0}
               onClick={onContinue}
               className="w-full text-white font-semibold cursor-pointer py-5 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               style={{ background: 'var(--blue-btn)', borderRadius: "12px" }}
@@ -124,7 +205,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
               Continue
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-            {!spSelectedId && (
+            {!spSelectedId && patients.length > 0 && (
               <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-2">
                 Please select a patient to continue
               </p>
@@ -132,6 +213,32 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Edit Patient Modal */}
+      <EditPatientModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setEditingPatient(null)
+        }}
+        patient={editingPatient}
+        currentUserId={currentUserId}
+        onSuccess={(updated) => {
+          onEditSuccess?.(updated)
+        }}
+      />
+
+      {/* Delete Patient Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        title="Delete Patient Profile"
+        description="Are you sure you want to delete this patient profile? This action cannot be undone."
+        itemName={deletingPatient?.PatientName || deletingPatient?.name}
+        confirmLabel="Delete Patient"
+        isDeleting={isDeleting}
+      />
     </div>
   )
 }

@@ -14,6 +14,8 @@ interface MobileProfilePageProps {
   onSelectPatientClick?: () => void
   onAddPatient?: () => void
   onLogout?: () => void
+  currentUserId?: number | null
+  onEditSuccess?: (updatedPatient: Patient) => void
 }
 
 export const MobileProfilePage: React.FC<MobileProfilePageProps> = ({
@@ -25,6 +27,8 @@ export const MobileProfilePage: React.FC<MobileProfilePageProps> = ({
   onSelectPatientClick,
   onAddPatient,
   onLogout,
+  currentUserId,
+  onEditSuccess,
 }) => {
   const navigate = useNavigate()
 
@@ -67,6 +71,8 @@ export const MobileProfilePage: React.FC<MobileProfilePageProps> = ({
           currentPatient={currentPatient}
           isLoadingPatient={isLoadingPatient}
           patientError={patientError}
+          currentUserId={currentUserId}
+          onEditSuccess={onEditSuccess}
           className="w-full"
         />
       </div>

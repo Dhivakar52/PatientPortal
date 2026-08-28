@@ -36,7 +36,7 @@ export function useAppointmentsQuery(
       if (!Array.isArray(res)) return []
 
       const mapped: Appointment[] = res.map((item: Record<string, unknown>, idx: number) => {
-        const apptStatus = String(item.AppointmentStatus || item.Status || item.status || 'Scheduled')
+        const apptStatus = String(item.AppointmentStatus || item.Status || item.status || '')
         const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : `APT-${item.AppointmentID || idx + 1}`
         const apptDate = String(item.AppointmentDate || item.date || item.Date || todayStr())
         const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || 'General')

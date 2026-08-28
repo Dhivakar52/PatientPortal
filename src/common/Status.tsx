@@ -29,16 +29,16 @@ const STATUS_CONFIG: Record<string, { bg: string; text: string; border?: string;
   stable: { bg: 'bg-emerald-100 dark:bg-emerald-950/60', text: 'text-emerald-800 dark:text-emerald-300', border: 'border border-emerald-200 dark:border-emerald-800', label: 'Stable' },
 };
 
-export const Status: React.FC<StatusProps> = ({ 
-  status, 
-  size = 'md', 
+export const Status: React.FC<StatusProps> = ({
+  status,
+  size = 'md',
   className = '',
   showLabel = true,
 }) => {
-  const config = STATUS_CONFIG[status] || { 
-    bg: 'bg-gray-100', 
-    text: 'text-gray-700', 
-    label: status 
+  const config = STATUS_CONFIG[status] || {
+    bg: 'bg-gray-100',
+    text: 'text-gray-700',
+    label: status
   };
 
   const sizeClasses = {

@@ -169,6 +169,24 @@ export const validateOtp = async (phoneNo: string, otp: string, patientID?: numb
     }
 };
 
+export interface UpdatePatientRequest {
+    userID: number;
+    name: string;
+    email: string;
+    gender: number;
+    dob: string;
+    age: number;
+    mobileNo: string;
+    address: string;
+    pinCode: string;
+    createdBy: number;
+    updatedBy: number;
+    countryID: number;
+    cityID: number;
+    stateID: number;
+    area: string;
+}
+
 /**
  * Register a new patient
  * Calls POST /api/savepatient
@@ -181,6 +199,48 @@ export const savePatient = async (data: RegisterPatientRequest) => {
         return response.data;
     } catch (error) {
         console.error('Save Patient Error:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update Patient Details
+ * Calls PUT /api/updatepatient/{patientid}
+ */
+export const updatePatient = async (
+    patientId: number | string,
+    payload: UpdatePatientRequest
+) => {
+    try {
+        console.log(`📝 Updating patient ID ${patientId} payload:`, JSON.stringify(payload, null, 2));
+        const response = await axiosInstance.put(`/api/updatepatient/${patientId}`, payload);
+        console.log("Update Patient Response:", response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error('Update Patient Error details:', error?.response?.data || error?.message);
+        throw error;
+    }
+};
+
+/**
+ * Delete Patient
+ * Calls DELETE /api/deletepatient/{patientid}?updatedBy={updatedBy}
+ */
+export const deletePatient = async (
+    patientId: number | string,
+    updatedBy: number
+) => {
+    try {
+        console.log(`🗑️ Deleting patient ID ${patientId} updatedBy: ${updatedBy}`);
+        const response = await axiosInstance.delete(`/api/deletepatient/${patientId}`, {
+            params: {
+                updatedBy,
+            },
+        });
+        console.log("Delete Patient Response:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Delete Patient Error:', error);
         throw error;
     }
 };

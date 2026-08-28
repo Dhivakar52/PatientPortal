@@ -360,7 +360,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 <TimeSlotsSkeleton />
               ) : timeSlotsList.length > 0 ? (
                 <>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
                     {timeSlotsList.map((slot) => {
                       const slotId = String(slot.TimeSlotID || slot.timeSlotID || '')
                       const slotLabel = String(slot.Timeslot || slot.TimeSlot || slot.Slot || slot.slot || '')

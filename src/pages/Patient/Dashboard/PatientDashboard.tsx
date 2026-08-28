@@ -56,6 +56,8 @@ interface PatientDashboardProps {
   onConfirmBooking: (data?: { deptID: string; doctorID: string; timeSlotID: string; deptName?: string }) => void
   onViewReceipt: (appt: Appointment) => void
   onCancelAppointment: (appt: Appointment) => void
+  currentUserId?: number | null
+  onEditSuccess?: (updatedPatient: Patient) => void
 }
 
 export const PatientDashboard: React.FC<PatientDashboardProps> = ({
@@ -68,6 +70,8 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   onAddPatient,
   patientAppointments = [],
   onLogout,
+  currentUserId,
+  onEditSuccess,
   bookDate,
   setBookDate,
   bookDoctor,
@@ -227,17 +231,22 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     return isPastDate(a.date || a.AppointmentDate || '')
   }
 
-  const mapAppt = (item: Record<string, unknown>, idx: number, defaultPrefix: string): Appointment => ({
-    apptNo: String(item.apptNo || item.ApptNo || `${defaultPrefix}-${idx + 1}`),
-    date: String(item.date || item.AppointmentDate || item.Date || todayStr()),
-    doctor: String(item.doctor || item.Doctor_Name || item.DoctorName || 'Doctor'),
-    department: String(item.department || item.DepartmentName || item.Department || 'General'),
-    slot: String(item.slot || item.Timeslot || item.TimeSlot || '08:00 AM-08:10 AM'),
-    unit: String(item.unit || item.Unit || 'Unit 1'),
-    bookedOn: String(item.bookedOn || item.BookedOn || new Date().toISOString()),
-    room: String(item.room || item.Room || 'OPD-101'),
-    status: String(item.status || item.Status || 'Scheduled'),
-  })
+  const mapAppt = (item: Record<string, unknown>, idx: number, defaultPrefix: string): Appointment => {
+    const apptStatus = String(item.AppointmentStatus || item.status || item.Status || '')
+    return {
+      apptNo: String(item.apptNo || item.ApptNo || item.AppointmentNo || `${defaultPrefix}-${idx + 1}`),
+      date: String(item.date || item.AppointmentDate || item.Date || todayStr()),
+      doctor: String(item.doctor || item.Doctor_Name || item.DoctorName || 'Doctor'),
+      department: String(item.department || item.DepartmentName || item.Department || 'General'),
+      slot: String(item.slot || item.Timeslot || item.TimeSlot || '08:00 AM-08:10 AM'),
+      unit: String(item.unit || item.Unit || 'Unit 1'),
+      bookedOn: String(item.bookedOn || item.BookedOn || new Date().toISOString()),
+      room: String(item.room || item.Room || 'OPD-101'),
+      status: apptStatus,
+      AppointmentStatus: apptStatus,
+      Status: apptStatus,
+    }
+  }
 
   const apiUpcoming: Appointment[] = (dashboardData?.UpcomingAppointments as Record<string, unknown>[] | undefined)?.map((item, idx) =>
     mapAppt(item, idx, 'APT')
@@ -330,6 +339,8 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
               isLoadingPatient={isLoadingPatient}
               patientError={patientError}
               lastVisitedDate={pastAppointments[0]?.date || apiPast[0]?.date}
+              currentUserId={currentUserId}
+              onEditSuccess={onEditSuccess}
               className="w-full"
             />
           </div>
