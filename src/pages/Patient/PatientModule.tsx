@@ -112,6 +112,9 @@ const PatientModule: React.FC = () => {
                     setSpSelectedId={auth.setSpSelectedId}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
                     onContinue={auth.handleSelectPatientContinue}
+                    onEditSuccess={auth.handleUpdatePatientSuccess}
+                    onDeletePatient={auth.handleDeletePatient}
+                    currentUserId={auth.currentUserId}
                 />
             )}
 
@@ -126,6 +129,8 @@ const PatientModule: React.FC = () => {
                     onSelectPatientClick={() => auth.setScreen('select')}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
                     onLogout={auth.handleLogout}
+                    currentUserId={auth.currentUserId}
+                    onEditSuccess={auth.handleUpdatePatientSuccess}
                 />
             )}
 
@@ -140,6 +145,8 @@ const PatientModule: React.FC = () => {
                     onSelectPatientClick={() => auth.setScreen('select')}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
                     onLogout={auth.handleLogout}
+                    currentUserId={auth.currentUserId}
+                    onEditSuccess={auth.handleUpdatePatientSuccess}
                     bookDate={booking.bookDate}
                     setBookDate={booking.setBookDate}
                     bookDoctor={booking.bookDoctor}

@@ -24,10 +24,13 @@ export interface Patient {
   PinCode?: string
   PhoneNo?: string
   phoneNo?: string
+  UserID?: number
+  userID?: number
   Email?: string | null
   email?: string | null
   EmailID?: string | null
   emailID?: string | null
+  area?: string
 
   // Convenience aliases for existing components
   id?: string

@@ -117,7 +117,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     appointment.Status ||
     (appointment as unknown as Record<string, unknown>).AppointmentStatus ||
     (appointment as unknown as Record<string, unknown>).status
-  const computedStatus = rawStatus ? String(rawStatus) : (appointment.date < today ? 'Completed' : 'Scheduled')
+  const computedStatus = rawStatus ? String(rawStatus) : (appointment.date < today ? 'Completed' : '')
 
   const departmentName = appointment.department || appointment.DeptName || appointment.Department || ''
   const displayDoctor = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : ('Specialist Consultation')

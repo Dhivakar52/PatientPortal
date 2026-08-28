@@ -155,7 +155,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
           appt.status ||
           appt.Status ||
           (appt as any).appointmentStatus ||
-          (appt.date < today ? 'Visited' : 'Scheduled')
+          (appt.date < today ? 'Visited' : '')
         ).toLowerCase()
 
         // Visits tab strictly displays only: Visited, Not Visited, and Cancelled

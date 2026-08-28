@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { UserRecord, Patient, FlowScreen, RegisterContext } from '@/types/patient.types'
-import { generateOtp, validateOtp, fetchPatient, getUsers, type UserData } from '@/services/apiService'
+import { generateOtp, validateOtp, fetchPatient, getUsers, deletePatient, type UserData } from '@/services/apiService'
+import { toast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { queryClient } from '@/lib/queryClient'
 import { appointmentsQueryKeys } from './queries/useAppointmentsQuery'
@@ -844,6 +845,69 @@ export function usePatientAuth() {
     }
   }
 
+  const handleDeletePatient = async (patientId: number | string) => {
+    const numericId = Number(patientId)
+    const loggedInUserId = currentUserId ?? (Number(localStorage.getItem('userID')) || 0)
+    try {
+      console.log(`🗑️ Initiating deletion for patient ID ${numericId} by user ${loggedInUserId}`)
+      await deletePatient(numericId, loggedInUserId)
+      toast.success('Patient deleted successfully!')
+
+      // 1. Refresh patients list from backend
+      const updatedList = await refreshUserPatients(currentMobile)
+
+      // 2. Invalidate query caches
+      queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.all })
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all })
+
+      // 3. Handle active/selected patient state
+      const remainingPatients = updatedList.filter((p) => Number(p.PatientID || p.id) !== numericId)
+      if (String(activePatientId) === String(numericId) || String(spSelectedId) === String(numericId)) {
+        if (remainingPatients.length > 0) {
+          const nextId = String(remainingPatients[0].PatientID || remainingPatients[0].id)
+          setActivePatientId(nextId)
+          setSpSelectedId(nextId)
+          useAuthStore.getState().setActivePatient(nextId)
+          await fetchCurrentPatient(nextId)
+        } else {
+          setActivePatientId(null)
+          setSpSelectedId(null)
+          setApiPatient(null)
+        }
+      }
+      return true
+    } catch (err: unknown) {
+      console.error('Delete Patient Error:', err)
+      const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
+      const resData = error.response?.data
+      let message = 'Failed to delete patient. Please try again.'
+      if (typeof resData === 'string' && resData.trim()) {
+        message = resData
+      } else if (resData && typeof resData === 'object') {
+        message = resData.message || resData.Result || message
+      } else if (error.message) {
+        message = error.message
+      }
+      toast.error(message)
+      return false
+    }
+  }
+
+  const handleUpdatePatientSuccess = async (updatedPatient: Patient) => {
+    // 1. Refresh user patients list from backend
+    await refreshUserPatients(currentMobile)
+
+    // 2. If the updated patient is the active patient, re-fetch profile and update state
+    const pid = updatedPatient.PatientID || updatedPatient.id
+    if (pid && String(activePatientId) === String(pid)) {
+      await fetchCurrentPatient(pid)
+    }
+
+    // 3. Invalidate query caches
+    queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.all })
+    queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all })
+  }
+
   const handleLogout = () => {
     setCurrentMobile('')
     setPendingMobile('')
@@ -892,6 +956,7 @@ export function usePatientAuth() {
     isLoadingPatient,
     patientError,
     fetchCurrentPatient,
+    refreshUserPatients,
     currentUserId,
 
     // Login state & handlers
@@ -912,6 +977,8 @@ export function usePatientAuth() {
     openRegisterForm,
     handleSelectPatientContinue,
     selectPatientProfile,
+    handleDeletePatient,
+    handleUpdatePatientSuccess,
     handleLogout,
     switchAccount,
   }
