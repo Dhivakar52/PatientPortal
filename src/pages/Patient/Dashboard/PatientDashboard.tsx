@@ -20,10 +20,8 @@ import { PatientProfileCard } from '../Profile/PatientProfileCard'
 import { AppointmentDetailsPanel } from '@/common/AppointmentDetailsPanel'
 
 import { type Patient, type Appointment, type ActiveTab } from '@/types/patient.types'
-import { todayStr } from '@/utils/patient.utils'
 import { useAuthStore } from '@/stores/authStore'
 import { useAppointmentsQuery } from '@/hooks/queries/useAppointmentsQuery'
-import { useDashboardQuery } from '@/hooks/queries/useDashboardQuery'
 
 interface PatientDashboardProps {
   currentPatient: Patient | null
@@ -33,7 +31,6 @@ interface PatientDashboardProps {
   onSelectPatient?: (patientId: string) => void
   onSelectPatientClick?: () => void
   onAddPatient?: () => void
-  patientAppointments?: Appointment[]
   onLogout?: () => void
 
   // Booking props
@@ -68,7 +65,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   onSelectPatient,
   onSelectPatientClick,
   onAddPatient,
-  patientAppointments = [],
   onLogout,
   currentUserId,
   onEditSuccess,
@@ -107,18 +103,12 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const authUserId = useAuthStore((s) => s.userId)
   const patientNumericId = currentPatient?.PatientID || (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
 
-  // TanStack Queries with user-specific query keys
+  // TanStack Query with user and patient specific query key
   const {
     data: fetchedAppointments = [],
     isLoading: isLoadingAppointments,
     refetch: refetchAppointments,
   } = useAppointmentsQuery(authUserId, patientNumericId || null)
-
-  const {
-    data: dashboardData,
-    isLoading: isLoadingDashboard,
-    refetch: refetchDashboard,
-  } = useDashboardQuery(authUserId, patientNumericId || null)
 
   const [isFabExpanded, setIsFabExpanded] = useState<boolean>(false)
   const [selectedHomeAppointment, setSelectedHomeAppointment] = useState<Appointment | null>(null)
@@ -146,18 +136,18 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     }
   }, [location.pathname])
 
-  // Re-fetch on Home tab or navigation changes
+  // Re-fetch on patient switch, tab switch or navigation
   useEffect(() => {
     if (!patientNumericId) return
     if (activeTab === 'home' || activeTab === 'visits') {
       refetchAppointments()
-      refetchDashboard()
     }
-  }, [patientNumericId, activeTab, location.pathname, refetchAppointments, refetchDashboard])
+  }, [patientNumericId, activeTab, location.pathname, refetchAppointments])
 
   const handleCancelAppointmentAndRefresh = async (appt: Appointment) => {
     if (onCancelAppointment) {
       await onCancelAppointment(appt)
+      await refetchAppointments()
     }
   }
 
@@ -212,82 +202,53 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   }
 
   const isCancelledAppt = (a: Appointment) => {
-    const s = (a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase()
+    const s = String(a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase().trim()
     return s === 'cancelled' || s === 'canceled'
   }
 
   const isUpcomingAppt = (a: Appointment) => {
     if (isCancelledAppt(a)) return false
-    const s = (a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase()
+    const s = String(a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase().trim()
     if (s === 'visited' || s === 'completed') return false
-    if (s === 'upcoming' || s === 'scheduled' || s === 'confirmed' || s === 'pending') return true
+    if (s === 'upcoming' || s === 'scheduled' || s === 'confirmed' || s === 'pending') {
+      const dStr = a.date || a.AppointmentDate || ''
+      if (dStr) return isUpcomingDate(dStr)
+      return true
+    }
     return isUpcomingDate(a.date || a.AppointmentDate || '')
   }
 
   const isPastAppt = (a: Appointment) => {
-    const s = (a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase()
+    const s = String(a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase().trim()
     if (s === 'visited' || s === 'completed') return true
     if (isUpcomingAppt(a)) return false
-    return isPastDate(a.date || a.AppointmentDate || '')
+    return isPastDate(a.date || a.AppointmentDate || '') || isCancelledAppt(a)
   }
 
-  const mapAppt = (item: Record<string, unknown>, idx: number, defaultPrefix: string): Appointment => {
-    const apptStatus = String(item.AppointmentStatus || item.status || item.Status || '')
-    return {
-      apptNo: String(item.apptNo || item.ApptNo || item.AppointmentNo || `${defaultPrefix}-${idx + 1}`),
-      date: String(item.date || item.AppointmentDate || item.Date || todayStr()),
-      doctor: String(item.doctor || item.Doctor_Name || item.DoctorName || 'Doctor'),
-      department: String(item.department || item.DepartmentName || item.Department || 'General'),
-      slot: String(item.slot || item.Timeslot || item.TimeSlot || '08:00 AM-08:10 AM'),
-      unit: String(item.unit || item.Unit || 'Unit 1'),
-      bookedOn: String(item.bookedOn || item.BookedOn || new Date().toISOString()),
-      room: String(item.room || item.Room || 'OPD-101'),
-      status: apptStatus,
-      AppointmentStatus: apptStatus,
-      Status: apptStatus,
-    }
-  }
+  // Deduplicate unique appointments strictly by AppointmentID
+  const uniqueAppointments = React.useMemo(() => {
+    if (!Array.isArray(fetchedAppointments) || fetchedAppointments.length === 0) return []
+    return fetchedAppointments.filter(
+      (appointment, index, self) =>
+        index ===
+        self.findIndex((item) => {
+          if (item.AppointmentID && appointment.AppointmentID) {
+            return item.AppointmentID === appointment.AppointmentID
+          }
+          if (item.AppointmentNo && appointment.AppointmentNo) {
+            return item.AppointmentNo === appointment.AppointmentNo
+          }
+          if (item.apptNo && appointment.apptNo) {
+            return item.apptNo === appointment.apptNo
+          }
+          return false
+        })
+    )
+  }, [fetchedAppointments])
 
-  const apiUpcoming: Appointment[] = (dashboardData?.UpcomingAppointments as Record<string, unknown>[] | undefined)?.map((item, idx) =>
-    mapAppt(item, idx, 'APT')
-  ) || []
-
-  const apiPast: Appointment[] = (dashboardData?.PastVisits as Record<string, unknown>[] | undefined)?.map((item, idx) =>
-    mapAppt(item, idx, 'VIS')
-  ) || []
-
-  // Combine and deduplicate across API appointments, dashboard data, and local booking DB
-  const allAppointmentsList = React.useMemo(() => {
-    const list: Appointment[] = []
-    const seenKeys = new Set<string>()
-
-    const addAppt = (appt: Appointment) => {
-      const key = String(appt.AppointmentID || appt.AppointmentNo || appt.apptNo || `${appt.date}-${appt.slot}-${appt.doctor}`)
-      if (!seenKeys.has(key)) {
-        seenKeys.add(key)
-        list.push(appt)
-      }
-    }
-
-    if (Array.isArray(fetchedAppointments) && fetchedAppointments.length > 0) {
-      fetchedAppointments.forEach(addAppt)
-    }
-    if (Array.isArray(apiUpcoming) && apiUpcoming.length > 0) {
-      apiUpcoming.forEach(addAppt)
-    }
-    if (Array.isArray(apiPast) && apiPast.length > 0) {
-      apiPast.forEach(addAppt)
-    }
-    if (Array.isArray(patientAppointments) && patientAppointments.length > 0) {
-      patientAppointments.forEach(addAppt)
-    }
-
-    return list
-  }, [fetchedAppointments, apiUpcoming, apiPast, patientAppointments])
-
-  // Sort Upcoming Appointments: Date ASC -> TimeSlot ASC (excluding Cancelled)
+  // Sort Upcoming Appointments: Date ASC -> TimeSlot ASC (excluding Cancelled & Completed)
   const upcomingAppointments = React.useMemo(() => {
-    return allAppointmentsList
+    return uniqueAppointments
       .filter(isUpcomingAppt)
       .sort((a, b) => {
         const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
@@ -299,18 +260,18 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
         const slotB = b.slot || b.TimeSlot || b.Timeslot || ''
         return slotA.localeCompare(slotB)
       })
-  }, [allAppointmentsList])
+  }, [uniqueAppointments])
 
   // Sort Past Visits: Date DESC
   const pastAppointments = React.useMemo(() => {
-    return allAppointmentsList
+    return uniqueAppointments
       .filter(isPastAppt)
       .sort((a, b) => {
         const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
         const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')
         return dateB.getTime() - dateA.getTime()
       })
-  }, [allAppointmentsList])
+  }, [uniqueAppointments])
 
   const tabs = [
     { id: 'home', label: 'Home', icon: Home },
@@ -338,7 +299,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
               currentPatient={currentPatient}
               isLoadingPatient={isLoadingPatient}
               patientError={patientError}
-              lastVisitedDate={pastAppointments[0]?.date || apiPast[0]?.date}
+              lastVisitedDate={pastAppointments[0]?.date || ''}
               currentUserId={currentUserId}
               onEditSuccess={onEditSuccess}
               className="w-full"
@@ -403,10 +364,10 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
             <div className="p-3.5 sm:p-5 w-full min-w-0">
               {activeTab === 'home' && (
                 <div className="space-y-6">
-                  {(isLoadingDashboard || isLoadingAppointments) && upcomingAppointments.length === 0 && pastAppointments.length === 0 ? (
+                  {isLoadingAppointments && upcomingAppointments.length === 0 && pastAppointments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-slate-500">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
-                      <p className="text-sm font-medium">Loading dashboard...</p>
+                      <p className="text-sm font-medium">Loading appointments...</p>
                     </div>
                   ) : (
                     <>
@@ -456,7 +417,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
               {activeTab === 'visits' && (
                 <VisitsTab
-                  appointments={fetchedAppointments.length > 0 ? fetchedAppointments : patientAppointments}
+                  appointments={uniqueAppointments}
                   onViewReceipt={onViewReceipt}
                   onCancelAppointment={handleCancelAppointmentAndRefresh}
                   currentPatient={currentPatient}
