@@ -518,8 +518,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     try {
       console.log(`🔐 Validating OTP for cancel: GET /api/validateotp?PhoneNo=${targetMobile}&PatientID=${patientId}&otp=${cancelOtpInput}`)
       const validateRes = await validateOtp(targetMobile, cancelOtpInput, patientId)
-      
-      const isOtpValid = 
+
+      const isOtpValid =
         validateRes.Result?.toLowerCase() === 'success' ||
         validateRes.Result?.toLowerCase() === 'valid' ||
         validateRes.UserID > 0

@@ -8,6 +8,8 @@ interface CustomPanelProps {
   onSave?: () => void;
   children: React.ReactNode;
   saveLabel?: string;
+  cancelLabel?: string;
+  onCancel?: () => void;
   width?: string;
   hideCancel?: boolean;
   hideSave?: boolean;
@@ -20,6 +22,8 @@ const CustomPanel: React.FC<CustomPanelProps> = ({
   onSave,
   children,
   saveLabel = "Save",
+  cancelLabel = "Cancel",
+  onCancel,
   width = "560px",
   hideCancel = false,
   hideSave = false,
@@ -57,10 +61,10 @@ const CustomPanel: React.FC<CustomPanelProps> = ({
         <div className="p-4 border-t border-border flex justify-end gap-3 shrink-0 bg-muted/50">
           {!hideCancel && (
             <button
-              onClick={onClose}
+              onClick={onCancel || onClose}
               className="px-4 py-2 text-sm border border-border rounded-lg text-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
             >
-              Cancel
+              {cancelLabel}
             </button>
           )}
           {!hideSave && (
