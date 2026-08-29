@@ -39,10 +39,6 @@ const PatientModule: React.FC = () => {
     // 3. Appointment Booking Hook
     const booking = useAppointmentBooking(auth.currentPatient)
 
-    // Derive appointments for active patient
-    const patientKey = auth.currentPatient ? String(auth.currentPatient.PatientID || auth.currentPatient.id || '') : ''
-    const patientAppointments = patientKey ? booking.appointmentsDB[patientKey] || [] : []
-
     const receiptPatient = useMemo(() => {
         if (!booking.selectedReceiptAppt) return auth.currentPatient
         const apptPid = booking.selectedReceiptAppt.PatientID
@@ -141,7 +137,6 @@ const PatientModule: React.FC = () => {
                     patientError={auth.patientError}
                     patients={auth.patientsList}
                     onSelectPatient={auth.selectPatientProfile}
-                    patientAppointments={patientAppointments}
                     onSelectPatientClick={() => auth.setScreen('select')}
                     onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
                     onLogout={auth.handleLogout}
@@ -186,6 +181,12 @@ const PatientModule: React.FC = () => {
                 onClose={() => booking.setShowCancelOtpModal(false)}
                 appointment={booking.selectedCancelAppt}
                 patientMobile={auth.currentPatient?.PhoneNo || auth.currentPatient?.mobile}
+                step={booking.cancelStep}
+                reason={booking.cancelReason}
+                setReason={booking.setCancelReason}
+                reasonErr={booking.cancelReasonErr}
+                isGeneratingOtp={booking.isGeneratingCancelOtp}
+                onContinueToOtp={booking.handleContinueToCancelOtp}
                 otpInput={booking.cancelOtpInput}
                 setOtpInput={booking.setCancelOtpInput}
                 otpErr={booking.cancelOtpErr}
@@ -193,6 +194,7 @@ const PatientModule: React.FC = () => {
                 isResending={booking.isResendingCancelOtp}
                 onVerify={booking.handleVerifyCancelOtp}
                 onResend={booking.handleResendCancelOtp}
+                onBackToReason={booking.handleBackToCancelReason}
             />
 
             <BookingSuccessModal

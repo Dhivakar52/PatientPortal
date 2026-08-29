@@ -37,18 +37,19 @@ export function useAppointmentsQuery(
 
       const mapped: Appointment[] = res.map((item: Record<string, unknown>, idx: number) => {
         const apptStatus = String(item.AppointmentStatus || item.Status || item.status || '')
-        const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : `APT-${item.AppointmentID || idx + 1}`
+        const apptId = item.AppointmentID !== undefined && item.AppointmentID !== null ? Number(item.AppointmentID) : (item.id !== undefined ? Number(item.id) : undefined)
+        const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : (apptId ? `APT-${apptId}` : (item.apptNo ? String(item.apptNo) : `APT-${idx + 1}`))
         const apptDate = String(item.AppointmentDate || item.date || item.Date || todayStr())
-        const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || 'General')
+        const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || '')
         const rawDoctor = String(item.DoctorName || item.Doctor_Name || item.doctor || '')
-        const cleanDoctor = (rawDoctor === '--Select--' || !rawDoctor.trim() || item.DoctorID === 0) ? `${deptName} Specialist` : rawDoctor
-        const timeSlot = String(item.TimeSlot || item.Timeslot || item.timeslot || item.slot || '08:00 AM - 08:10 AM')
+        const cleanDoctor = (rawDoctor === '--Select--' || !rawDoctor.trim() || item.DoctorID === 0) ? (deptName ? `${deptName} Specialist` : 'Doctor') : rawDoctor
+        const timeSlot = String(item.TimeSlot || item.Timeslot || item.timeslot || item.slot || '')
         const bookedOn = String(item.CreatedAt || item.BookedOn || item.bookedOn || new Date().toISOString())
 
         return {
-          AppointmentID: Number(item.AppointmentID || idx + 1),
-          PatientID: Number(item.PatientID || numericPatientId),
-          PatientName: String(item.PatientName || ''),
+          AppointmentID: apptId,
+          PatientID: Number(item.PatientID || item.patientID || numericPatientId),
+          PatientName: String(item.PatientName || item.patientName || ''),
           AppointmentStatus: apptStatus,
           AppointmentDate: apptDate,
           AppointmentType: String(item.AppointmentType || 'Online'),
@@ -65,9 +66,9 @@ export function useAppointmentsQuery(
           Timeslot: timeSlot,
           slot: timeSlot,
           UnitID: Number(item.UnitID || 0),
-          Unit: String(item.Unit || item.unit || 'Unit 1'),
-          unit: String(item.Unit || item.unit || 'Unit 1'),
-          StatusID: Number(item.StatusID || 0),
+          Unit: String(item.Unit || item.unit || ''),
+          unit: String(item.Unit || item.unit || ''),
+          StatusID: Number(item.StatusID || item.statusID || 0),
           Status: apptStatus,
           status: apptStatus,
           AppointmentNo: apptNo,
@@ -77,11 +78,29 @@ export function useAppointmentsQuery(
           BookedMode: String(item.BookedMode || item.bookedMode || item.BookingMode || item.bookingMode || item.AppointmentType || 'Online'),
           bookedMode: String(item.BookedMode || item.bookedMode || item.BookingMode || item.bookingMode || item.AppointmentType || 'Online'),
           date: apptDate,
-          room: String(item.Room || item.room || 'OPD-101'),
+          room: String(item.Room || item.room || ''),
         }
       })
 
-      return mapped
+      // Strict Deduplication by AppointmentID
+      const uniqueMapped = mapped.filter(
+        (appointment, index, self) =>
+          index ===
+          self.findIndex((item) => {
+            if (item.AppointmentID && appointment.AppointmentID) {
+              return item.AppointmentID === appointment.AppointmentID
+            }
+            if (item.AppointmentNo && appointment.AppointmentNo) {
+              return item.AppointmentNo === appointment.AppointmentNo
+            }
+            if (item.apptNo && appointment.apptNo) {
+              return item.apptNo === appointment.apptNo
+            }
+            return false
+          })
+      )
+
+      return uniqueMapped
     },
     enabled: isEnabled,
     staleTime: 1000 * 60, // 1 min fresh
