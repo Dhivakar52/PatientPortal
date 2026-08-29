@@ -7,6 +7,7 @@ interface UpcomingAppointmentsProps {
   onView?: (appt: Appointment) => void
   onViewReceipt?: (appt: Appointment) => void
   onCancelAppointment?: (appt: Appointment) => void
+  onEditAppointment?: (appt: Appointment) => void
 }
 
 export const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
@@ -14,6 +15,7 @@ export const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
   onView,
   onViewReceipt,
   onCancelAppointment,
+  onEditAppointment,
 }) => {
   return (
     <div>
@@ -29,6 +31,7 @@ export const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
               onView={onView}
               onDownloadReceipt={onViewReceipt}
               onCancelAppointment={onCancelAppointment}
+              onEditAppointment={onEditAppointment}
               showDownload={false}
               showCancel={true}
             />

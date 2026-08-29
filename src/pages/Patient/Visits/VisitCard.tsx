@@ -28,6 +28,7 @@ interface VisitCardProps {
   onView?: (appt: Appointment) => void
   onDownloadReceipt?: (appt: Appointment) => void
   onCancelAppointment?: (appt: Appointment) => void
+  onEditAppointment?: (appt: Appointment) => void
   showDownload?: boolean
   showCancel?: boolean
 }
@@ -102,6 +103,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   onView,
   onDownloadReceipt,
   onCancelAppointment,
+  onEditAppointment,
   showDownload = true,
   showCancel = true,
 }) => {
@@ -118,6 +120,8 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     (appointment as unknown as Record<string, unknown>).AppointmentStatus ||
     (appointment as unknown as Record<string, unknown>).status
   const computedStatus = rawStatus ? String(rawStatus) : (appointment.date < today ? 'Completed' : '')
+
+  const isEditable = computedStatus.toLowerCase() !== 'cancelled' && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited'
 
   const departmentName = appointment.department || appointment.DeptName || appointment.Department || ''
   const displayDoctor = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : ('Specialist Consultation')
@@ -198,7 +202,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
   const isCancelled = computedStatus.toLowerCase() === 'cancelled'
   const isCancellable = showCancel && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited' && !isCancelled
-  const hasMenuItems = !isCancelled && ((showDownload && !!onDownloadReceipt) || !!onView || isCancellable)
+  const hasMenuItems = !isCancelled && ((showDownload && !!onDownloadReceipt) || !!onView || isCancellable || (isEditable && !!onEditAppointment))
 
   return (
     <>
@@ -270,6 +274,16 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                       >
                         <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                         <span>View Details</span>
+                      </DropdownMenuItem>
+                    )}
+
+                    {onEditAppointment && isEditable && (
+                      <DropdownMenuItem
+                        onClick={() => onEditAppointment(appointment)}
+                        className="flex items-center gap-2 px-3 py-2 cursor-pointer text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-medium rounded-md text-xs"
+                      >
+                        <CalendarDays className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <span>Edit Appointment</span>
                       </DropdownMenuItem>
                     )}
 
@@ -403,6 +417,16 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                       </DropdownMenuItem>
                     )}
 
+                    {onEditAppointment && isEditable && (
+                      <DropdownMenuItem
+                        onClick={() => onEditAppointment(appointment)}
+                        className="flex items-center gap-2 px-3 py-2 cursor-pointer text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-medium rounded-md text-xs"
+                      >
+                        <CalendarDays className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                        <span>Edit Appointment</span>
+                      </DropdownMenuItem>
+                    )}
+
                     {isCancellable && (
                       <DropdownMenuItem
                         onClick={handleCancelClick}
@@ -420,7 +444,6 @@ export const VisitCard: React.FC<VisitCardProps> = ({
         </div>
       </div>
 
-      {/* Delete / Cancel Confirmation Modal */}
       {/* Delete / Cancel Confirmation Modal */}
       <DeleteConfirmationDialog
         isOpen={isCancelDialogOpen}

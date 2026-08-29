@@ -5,7 +5,6 @@ import {
   CalendarClock,
   Calendar as CalendarIcon,
   ChevronRight,
-  Loader2,
   Plus,
   X,
 } from 'lucide-react'
@@ -18,6 +17,8 @@ import { VisitsTab } from '../Visits/VisitsTab'
 import { AppointmentBooking } from '../Appointment/AppointmentBooking'
 import { PatientProfileCard } from '../Profile/PatientProfileCard'
 import { AppointmentDetailsPanel } from '@/common/AppointmentDetailsPanel'
+import { EditAppointmentPanel } from '@/common/EditAppointmentPanel'
+import { DashboardSkeleton } from './DashboardSkeleton'
 
 import { type Patient, type Appointment, type ActiveTab } from '@/types/patient.types'
 import { useAuthStore } from '@/stores/authStore'
@@ -107,16 +108,24 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const {
     data: fetchedAppointments = [],
     isLoading: isLoadingAppointments,
+    isFetching: isFetchingAppointments,
     refetch: refetchAppointments,
   } = useAppointmentsQuery(authUserId, patientNumericId || null)
 
   const [isFabExpanded, setIsFabExpanded] = useState<boolean>(false)
   const [selectedHomeAppointment, setSelectedHomeAppointment] = useState<Appointment | null>(null)
   const [isHomeViewPanelOpen, setIsHomeViewPanelOpen] = useState<boolean>(false)
+  const [selectedEditAppointment, setSelectedEditAppointment] = useState<Appointment | null>(null)
+  const [isEditPanelOpen, setIsEditPanelOpen] = useState<boolean>(false)
 
   const handleViewHomeAppointment = (appt: Appointment) => {
     setSelectedHomeAppointment(appt)
     setIsHomeViewPanelOpen(true)
+  }
+
+  const handleEditAppointment = (appt: Appointment) => {
+    setSelectedEditAppointment(appt)
+    setIsEditPanelOpen(true)
   }
 
   const setActiveTab = (tab: ActiveTab) => {
@@ -364,11 +373,8 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
             <div className="p-3.5 sm:p-5 w-full min-w-0">
               {activeTab === 'home' && (
                 <div className="space-y-6">
-                  {isLoadingAppointments && upcomingAppointments.length === 0 && pastAppointments.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-                      <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-3" />
-                      <p className="text-sm font-medium">Loading appointments...</p>
-                    </div>
+                  {isLoadingAppointments || isLoadingPatient || isFetchingAppointments ? (
+                    <DashboardSkeleton />
                   ) : (
                     <>
                       {/* Upcoming Appointments */}
@@ -379,6 +385,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                             onView={handleViewHomeAppointment}
                             onViewReceipt={onViewReceipt}
                             onCancelAppointment={handleCancelAppointmentAndRefresh}
+                            onEditAppointment={handleEditAppointment}
                           />
                         </div>
                       )}
@@ -420,7 +427,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                   appointments={uniqueAppointments}
                   onViewReceipt={onViewReceipt}
                   onCancelAppointment={handleCancelAppointmentAndRefresh}
+                  onEditAppointment={handleEditAppointment}
                   currentPatient={currentPatient}
+                  isLoading={isLoadingAppointments || isLoadingPatient || isFetchingAppointments}
                 />
               )}
 
@@ -511,6 +520,20 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
           setSelectedHomeAppointment(null)
         }}
         onViewReceipt={onViewReceipt}
+      />
+
+      {/* Edit Appointment Side Panel */}
+      <EditAppointmentPanel
+        isOpen={isEditPanelOpen}
+        appointment={selectedEditAppointment}
+        currentPatient={currentPatient}
+        onClose={() => {
+          setIsEditPanelOpen(false)
+          setSelectedEditAppointment(null)
+        }}
+        onSuccess={() => {
+          refetchAppointments()
+        }}
       />
     </div>
   )

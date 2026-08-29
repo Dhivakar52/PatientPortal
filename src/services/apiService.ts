@@ -598,6 +598,37 @@ export const cancelAppointment = async (
 
 export const cancelAppointmentApi = cancelAppointment;
 
+export interface UpdateAppointmentRequest {
+    patientID: number;
+    appointmentDate: string;
+    deptID: number;
+    doctorID: number;
+    timeSlotID: number;
+    unitID: number;
+    typeID: number;
+    statusID: number;
+    createdBy: number;
+    updatedBy: number;
+    cancelledReason?: string;
+}
+
+/**
+ * Update Appointment
+ * Calls PUT /api/updateappointment/{appointmentId}
+ */
+export const updateAppointment = async (
+    appointmentId: number,
+    data: UpdateAppointmentRequest
+) => {
+    try {
+        const response = await axiosInstance.put(`/api/updateappointment/${appointmentId}`, data);
+        return response.data;
+    } catch (error) {
+        console.error('Update Appointment Error:', error);
+        throw error;
+    }
+};
+
 /**
  * Get departments from Master
  * Calls GET /api/department

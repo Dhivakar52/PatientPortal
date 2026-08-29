@@ -16,6 +16,7 @@ interface VisitsTableProps {
   appointments: Appointment[]
   onViewReceipt: (appt: Appointment) => void
   onCancelAppointment?: (appt: Appointment) => void
+  onEditAppointment?: (appt: Appointment) => void
   currentPatient?: Patient | null
   isLoading?: boolean
   error?: string | null
@@ -60,6 +61,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
   appointments,
   onViewReceipt,
   onCancelAppointment,
+  onEditAppointment,
   currentPatient,
   isLoading = false,
   error = null,
@@ -350,6 +352,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
               onView={handleView}
               onDownloadReceipt={onViewReceipt}
               onCancelAppointment={onCancelAppointment}
+              onEditAppointment={onEditAppointment}
               showDownload={true}
               showCancel={true}
             />
