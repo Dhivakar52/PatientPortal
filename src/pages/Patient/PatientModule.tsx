@@ -181,6 +181,12 @@ const PatientModule: React.FC = () => {
                 onClose={() => booking.setShowCancelOtpModal(false)}
                 appointment={booking.selectedCancelAppt}
                 patientMobile={auth.currentPatient?.PhoneNo || auth.currentPatient?.mobile}
+                step={booking.cancelStep}
+                reason={booking.cancelReason}
+                setReason={booking.setCancelReason}
+                reasonErr={booking.cancelReasonErr}
+                isGeneratingOtp={booking.isGeneratingCancelOtp}
+                onContinueToOtp={booking.handleContinueToCancelOtp}
                 otpInput={booking.cancelOtpInput}
                 setOtpInput={booking.setCancelOtpInput}
                 otpErr={booking.cancelOtpErr}
@@ -188,6 +194,7 @@ const PatientModule: React.FC = () => {
                 isResending={booking.isResendingCancelOtp}
                 onVerify={booking.handleVerifyCancelOtp}
                 onResend={booking.handleResendCancelOtp}
+                onBackToReason={booking.handleBackToCancelReason}
             />
 
             <BookingSuccessModal
