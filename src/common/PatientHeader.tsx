@@ -1,6 +1,6 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronDown, CheckCircle2, LayoutGrid, Sun, Moon, LogOut, User, Users } from 'lucide-react'
+import { ChevronDown, CheckCircle2, LayoutGrid, Sun, Moon, LogOut, User, Users, UserPlus } from 'lucide-react'
 import srmLogo from '@/assets/images/srm_logo.png'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
@@ -30,7 +30,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   patients = [],
   onSelectPatient,
   onSelectPatientClick,
-  // onAddPatient,
+  onAddPatient,
   onLogout,
 }) => {
   const navigate = useNavigate()
@@ -48,8 +48,8 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
   // Determine list of patients for dropdown menu
   const patientList = patients.length > 0 ? patients : (currentPatient ? [currentPatient] : [])
-  const showMoreCardView = patientList.length > 5
-  const displayedPatients = showMoreCardView ? patientList.slice(0, 5) : patientList
+  const showMoreThanFive = patientList.length > 5
+  const displayedPatients = showMoreThanFive ? patientList.slice(0, 5) : patientList
   const otherAccounts = knownAccounts.filter((a) => a.phoneNo && a.phoneNo !== activePhone)
 
   return (
@@ -106,7 +106,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
               <DropdownMenuSeparator className="my-1.5" />
 
-              {/* Patient List */}
+              {/* Patient List (up to 5 profiles) */}
               <DropdownMenuGroup className="space-y-0.5">
                 {displayedPatients.map((p, idx) => {
                   const pId = String(p.PatientID || p.id || idx)
@@ -161,8 +161,22 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                 <span>Profile</span>
               </DropdownMenuItem>
 
-              {/* If > 5 patients, show option to open existing Patient Selection CARD view */}
-              {showMoreCardView && (
+              {/* If <= 5 patients, show + Add Patient action */}
+              {patientList.length <= 5 && onAddPatient && (
+                <>
+                  <DropdownMenuSeparator className="my-1.5" />
+                  <DropdownMenuItem
+                    onClick={onAddPatient}
+                    className="flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg"
+                  >
+                    <UserPlus className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>+ Add Patient</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              {/* If > 5 patients, show View All Profiles action */}
+              {patientList.length > 5 && onSelectPatientClick && (
                 <>
                   <DropdownMenuSeparator className="my-1.5" />
                   <DropdownMenuItem
@@ -170,24 +184,10 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                     className="flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg"
                   >
                     <LayoutGrid className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span>View All Patients ({patientList.length})</span>
+                    <span>View All Profiles ({patientList.length})</span>
                   </DropdownMenuItem>
                 </>
               )}
-
-              {/* Add New Patient Action */}
-              {/* {onAddPatient && (
-                <>
-                  <DropdownMenuSeparator className="my-1.5" />
-                  <DropdownMenuItem
-                    onClick={onAddPatient}
-                    className="flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
-                  >
-                    <UserPlus className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span>+ Add New Patient</span>
-                  </DropdownMenuItem>
-                </>
-              )} */}
 
               {/* Switch Account Section (Multi-user accounts without logout) */}
               {otherAccounts.length > 0 && (

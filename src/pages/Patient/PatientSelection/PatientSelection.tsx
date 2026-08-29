@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Edit3, Trash2 } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Edit3, Trash2, Phone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PatientHeader } from '@/common/PatientHeader'
 import { DeleteConfirmationDialog } from '@/common/DeleteConfirmationDialog'
@@ -99,6 +99,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                 const pRawName = p.PatientName || p.name || `Patient #${pId}`
                 const pDob = p.DOB || p.dob || ''
                 const pGender = p.Gender || p.gender || '—'
+                const pMobile = p.PhoneNo || p.phoneNo || p.mobile || ''
                 const age = p.Age !== undefined ? p.Age : (pDob ? calcAge(pDob) : '')
                 const isActive = pId === spSelectedId
                 return (
@@ -130,13 +131,19 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                           {capitalizeName(pRawName)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {pMobile && (
+                          <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
+                            <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                            {pMobile}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
+                          <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
                           {age !== '' ? `${age} Years` : '—'}
                         </span>
                         <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
+                          <User className="w-3 h-3 text-slate-400 shrink-0" />
                           {pGender}
                         </span>
                       </div>
