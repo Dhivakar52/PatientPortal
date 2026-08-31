@@ -266,10 +266,16 @@ export function usePatientAuth() {
       }
     } catch (err: unknown) {
       if (fetchPatientReqRef.current === targetId) {
-        console.error('Fetch Patient Error:', err)
-        setPatientError('Failed to fetch patient data.')
-        const fallback = apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId)) || null
+        console.warn('Fetch Patient Network/Timeout warning:', err)
+        const fallback =
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId)) ||
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId)) ||
+          (apiPatient && String(apiPatient.PatientID || apiPatient.id) === String(targetId) ? apiPatient : null) ||
+          null
         setApiPatient(fallback)
+        if (!fallback) {
+          setPatientError('Failed to fetch patient data.')
+        }
       }
       return null
     } finally {

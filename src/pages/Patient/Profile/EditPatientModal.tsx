@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Loader2, UserCheck, Calendar } from 'lucide-react'
+import { X, Loader2, UserCheck, Calendar, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldLabel, TextField, DobDateField, SelectField } from '@/components/FormPrimitives'
 import { type Patient } from '@/types/patient.types'
@@ -96,7 +96,18 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
 
       const isoDob = parseDateToIso(patient.DOB || patient.dob || '')
       setDob(isoDob)
-      setMobileNo(patient.PhoneNo || patient.phoneNo || patient.mobile || '')
+      const registeredMobile =
+        patient.PhoneNo ||
+        patient.phoneNo ||
+        patient.mobile ||
+        (patient as any).Mobile ||
+        (patient as any).MobileNo ||
+        (patient as any).mobileNo ||
+        localStorage.getItem('srm_patient_current_mobile') ||
+        localStorage.getItem('mobileNo') ||
+        localStorage.getItem('userMobile') ||
+        ''
+      setMobileNo(registeredMobile)
       setEmail(patient.Email || patient.email || '')
       setAddress(patient.Address || patient.PatientAddress || patient.address || '')
       
@@ -193,7 +204,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
       mobileNo: cleanMobile,
       address: address.trim(),
       pinCode: pinCode.trim(),
-      createdBy: loggedInUserId,
+      createdBy: Number((patient as any).CreatedBy ?? (patient as any).createdBy ?? loggedInUserId) || loggedInUserId || 0,
       updatedBy: loggedInUserId,
       countryID: countryIdNum,
       cityID: cityIdNum,
@@ -299,15 +310,25 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
               {errors.name && <p className="text-xs text-rose-600 mt-1">{errors.name}</p>}
             </div>
 
-            {/* Mobile Number */}
+            {/* Mobile Number - Registered / Disabled */}
             <div>
-              <FieldLabel required>Mobile Number</FieldLabel>
-              <TextField
-                value={mobileNo}
-                onChange={(v) => setMobileNo(digitsOnly(v, 10))}
-                placeholder="10-digit Mobile Number"
-                disabled={isSubmitting}
-              />
+              <div className="flex items-center justify-between mb-1">
+                <FieldLabel required>Mobile Number</FieldLabel>
+                <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                  <Lock className="w-2.5 h-2.5" /> Registered Mobile
+                </span>
+              </div>
+              <div className="relative">
+                <TextField
+                  value={mobileNo}
+                  onChange={(v) => setMobileNo(digitsOnly(v, 10))}
+                  placeholder="10-digit Mobile Number"
+                  disabled={true}
+                />
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <Lock className="w-3.5 h-3.5" />
+                </div>
+              </div>
               {errors.mobileNo && <p className="text-xs text-rose-600 mt-1">{errors.mobileNo}</p>}
             </div>
 

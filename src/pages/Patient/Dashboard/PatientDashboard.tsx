@@ -108,7 +108,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const {
     data: fetchedAppointments = [],
     isLoading: isLoadingAppointments,
-    isFetching: isFetchingAppointments,
     refetch: refetchAppointments,
   } = useAppointmentsQuery(authUserId, patientNumericId || null)
 
@@ -145,13 +144,12 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     }
   }, [location.pathname])
 
-  // Re-fetch on patient switch, tab switch or navigation
+  // Re-fetch on patient switch
   useEffect(() => {
-    if (!patientNumericId) return
-    if (activeTab === 'home' || activeTab === 'visits') {
+    if (patientNumericId) {
       refetchAppointments()
     }
-  }, [patientNumericId, activeTab, location.pathname, refetchAppointments])
+  }, [patientNumericId, refetchAppointments])
 
   const handleCancelAppointmentAndRefresh = async (appt: Appointment) => {
     if (onCancelAppointment) {
@@ -373,7 +371,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
             <div className="p-3.5 sm:p-5 w-full min-w-0">
               {activeTab === 'home' && (
                 <div className="space-y-6">
-                  {isLoadingAppointments || isLoadingPatient || isFetchingAppointments ? (
+                  {(isLoadingAppointments || isLoadingPatient) && uniqueAppointments.length === 0 ? (
                     <DashboardSkeleton />
                   ) : (
                     <>
@@ -429,7 +427,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                   onCancelAppointment={handleCancelAppointmentAndRefresh}
                   onEditAppointment={handleEditAppointment}
                   currentPatient={currentPatient}
-                  isLoading={isLoadingAppointments || isLoadingPatient || isFetchingAppointments}
+                  isLoading={isLoadingAppointments && uniqueAppointments.length === 0}
                 />
               )}
 
