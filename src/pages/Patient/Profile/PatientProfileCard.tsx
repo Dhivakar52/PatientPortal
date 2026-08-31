@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { User, Venus, Mars, Loader2, Edit3 } from 'lucide-react'
+import { User, Venus, Mars, Edit3 } from 'lucide-react'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, formatDateLong, calcAge } from '@/utils/patient.utils'
 import { useStatesQuery, useCitiesQuery } from '@/hooks/queries/useMasterDataQueries'
 import { EditPatientModal } from './EditPatientModal'
+import { PageLoader } from '@/components/PageLoader'
 
 interface PatientProfileCardProps {
   currentPatient: Patient | null
@@ -72,9 +73,8 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
 
   if (isLoadingPatient && !currentPatient) {
     return (
-      <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shrink-0 shadow-sm flex flex-col items-center justify-center py-12 text-slate-400 ${className}`}>
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
-        <p className="text-xs">Loading patient profile...</p>
+      <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shrink-0 shadow-sm ${className}`}>
+        <PageLoader fullScreen={false} size="sm" message="Loading Profile..." subMessage="Fetching patient records" />
       </div>
     )
   }

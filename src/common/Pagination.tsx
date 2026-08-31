@@ -13,9 +13,10 @@ interface PaginationTable {
 interface PaginationProps {
   table: PaginationTable;
   totalCount: number;
+  pageSizeOptions?: number[];
 }
 
-const Pagination: React.FC<PaginationProps> = ({ table, totalCount }) => {
+const Pagination: React.FC<PaginationProps> = ({ table, totalCount, pageSizeOptions = [5, 10, 25, 50] }) => {
   if (!table) return null;
 
   const { pageIndex, pageSize } = table.getState().pagination;
@@ -61,6 +62,11 @@ const Pagination: React.FC<PaginationProps> = ({ table, totalCount }) => {
 
   const pages = getVisiblePages();
 
+  const availablePageSizes = React.useMemo(() => {
+    const set = new Set([...pageSizeOptions, pageSize]);
+    return Array.from(set).sort((a, b) => a - b);
+  }, [pageSizeOptions, pageSize]);
+
   return (
     <div className="flex items-center justify-between mt-4 flex-wrap gap-3">
       {/* LEFT: Records Count & Records Per Page Dropdown */}
@@ -80,7 +86,7 @@ const Pagination: React.FC<PaginationProps> = ({ table, totalCount }) => {
             }}
             className="border border-border bg-background text-foreground dark:bg-slate-900 dark:text-slate-100 px-2 py-1 rounded text-xs cursor-pointer hover:border-slate-400 focus:outline-none"
           >
-            {[10, 25, 50, 100].map((size) => (
+            {availablePageSizes.map((size) => (
               <option key={size} value={size} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-slate-100">
                 {size}
               </option>

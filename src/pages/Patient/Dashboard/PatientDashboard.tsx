@@ -104,13 +104,15 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const authUserId = useAuthStore((s) => s.userId)
   const patientNumericId = currentPatient?.PatientID || (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
 
-  // TanStack Query with user and patient specific query key
+  // TanStack Query with user and patient specific query key (only when on home or visits tab)
+  const isAppointmentsNeeded = activeTab === 'home' || activeTab === 'visits'
   const {
     data: fetchedAppointments = [],
     isLoading: isLoadingAppointments,
-    isFetching: isFetchingAppointments,
     refetch: refetchAppointments,
-  } = useAppointmentsQuery(authUserId, patientNumericId || null)
+  } = useAppointmentsQuery(authUserId, patientNumericId || null, undefined, {
+    enabled: Boolean(patientNumericId && isAppointmentsNeeded),
+  })
 
   const [isFabExpanded, setIsFabExpanded] = useState<boolean>(false)
   const [selectedHomeAppointment, setSelectedHomeAppointment] = useState<Appointment | null>(null)
@@ -144,14 +146,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
       setActiveTabState(t)
     }
   }, [location.pathname])
-
-  // Re-fetch on patient switch, tab switch or navigation
-  useEffect(() => {
-    if (!patientNumericId) return
-    if (activeTab === 'home' || activeTab === 'visits') {
-      refetchAppointments()
-    }
-  }, [patientNumericId, activeTab, location.pathname, refetchAppointments])
 
   const handleCancelAppointmentAndRefresh = async (appt: Appointment) => {
     if (onCancelAppointment) {
@@ -373,7 +367,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
             <div className="p-3.5 sm:p-5 w-full min-w-0">
               {activeTab === 'home' && (
                 <div className="space-y-6">
-                  {isLoadingAppointments || isLoadingPatient || isFetchingAppointments ? (
+                  {(isLoadingAppointments || isLoadingPatient) && uniqueAppointments.length === 0 ? (
                     <DashboardSkeleton />
                   ) : (
                     <>
@@ -382,6 +376,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                         <div>
                           <UpcomingAppointments
                             appointments={upcomingAppointments}
+                            currentPatient={currentPatient}
                             onView={handleViewHomeAppointment}
                             onViewReceipt={onViewReceipt}
                             onCancelAppointment={handleCancelAppointmentAndRefresh}
@@ -395,6 +390,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                         <div>
                           <PastVisits
                             appointments={pastAppointments}
+                            currentPatient={currentPatient}
                             onView={handleViewHomeAppointment}
                             onViewReceipt={onViewReceipt}
                           />
@@ -429,7 +425,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                   onCancelAppointment={handleCancelAppointmentAndRefresh}
                   onEditAppointment={handleEditAppointment}
                   currentPatient={currentPatient}
-                  isLoading={isLoadingAppointments || isLoadingPatient || isFetchingAppointments}
+                  isLoading={isLoadingAppointments && uniqueAppointments.length === 0}
                 />
               )}
 
@@ -465,7 +461,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
       {/* Mobile Only: Floating Book Appointment Action Button (FAB) */}
       {activeTab !== 'book' && (
-        <div className="fixed bottom-6 right-6 z-50 md:hidden flex flex-col items-end gap-2.5">
+        <div className="fixed  bottom-6 right-6 z-0 md:hidden flex flex-col items-end gap-2.5">
           {/* Expanded Book Action Pill */}
           {isFabExpanded && (
             <button
@@ -490,7 +486,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
           <button
             type="button"
             onClick={() => setIsFabExpanded(!isFabExpanded)}
-            className="w-13 h-13 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-13  h-13 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
             style={{
               background: isFabExpanded ? '#dc2626' : 'var(--blue-btn)',
               boxShadow: isFabExpanded

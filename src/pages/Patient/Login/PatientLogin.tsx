@@ -4,6 +4,7 @@ import { LoginOtp } from './LoginOtp'
 import { digitsOnly } from '@/utils/patient.utils'
 import srmLogo from '@/assets/images/srm_logo.png'
 import { Smartphone, ArrowRight, Phone, Loader2, CheckCircle2 } from 'lucide-react'
+import { PageLoader } from '@/components/PageLoader'
 
 interface PatientLoginProps {
   loginMobileInput: string
@@ -34,6 +35,15 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
   onVerifyOtp,
   onResendOtp,
 }) => {
+  if (isVerifyingOtp) {
+    return (
+      <PageLoader
+        message="Validating & Loading Data..."
+        subMessage="Please wait while we fetch your patient profile"
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-sans">
       {/* Header */}
@@ -44,6 +54,7 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
         <div className="w-full max-w-md">
           {/* Card */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200/60 dark:border-slate-800/60 overflow-hidden transition-all duration-300 hover:shadow-2xl">
+
             {/* Card Header */}
             <div
               className="relative px-8 pt-8 pb-6 overflow-hidden"
@@ -57,12 +68,21 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
               <div className="relative z-10">
                 <div className="flex items-center mb-4 gap-3 min-w-0">
                   <div className="bg-white rounded p-1 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center overflow-hidden shrink-0">
-                    <img src={srmLogo} alt="SRM Logo" className="w-9 sm:w-10 h-auto object-contain" />
+                    <img
+                      src={srmLogo}
+                      alt="SRM Logo"
+                      width={48}
+                      height={48}
+                      fetchPriority="high"
+                      loading="eager"
+                      decoding="async"
+                      className="w-9 sm:w-10 h-auto object-contain"
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="font-bold text-white text-sm sm:text-base leading-snug">
+                    <h1 className="font-bold text-white text-sm sm:text-base leading-snug">
                       SRM Medical College Hospital and Research Centre
-                    </div>
+                    </h1>
                     <div className="text-xs text-blue-200">Doctor Appointment</div>
                   </div>
                 </div>

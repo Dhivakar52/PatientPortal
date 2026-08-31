@@ -266,10 +266,16 @@ export function usePatientAuth() {
       }
     } catch (err: unknown) {
       if (fetchPatientReqRef.current === targetId) {
-        console.error('Fetch Patient Error:', err)
-        setPatientError('Failed to fetch patient data.')
-        const fallback = apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId)) || null
+        console.warn('Fetch Patient Network/Timeout warning:', err)
+        const fallback =
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId)) ||
+          currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId)) ||
+          (apiPatient && String(apiPatient.PatientID || apiPatient.id) === String(targetId) ? apiPatient : null) ||
+          null
         setApiPatient(fallback)
+        if (!fallback) {
+          setPatientError('Failed to fetch patient data.')
+        }
       }
       return null
     } finally {
@@ -317,21 +323,21 @@ export function usePatientAuth() {
     }
   }, [currentUserId])
 
-  // Sync user patients on mobile change
+  const [screen, setScreenState] = useState<FlowScreen>(() => getScreenFromPath(location.pathname))
+
+  // Sync user patients on mobile change (only when authenticated / not on login screen)
   useEffect(() => {
-    if (currentMobile) {
+    if (screen !== 'login' && currentMobile) {
       refreshUserPatients(currentMobile)
     }
-  }, [currentMobile])
+  }, [currentMobile, screen])
 
-  // Fetch active patient profile details on ID change
+  // Fetch active patient profile details on ID change (only when authenticated / not on login screen)
   useEffect(() => {
-    if (activePatientId) {
+    if (screen !== 'login' && activePatientId) {
       fetchCurrentPatient(activePatientId)
     }
-  }, [activePatientId])
-
-  const [screen, setScreenState] = useState<FlowScreen>(() => getScreenFromPath(location.pathname))
+  }, [activePatientId, screen])
 
   const setScreen = (newScreen: FlowScreen) => {
     setScreenState(newScreen)
@@ -768,9 +774,12 @@ export function usePatientAuth() {
     setScreenState('register')
   }
 
+  const [isContinuing, setIsContinuing] = useState<boolean>(false)
+
   const handleSelectPatientContinue = async () => {
     if (!spSelectedId) return
     const targetPatientId = Number(spSelectedId)
+    setIsContinuing(true)
     setActivePatientId(String(targetPatientId))
 
     // Call GET /api/fetchpatient?patientID=<PatientID>
@@ -799,8 +808,13 @@ export function usePatientAuth() {
 
     useAuthStore.getState().setActivePatient(String(targetPatientId))
 
+    // Invalidate queries so dashboard loads fresh data for the selected patient
+    queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.all })
+    queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all })
+
     navigate('/patient/home')
     setScreenState('app')
+    setIsContinuing(false)
   }
 
   const selectPatientProfile = async (id: string | number) => {
@@ -976,6 +990,7 @@ export function usePatientAuth() {
     // Actions
     openRegisterForm,
     handleSelectPatientContinue,
+    isContinuing,
     selectPatientProfile,
     handleDeletePatient,
     handleUpdatePatientSuccess,
