@@ -376,6 +376,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                         <div>
                           <UpcomingAppointments
                             appointments={upcomingAppointments}
+                            currentPatient={currentPatient}
                             onView={handleViewHomeAppointment}
                             onViewReceipt={onViewReceipt}
                             onCancelAppointment={handleCancelAppointmentAndRefresh}
@@ -389,6 +390,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                         <div>
                           <PastVisits
                             appointments={pastAppointments}
+                            currentPatient={currentPatient}
                             onView={handleViewHomeAppointment}
                             onViewReceipt={onViewReceipt}
                           />
