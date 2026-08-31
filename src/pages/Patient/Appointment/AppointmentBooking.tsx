@@ -48,24 +48,6 @@ export const isAppointmentDayEnabled = (date: Date): boolean => {
   return appointmentDayConfig[jsDay] === 1
 }
 
-// Skeleton Loader Component for Time Slots
-const TimeSlotsSkeleton: React.FC = () => {
-  const skeletonItems = Array(6).fill(null)
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
-      {skeletonItems.map((_, index) => (
-        <div
-          key={index}
-          className="px-3 py-2.5 rounded-lg border-2 border-slate-200 dark:border-slate-700 animate-pulse"
-        >
-          <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16 mx-auto"></div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // Skeleton Loader Component for Dropdowns
 const DropdownSkeleton: React.FC = () => {
   return (
@@ -357,7 +339,10 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
               </div>
 
               {isLoadingTimeSlots ? (
-                <TimeSlotsSkeleton />
+                <div className="py-6 flex flex-col items-center justify-center gap-2 border border-dashed border-blue-200 dark:border-blue-900/50 rounded-lg bg-blue-50/30 dark:bg-blue-950/20">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Loading available time slots...</span>
+                </div>
               ) : timeSlotsList.length > 0 ? (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
@@ -409,11 +394,21 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
         </div>
 
         {/* Footer actions */}
-        <div className="flex justify-end items-center gap-3 border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 md:px-8 py-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 border-t border-slate-200 dark:border-slate-800 px-4 sm:px-6 md:px-8 py-4">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
+            {!bookDate ? (
+              <span>Please select an appointment date</span>
+            ) : !selectedTimeSlotId || !selectedSlot ? (
+              <span>Please select a time slot to enable booking</span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">Slot selected: {selectedSlot}</span>
+            )}
+          </div>
+
           <Button
             onClick={validateAndConfirm}
-            disabled={isConfirming || isLoadingTimeSlots}
-            className="w-full sm:w-auto text-white cursor-pointer font-semibold px-6 py-2.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!selectedTimeSlotId || !selectedSlot || !bookDate || isConfirming || isLoadingTimeSlots}
+            className="w-full sm:w-auto text-white cursor-pointer font-semibold px-6 py-2.5 flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
           >
             {isConfirming ? (

@@ -104,12 +104,15 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const authUserId = useAuthStore((s) => s.userId)
   const patientNumericId = currentPatient?.PatientID || (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
 
-  // TanStack Query with user and patient specific query key
+  // TanStack Query with user and patient specific query key (only when on home or visits tab)
+  const isAppointmentsNeeded = activeTab === 'home' || activeTab === 'visits'
   const {
     data: fetchedAppointments = [],
     isLoading: isLoadingAppointments,
     refetch: refetchAppointments,
-  } = useAppointmentsQuery(authUserId, patientNumericId || null)
+  } = useAppointmentsQuery(authUserId, patientNumericId || null, undefined, {
+    enabled: Boolean(patientNumericId && isAppointmentsNeeded),
+  })
 
   const [isFabExpanded, setIsFabExpanded] = useState<boolean>(false)
   const [selectedHomeAppointment, setSelectedHomeAppointment] = useState<Appointment | null>(null)
@@ -143,13 +146,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
       setActiveTabState(t)
     }
   }, [location.pathname])
-
-  // Re-fetch on patient switch
-  useEffect(() => {
-    if (patientNumericId) {
-      refetchAppointments()
-    }
-  }, [patientNumericId, refetchAppointments])
 
   const handleCancelAppointmentAndRefresh = async (appt: Appointment) => {
     if (onCancelAppointment) {

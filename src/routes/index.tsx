@@ -6,12 +6,7 @@ import ProtectedRoutes from "./ProtectedRoutes"
 import { Layout } from "@/layout/Layout"
 import { useAuth } from "@/context/AuthContext"
 import { ErrorFallback } from "@/components/ErrorFallback"
-
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-  </div>
-)
+import { PageLoader } from "@/components/PageLoader"
 
 // Reusable wrapper — resetKeys la pathname pass panra, so route change aanaa
 // boundary automatic-a reset aagum, "Try again" click pannanum nu venaam

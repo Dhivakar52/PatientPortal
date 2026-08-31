@@ -6,6 +6,7 @@ import { DeleteConfirmationDialog } from '@/common/DeleteConfirmationDialog'
 import { EditPatientModal } from '../Profile/EditPatientModal'
 import { type Patient } from '@/types/patient.types'
 import { initials, capitalizeName, calcAge } from '@/utils/patient.utils'
+import { PageLoader } from '@/components/PageLoader'
 
 interface PatientSelectionProps {
   patients: Patient[]
@@ -16,6 +17,8 @@ interface PatientSelectionProps {
   onEditSuccess?: (updatedPatient: Patient) => void
   onDeletePatient?: (patientId: string | number) => Promise<boolean | void>
   currentUserId?: number | null
+  isLoading?: boolean
+  isContinuing?: boolean
 }
 
 export const PatientSelection: React.FC<PatientSelectionProps> = ({
@@ -27,6 +30,8 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
   onEditSuccess,
   onDeletePatient,
   currentUserId,
+  isLoading = false,
+  isContinuing = false,
 }) => {
   // State for Edit Patient Modal
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
@@ -64,12 +69,30 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
     }
   }
 
+  if (isLoading && patients.length === 0) {
+    return (
+      <PageLoader
+        message="Loading Patient Profiles..."
+        subMessage="Fetching your registered patient records"
+      />
+    )
+  }
+
+  if (isContinuing) {
+    return (
+      <PageLoader
+        message="Opening Dashboard..."
+        subMessage="Preparing patient records and appointments"
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f0f4f8] to-[#e2e8f0] dark:from-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 font-sans">
       <PatientHeader />
 
       <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-3xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden transition-all duration-300 hover:shadow-3xl relative">
           {/* Header Section */}
           <div className="relative overflow-hidden px-8 py-7" style={{ background: "var(--blue-text-color)" }}>
             <div className="relative z-10">
@@ -89,7 +112,19 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
 
           {/* Patient List */}
           <div className="max-h-[340px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-            {patients.length === 0 ? (
+            {isLoading ? (
+              <div className="p-4 space-y-3">
+                {[1, 2].map((n) => (
+                  <div key={n} className="flex items-center gap-3 p-3 animate-pulse">
+                    <div className="w-11 h-11 rounded-full bg-slate-200 dark:bg-slate-800 shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/3" />
+                      <div className="h-3 bg-slate-100 dark:bg-slate-800/60 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : patients.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-500">
                 No patient profiles found. Please register a new patient.
               </div>
@@ -204,15 +239,24 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
           {/* Continue Button */}
           <div className="p-6 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800">
             <Button
-              disabled={!spSelectedId || patients.length === 0}
+              disabled={isLoading || !spSelectedId || patients.length === 0}
               onClick={onContinue}
-              className="w-full text-white font-semibold cursor-pointer py-5 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full text-white font-semibold cursor-pointer py-5 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
               style={{ background: 'var(--blue-btn)', borderRadius: "12px" }}
             >
-              Continue
-              <ArrowRight className="w-4 h-4 ml-2" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Loading Patient Profiles...</span>
+                </>
+              ) : (
+                <>
+                  <span>Continue</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </Button>
-            {!spSelectedId && patients.length > 0 && (
+            {!isLoading && !spSelectedId && patients.length > 0 && (
               <p className="text-center text-xs text-slate-400 dark:text-slate-500 mt-2">
                 Please select a patient to continue
               </p>
