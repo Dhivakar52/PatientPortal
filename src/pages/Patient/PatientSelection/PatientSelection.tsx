@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Edit3, Trash2, Phone } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Edit3, Trash2, Phone, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PatientHeader } from '@/common/PatientHeader'
 import { DeleteConfirmationDialog } from '@/common/DeleteConfirmationDialog'
