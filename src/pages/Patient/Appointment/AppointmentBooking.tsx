@@ -28,7 +28,7 @@ interface AppointmentBookingProps {
 // Mapping: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6
 // Sunday is always disabled and excluded from configuration
 export const appointmentDayConfig: Record<number, 0 | 1> = {
-  1: 0, // Monday
+  1: 0,
   2: 1, // Tuesday
   3: 0, // Wednesday
   4: 1, // Thursday

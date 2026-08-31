@@ -461,7 +461,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
       {/* Mobile Only: Floating Book Appointment Action Button (FAB) */}
       {activeTab !== 'book' && (
-        <div className="fixed bottom-6 right-6 z-50 md:hidden flex flex-col items-end gap-2.5">
+        <div className="fixed  bottom-6 right-6 z-0 md:hidden flex flex-col items-end gap-2.5">
           {/* Expanded Book Action Pill */}
           {isFabExpanded && (
             <button
@@ -486,7 +486,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
           <button
             type="button"
             onClick={() => setIsFabExpanded(!isFabExpanded)}
-            className="w-13 h-13 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-13  h-13 rounded-full text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
             style={{
               background: isFabExpanded ? '#dc2626' : 'var(--blue-btn)',
               boxShadow: isFabExpanded
