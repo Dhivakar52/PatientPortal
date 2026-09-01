@@ -10,7 +10,6 @@ const PrimitiveTrigger = MenuPrimitive.Trigger as any
 const PrimitivePositioner = MenuPrimitive.Positioner as any
 const PrimitivePopup = MenuPrimitive.Popup as any
 const PrimitiveGroup = MenuPrimitive.Group as any
-const PrimitiveGroupLabel = MenuPrimitive.GroupLabel as any
 const PrimitiveItem = MenuPrimitive.Item as any
 const PrimitiveSubmenuRoot = MenuPrimitive.SubmenuRoot as any
 const PrimitiveSubmenuTrigger = MenuPrimitive.SubmenuTrigger as any
@@ -81,7 +80,7 @@ function DropdownMenuLabel({
   inset?: boolean
 }) {
   return (
-    <PrimitiveGroupLabel
+    <div
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn(
@@ -91,7 +90,7 @@ function DropdownMenuLabel({
       {...props}
     >
       {children}
-    </PrimitiveGroupLabel>
+    </div>
   )
 }
 

@@ -27,18 +27,20 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   appt,
   patient,
 }) => {
-  const { data: statesList = [] } = useStatesQuery()
+  const { data: rawStates } = useStatesQuery()
+  const statesList = Array.isArray(rawStates) ? rawStates : []
   const rawState = patient?.StateID ?? patient?.stateID ?? patient?.PatientState ?? patient?.State ?? patient?.state ?? ''
   const matchedState = statesList.find(
-    (s) => String(s.StateID) === String(rawState) || s.StateName?.toLowerCase() === String(rawState).toLowerCase()
+    (s) => String(s?.StateID) === String(rawState) || s?.StateName?.toLowerCase() === String(rawState).toLowerCase()
   )
   const resolvedStateId = matchedState?.StateID ? String(matchedState.StateID) : (String(rawState).match(/^\d+$/) ? String(rawState) : undefined)
   const stateDisplayName = matchedState?.StateName || (String(rawState).match(/^\d+$/) ? '—' : (String(rawState) || '—'))
 
-  const { data: citiesList = [] } = useCitiesQuery(resolvedStateId)
+  const { data: rawCities } = useCitiesQuery(resolvedStateId)
+  const citiesList = Array.isArray(rawCities) ? rawCities : []
   const rawCity = patient?.CityID ?? patient?.cityID ?? patient?.City ?? patient?.city ?? ''
   const matchedCity = citiesList.find(
-    (c) => String(c.CityID) === String(rawCity) || c.CityName?.toLowerCase() === String(rawCity).toLowerCase()
+    (c) => String(c?.CityID) === String(rawCity) || c?.CityName?.toLowerCase() === String(rawCity).toLowerCase()
   )
   const cityDisplayName = matchedCity?.CityName || (String(rawCity).match(/^\d+$/) ? '—' : (String(rawCity) || '—'))
 

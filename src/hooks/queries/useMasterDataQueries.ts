@@ -72,7 +72,8 @@ export function useStatesQuery(options?: { enabled?: boolean }) {
   return useQuery<StateOption[]>({
     queryKey: masterDataQueryKeys.states,
     queryFn: async () => {
-      return getStates()
+      const res = await getStates()
+      return Array.isArray(res) ? res : []
     },
     enabled: options?.enabled !== false,
     staleTime: 1000 * 60 * 60, // 1 hour
@@ -83,7 +84,8 @@ export function useCitiesQuery(stateId?: number | string, options?: { enabled?: 
   return useQuery<CityOption[]>({
     queryKey: masterDataQueryKeys.cities(stateId),
     queryFn: async () => {
-      return getCities(stateId)
+      const res = await getCities(stateId)
+      return Array.isArray(res) ? res : []
     },
     enabled: options?.enabled !== false,
     staleTime: 1000 * 60 * 30, // 30 minutes

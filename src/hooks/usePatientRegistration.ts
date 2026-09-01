@@ -31,6 +31,7 @@ export function usePatientRegistration({
   const [regName, setRegName] = useState('')
   const [regGender, setRegGender] = useState<'Male' | 'Female' | 'Other'>('Male')
   const [regDob, setRegDob] = useState('')
+  const [regAge, setRegAge] = useState('')
   const [regAddress, setRegAddress] = useState('')
   const [regCity, setRegCity] = useState('')
   const [regState, setRegState] = useState('')
@@ -43,6 +44,7 @@ export function usePatientRegistration({
     setRegName('')
     setRegGender('Male')
     setRegDob('')
+    setRegAge('')
     setRegAddress('')
     setRegCity('')
     setRegState('')
@@ -57,7 +59,16 @@ export function usePatientRegistration({
     // Validation
     const errs: Record<string, string> = {}
     if (!regName.trim()) errs.name = 'Name is required.'
-    if (!regDob) errs.dob = 'Date of birth is required.'
+
+    // Check Date of Birth or Age (at least one is mandatory)
+    const hasDob = Boolean(regDob && regDob.trim())
+    const parsedAge = parseInt(regAge, 10)
+    const hasAge = Boolean(regAge && !isNaN(parsedAge) && parsedAge > 0 && parsedAge <= 150)
+
+    if (!hasDob && !hasAge) {
+      errs.dob = 'Please enter Date of Birth or Age.'
+      errs.age = 'Please enter Date of Birth or Age.'
+    }
 
     // Optional Email: validate format only when a value is entered
     if (regEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(regEmail.trim())) {
@@ -83,8 +94,20 @@ export function usePatientRegistration({
     setIsSubmitting(true)
 
     // Calculate age and gender code
-    const calculatedAge = calcAge(regDob)
-    const ageValue = typeof calculatedAge === 'number' ? calculatedAge : 0
+    let ageValue = 0
+    if (hasAge) {
+      ageValue = parsedAge
+    } else if (hasDob) {
+      const calculatedAge = calcAge(regDob)
+      ageValue = typeof calculatedAge === 'number' ? calculatedAge : 0
+    }
+
+    let finalDob = regDob.trim()
+    if (!finalDob && ageValue > 0) {
+      const birthYear = new Date().getFullYear() - ageValue
+      finalDob = `${birthYear}-01-01`
+    }
+
     const genderCode = regGender === 'Male' ? 1 : regGender === 'Female' ? 2 : 3
 
     // Get logged-in user ID
@@ -101,7 +124,7 @@ export function usePatientRegistration({
       name: regName.trim(),
       email: emailVal,
       gender: genderCode,
-      dob: regDob,
+      dob: finalDob,
       age: ageValue,
       mobileNo: targetMobile,
       address: regAddress.trim(),
@@ -319,6 +342,8 @@ export function usePatientRegistration({
     setRegGender,
     regDob,
     setRegDob,
+    regAge,
+    setRegAge,
     regAddress,
     setRegAddress,
     regCity,

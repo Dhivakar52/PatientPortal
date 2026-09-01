@@ -111,6 +111,8 @@ export interface SaveAppointmentRequest {
     statusID: number;
     createdBy: number;
     updatedBy: number;
+    appointBookedTypeID?: number;
+    cancelledReason?: string;
 }
 
 /**
@@ -138,8 +140,17 @@ export const generateOtp = async (phoneNo: string, patientID?: number) => {
  */
 export const saveAppointment = async (data: SaveAppointmentRequest) => {
     try {
-        const response = await axiosInstance.post('/api/saveappointment', data);
-        console.log("Save Appointment", response.data)
+        const payload: SaveAppointmentRequest = {
+            ...data,
+            deptID: Number(data.deptID) || 18,
+            doctorID: Number(data.doctorID) || 0,
+            unitID: Number(data.unitID) || 0,
+            appointBookedTypeID: Number(data.appointBookedTypeID) || 0,
+            cancelledReason: data.cancelledReason || '',
+        };
+        console.log("Save Appointment Payload:", payload);
+        const response = await axiosInstance.post('/api/saveappointment', payload);
+        console.log("Save Appointment Response:", response.data);
         return response.data;
     } catch (error) {
         console.error('Save Appointment Error:', error);
@@ -349,12 +360,19 @@ export const getDoctors = async (departmentId?: number, doctorId?: number): Prom
  */
 export const getStates = async (): Promise<StateOption[]> => {
     try {
-        const response = await axiosInstance.get<StateOption[]>('/api/states');
+        const response = await axiosInstance.get<unknown>('/api/states');
         console.log("States response:", response.data);
-        return response.data;
+        const data = response.data;
+        if (Array.isArray(data)) return data;
+        if (data && typeof data === 'object') {
+            if (Array.isArray((data as any).data)) return (data as any).data;
+            if (Array.isArray((data as any).States)) return (data as any).States;
+            if (Array.isArray((data as any).result)) return (data as any).result;
+        }
+        return [];
     } catch (error) {
         console.error('Get States Error:', error);
-        throw error;
+        return [];
     }
 };
 
@@ -364,16 +382,23 @@ export const getStates = async (): Promise<StateOption[]> => {
  */
 export const getCities = async (stateId?: number | string): Promise<CityOption[]> => {
     try {
-        const response = await axiosInstance.get<CityOption[]>('/api/cities', {
+        const response = await axiosInstance.get<unknown>('/api/cities', {
             params: {
                 ...(stateId !== undefined && stateId !== '' && { StateID: stateId }),
             },
         });
         console.log("Cities response:", response.data);
-        return response.data;
+        const data = response.data;
+        if (Array.isArray(data)) return data;
+        if (data && typeof data === 'object') {
+            if (Array.isArray((data as any).data)) return (data as any).data;
+            if (Array.isArray((data as any).Cities)) return (data as any).Cities;
+            if (Array.isArray((data as any).result)) return (data as any).result;
+        }
+        return [];
     } catch (error) {
         console.error('Get Cities Error:', error);
-        throw error;
+        return [];
     }
 };
 

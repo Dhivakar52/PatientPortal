@@ -193,10 +193,12 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
               {otherAccounts.length > 0 && (
                 <>
                   <DropdownMenuSeparator className="my-1.5" />
-                  <DropdownMenuLabel className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold px-2 py-0.5 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Switch Account</span>
-                  </DropdownMenuLabel>
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold px-2 py-0.5 flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Switch Account</span>
+                    </DropdownMenuLabel>
+                  </DropdownMenuGroup>
                   <DropdownMenuGroup className="space-y-0.5">
                     {otherAccounts.map((acc) => (
                       <DropdownMenuItem

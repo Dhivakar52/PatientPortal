@@ -87,6 +87,8 @@ const PatientModule: React.FC = () => {
                         setRegGender={reg.setRegGender}
                         regDob={reg.regDob}
                         setRegDob={reg.setRegDob}
+                        regAge={reg.regAge}
+                        setRegAge={reg.setRegAge}
                         regAddress={reg.regAddress}
                         setRegAddress={reg.setRegAddress}
                         regCity={reg.regCity}
