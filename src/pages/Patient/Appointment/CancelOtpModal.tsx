@@ -48,7 +48,6 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
   if (!isOpen || !appointment) return null
 
   const apptNo = appointment.AppointmentNo || appointment.apptNo || appointment.AppointmentID || ''
-  const displayDoc = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : (appointment.DoctorName || 'Specialist Consultation')
   const displayDate = appointment.date || appointment.AppointmentDate || ''
 
   return (
@@ -74,10 +73,10 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
             <span className="text-slate-500">Appointment:</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">#{apptNo}</span>
           </div>
-          <div className="flex justify-between">
+          {/* <div className="flex justify-between">
             <span className="text-slate-500">Doctor:</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">{displayDoc}</span>
-          </div>
+          </div> */}
           <div className="flex justify-between">
             <span className="text-slate-500">Date:</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">{displayDate}</span>

@@ -139,13 +139,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
   const [pendingBookingPayload, setPendingBookingPayload] = useState<SaveAppointmentRequest | null>(null)
 
-  // Male Patient Confirmation Modal States
+  // Male Patient Restriction Modal State
   const [showMaleConfirmModal, setShowMaleConfirmModal] = useState(false)
-  const [pendingMaleBookingData, setPendingMaleBookingData] = useState<{
-    deptID: string
-    doctorID: string
-    timeSlotID: string
-  } | null>(null)
 
   // Reset all modal states and active inputs when switching patient profile
   useEffect(() => {
@@ -166,7 +161,6 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setPendingBookingPayload(null)
 
     setShowMaleConfirmModal(false)
-    setPendingMaleBookingData(null)
 
     setShowReceiptModal(false)
     setSelectedReceiptAppt(null)
@@ -188,14 +182,16 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     const payload: SaveAppointmentRequest = {
       patientID: numericPatientId,
       appointmentDate: bookDate,
-      deptID: Number(deptID),
-      doctorID: Number(doctorID),
+      deptID: Number(deptID) || 18,
+      doctorID: Number(doctorID) || 0,
       timeSlotID: Number(timeSlotID) || 1,
       unitID: 0,
       typeID: 4,  // 4 . Online, 5. Phone , 6. Reception.
       statusID: 0,
       createdBy: userId,
       updatedBy: userId,
+      appointBookedTypeID: 0,
+      cancelledReason: '',
     }
 
     setPendingBookingPayload(payload)
@@ -229,14 +225,12 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     deptID: string
     doctorID: string
     timeSlotID: string
-    deptName?: string
   }) => {
     if (isConfirming) return
 
-    const deptID = bookingData?.deptID || selectedDepartmentId || '1'
+    const deptID = bookingData?.deptID || selectedDepartmentId || '18'
     const doctorID = bookingData?.doctorID || selectedDoctorId || '0'
     const timeSlotID = bookingData?.timeSlotID || selectedTimeSlotId
-    const deptName = String(bookingData?.deptName || '').trim()
 
     const errs: Record<string, string> = {}
     if (!currentPatient?.id && !currentPatient?.PatientID) errs.patient = 'No active patient selected.'
@@ -249,22 +243,16 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       return
     }
 
-    // Check if patient is Male
+    // Check if patient is Male (Male appointment booking is not permitted)
     const rawGender = String(currentPatient?.Gender ?? currentPatient?.gender ?? '').trim().toLowerCase()
     const genderId = currentPatient?.GenderID
     const isMale = rawGender === 'male' || rawGender === 'm' || genderId === 1 || rawGender === '1'
 
-    // Check if selected department is Gynecology
-    const isGynecology =
-      deptName.toLowerCase().includes('gynec') ||
-      deptName.toLowerCase().includes('gynaec') ||
-      deptName.toLowerCase().includes('gynae') ||
-      deptID === '1' ||
-      !deptName
-
-    if (isMale && isGynecology) {
-      setPendingMaleBookingData({ deptID, doctorID, timeSlotID: timeSlotID || '' })
+    if (isMale) {
       setShowMaleConfirmModal(true)
+      const restrictionMsg = 'Appointment booking is not available for Male patients.'
+      toast.error(restrictionMsg)
+      setBookErrors((prev) => ({ ...prev, form: restrictionMsg }))
       return
     }
 
@@ -273,16 +261,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
   const handleCancelMaleBooking = () => {
     setShowMaleConfirmModal(false)
-    setPendingMaleBookingData(null)
   }
 
-  const handleConfirmMaleBooking = async () => {
+  const handleConfirmMaleBooking = () => {
     setShowMaleConfirmModal(false)
-    if (pendingMaleBookingData) {
-      const { deptID, doctorID, timeSlotID } = pendingMaleBookingData
-      setPendingMaleBookingData(null)
-      await executeBookingFlow(deptID, doctorID, timeSlotID)
-    }
   }
 
   const handleVerifyBookOtp = async (onSuccess: () => void) => {
@@ -545,8 +527,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     try {
       console.log(`🔐 Validating OTP for cancel: GET /api/validateotp?PhoneNo=${targetMobile}&PatientID=${patientId}&otp=${cancelOtpInput}`)
       const validateRes = await validateOtp(targetMobile, cancelOtpInput, patientId)
-      
-      const isOtpValid = 
+
+      const isOtpValid =
         validateRes.Result?.toLowerCase().trim() === 'otp successfully validated' ||
         validateRes.Result?.toLowerCase().trim() === 'success' ||
         validateRes.Result?.toLowerCase().trim() === 'valid' ||

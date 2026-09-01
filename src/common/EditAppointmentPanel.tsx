@@ -323,13 +323,39 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
   return (
     <CustomPanel
       isOpen={isOpen}
-      title="Edit Appointment"
+      title="Reschedule Appointment"
       onClose={onClose}
-      onSave={handleUpdate}
-      saveLabel={isUpdating ? 'Updating...' : 'Update Appointment'}
-      hideSave={true}
-      hideCancel={true}
       width="560px"
+      customFooter={
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-3 shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isUpdating}
+            className="text-xs font-medium px-4 py-2 cursor-pointer border-slate-300 dark:border-slate-700"
+            style={{ borderRadius: '4px' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleUpdate}
+            disabled={!selectedDateStr || !selectedTimeSlotId || isUpdating || isLoadingTimeSlots}
+            className="text-white font-semibold text-xs px-5 py-2 cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
+          >
+            {isUpdating ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+                Updating...
+              </>
+            ) : (
+              'Update Appointment'
+            )}
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-5">
         {/* Error Alert */}
@@ -472,36 +498,6 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
               <Lock className="w-3.5 h-3.5" />
             </span>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isUpdating}
-            className="text-xs font-medium px-4 py-2 cursor-pointer border-slate-300 dark:border-slate-700"
-            style={{ borderRadius: '4px' }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleUpdate}
-            disabled={!selectedDateStr || !selectedTimeSlotId || isUpdating || isLoadingTimeSlots}
-            className="text-white font-semibold text-xs px-5 py-2 cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
-          >
-            {isUpdating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
-                Updating...
-              </>
-            ) : (
-              'Update Appointment'
-            )}
-          </Button>
         </div>
       </div>
     </CustomPanel>

@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
+import { parseStandardDate } from '@/common/SearchAndFilter'
 
 interface VisitCardProps {
   appointment: Appointment
@@ -108,6 +109,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   showCancel = true,
 }) => {
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+  const [isCancelling, setIsCancelling] = useState(false)
 
   const { dayMonth, year, dayName } = formatVisitDate(appointment.date)
   const today = todayStr()
@@ -121,7 +123,24 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     (appointment as unknown as Record<string, unknown>).status
   const computedStatus = rawStatus ? String(rawStatus) : (appointment.date < today ? 'Completed' : '')
 
-  const isEditable = computedStatus.toLowerCase() !== 'cancelled' && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited'
+  // Check if appointment is strictly in the future (greater than today's date)
+  const apptDateObj = parseStandardDate(appointment.date)
+  const isFutureDate = (() => {
+    if (!apptDateObj) {
+      return appointment.date > today
+    }
+    const todayObj = new Date()
+    todayObj.setHours(0, 0, 0, 0)
+    const targetObj = new Date(apptDateObj)
+    targetObj.setHours(0, 0, 0, 0)
+    return targetObj.getTime() > todayObj.getTime()
+  })()
+
+  const isCancelled = computedStatus.toLowerCase() === 'cancelled'
+  // Reschedule and Cancel are strictly allowed ONLY for future appointments (hidden for today & past)
+  const isEditable = isFutureDate && !isCancelled && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited'
+  const isCancellable = isFutureDate && showCancel && !isCancelled && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited'
+  const hasMenuItems = !isCancelled && ((showDownload && !!onDownloadReceipt) || !!onView || isCancellable || (isEditable && !!onEditAppointment))
 
   const departmentName = appointment.department || appointment.DeptName || appointment.Department || ''
   const displayDoctor = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : ('Specialist Consultation')
@@ -162,8 +181,6 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     }
   }
 
-  const [isCancelling, setIsCancelling] = useState(false)
-
   const handleConfirmCancel = async () => {
     if (isCancelling) return
     setIsCancelling(true)
@@ -199,10 +216,6 @@ export const VisitCard: React.FC<VisitCardProps> = ({
         return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
     }
   }
-
-  const isCancelled = computedStatus.toLowerCase() === 'cancelled'
-  const isCancellable = showCancel && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited' && !isCancelled
-  const hasMenuItems = !isCancelled && ((showDownload && !!onDownloadReceipt) || !!onView || isCancellable || (isEditable && !!onEditAppointment))
 
   return (
     <>
@@ -283,7 +296,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-medium rounded-md text-xs"
                       >
                         <CalendarDays className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                        <span>Edit Appointment</span>
+                        <span>Reschedule Appointment</span>
                       </DropdownMenuItem>
                     )}
 
@@ -423,7 +436,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-medium rounded-md text-xs"
                       >
                         <CalendarDays className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                        <span>Edit Appointment</span>
+                        <span>Reschedule Appointment</span>
                       </DropdownMenuItem>
                     )}
 

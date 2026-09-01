@@ -1,5 +1,5 @@
 import React from 'react'
-import { CheckCircle2, Calendar, Clock, User, Stethoscope, Building2, Layers } from 'lucide-react'
+import { CheckCircle2, Calendar, Clock, User, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type Appointment } from '@/types/patient.types'
 import { formatDateFull, capitalizeName } from '@/utils/patient.utils'
@@ -25,17 +25,15 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
     ''
   )
   const patientName = lastBookedAppt.PatientName ? capitalizeName(lastBookedAppt.PatientName) : 'Patient'
-  const doctorName = lastBookedAppt.doctor || lastBookedAppt.DoctorName || 'Specialist Consultation'
   const departmentName = lastBookedAppt.department || lastBookedAppt.DeptName || 'Gynecology'
   const dateStr = lastBookedAppt.date || lastBookedAppt.AppointmentDate || ''
   const formattedDate = formatDateFull(dateStr) || dateStr
   const slotStr = lastBookedAppt.slot || lastBookedAppt.TimeSlot || lastBookedAppt.Timeslot || '08:00 AM - 08:10 AM'
-  const unitStr = lastBookedAppt.unit || lastBookedAppt.Unit || 'Unit 1'
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-200">
-        
+
         {/* Success Header */}
         <div className="text-center mb-5">
           <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3 shadow-inner">
@@ -80,22 +78,22 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
             </div>
 
             {/* Doctor */}
-            <div className="flex items-start gap-2">
+            {/* <div className="flex items-start gap-2">
               <Stethoscope className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <div>
                 <div className="text-slate-500 dark:text-slate-400">Doctor</div>
                 <div className="font-semibold text-slate-800 dark:text-slate-200">{doctorName}</div>
               </div>
-            </div>
+            </div> */}
 
             {/* Unit */}
-            <div className="flex items-start gap-2">
+            {/* <div className="flex items-start gap-2">
               <Layers className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <div>
                 <div className="text-slate-500 dark:text-slate-400">Unit</div>
                 <div className="font-semibold text-slate-800 dark:text-slate-200">{unitStr}</div>
               </div>
-            </div>
+            </div> */}
 
             {/* Date */}
             <div className="flex items-start gap-2">

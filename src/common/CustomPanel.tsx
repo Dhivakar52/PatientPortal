@@ -11,6 +11,7 @@ interface CustomPanelProps {
   width?: string;
   hideCancel?: boolean;
   hideSave?: boolean;
+  customFooter?: React.ReactNode;
 }
 
 const CustomPanel: React.FC<CustomPanelProps> = ({
@@ -23,6 +24,7 @@ const CustomPanel: React.FC<CustomPanelProps> = ({
   width = "560px",
   hideCancel = false,
   hideSave = false,
+  customFooter,
 }) => {
   if (!isOpen) return null;
 
@@ -30,9 +32,9 @@ const CustomPanel: React.FC<CustomPanelProps> = ({
     <div className="fixed inset-0 bg-black/30 z-50 flex justify-end">
       {/* Backdrop click closes panel */}
       <div className="flex-1" onClick={onClose}></div>
-      
+
       {/* Panel Content */}
-      <div 
+      <div
         className="bg-background h-full shadow-xl flex flex-col overflow-hidden border-l border-border"
         style={{ width }}
         onClick={(e) => e.stopPropagation()}
@@ -54,26 +56,36 @@ const CustomPanel: React.FC<CustomPanelProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border flex justify-end gap-3 shrink-0 bg-muted/50">
-          {!hideCancel && (
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm border border-border rounded-lg text-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-          )}
-          {!hideSave && (
-            <button
-              onClick={onSave || onClose}
-              className="px-4 py-2 text-sm text-primary-foreground rounded-lg bg-primary hover:bg-primary/90 transition-colors cursor-pointer"
-            >
-              {saveLabel}
-            </button>
-          )}
-        </div>
+        {customFooter !== undefined ? (
+          customFooter
+        ) : (
+          (!hideCancel || !hideSave) && (
+            <div className="p-4 border-t border-border flex justify-end gap-3 shrink-0 bg-muted/50">
+              {!hideCancel && (
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm border border-border rounded-lg text-foreground hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              )}
+              {!hideSave && (
+                <button
+                  onClick={onSave || onClose}
+                  className="px-4 py-2 text-sm text-primary-foreground rounded-lg bg-primary hover:bg-primary/90 transition-colors cursor-pointer"
+                  style={{
+                    background: "var(--blue-btn)",
+                    borderRadius: "4px",
+                  }}
+                >
+                  {saveLabel}
+                </button>
+              )}
+            </div>
+          )
+        )}
       </div>
-    </div>
+    </div >
   );
 };
 

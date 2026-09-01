@@ -14,6 +14,8 @@ interface PatientRegistrationProps {
   setRegGender: (v: 'Male' | 'Female' | 'Other') => void
   regDob: string
   setRegDob: (v: string) => void
+  regAge?: string
+  setRegAge?: (v: string) => void
   regAddress: string
   setRegAddress: (v: string) => void
   regCity: string
@@ -38,6 +40,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   setRegGender,
   regDob,
   setRegDob,
+  regAge = '',
+  setRegAge,
   regAddress,
   setRegAddress,
   regCity,
@@ -53,19 +57,21 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   onSubmit,
   onBack,
 }) => {
-  const { data: statesList = [] } = useStatesQuery()
+  const { data: rawStates } = useStatesQuery()
+  const statesList = Array.isArray(rawStates) ? rawStates : []
 
   // Resolve State ID for cities query in case regState is a name or ID
   const resolvedStateId = React.useMemo(() => {
     if (!regState) return ''
     if (/^\d+$/.test(regState)) return regState
     const found = statesList.find(
-      (s) => s.StateName?.toLowerCase() === regState.toLowerCase() || String(s.StateID) === regState
+      (s) => s?.StateName?.toLowerCase() === regState.toLowerCase() || String(s?.StateID) === regState
     )
     return found ? String(found.StateID) : regState
   }, [regState, statesList])
 
-  const { data: citiesList = [] } = useCitiesQuery(resolvedStateId)
+  const { data: rawCities } = useCitiesQuery(resolvedStateId)
+  const citiesList = Array.isArray(rawCities) ? rawCities : []
 
   const stateOptions = statesList.map((s) => ({
     value: String(s.StateID),
@@ -82,20 +88,34 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     setRegCity('')
   }
 
-  const calculatedAge = calcAge(regDob)
   const dobDate = regDob ? new Date(regDob) : undefined
 
-  // ✅ FIX: Use local date to avoid timezone issues
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
-      setRegDob(`${year}-${month}-${day}`)
+      const dobStr = `${year}-${month}-${day}`
+      setRegDob(dobStr)
+      if (setRegAge) {
+        const computed = calcAge(dobStr)
+        if (typeof computed === 'number') {
+          setRegAge(String(computed))
+        }
+      }
     } else {
       setRegDob('')
     }
   }
+
+  const handleAgeChange = (val: string) => {
+    const digits = digitsOnly(val, 3)
+    if (setRegAge) {
+      setRegAge(digits)
+    }
+  }
+
+  const displayAgeValue = regAge || (regDob ? String(calcAge(regDob)) : '')
 
   return (
     <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans">
@@ -171,7 +191,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
               {/* Date of Birth */}
               <div>
-                <FieldLabel required>Date of Birth</FieldLabel>
+                <FieldLabel>Date of Birth <span className="text-slate-400 font-normal text-[11px]">(or Age)</span></FieldLabel>
                 <DobDateField
                   value={dobDate}
                   onChange={handleDateSelect}
@@ -183,10 +203,14 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
 
               {/* Age */}
               <div>
-                <FieldLabel>Age</FieldLabel>
-                <div className="border border-slate-200 dark:border-slate-800 rounded p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm h-9 flex items-center">
-                  {calculatedAge === '' ? '—' : `${calculatedAge} Years`}
-                </div>
+                <FieldLabel>Age <span className="text-slate-400 font-normal text-[11px]">(or DOB)</span></FieldLabel>
+                <TextField
+                  value={displayAgeValue}
+                  onChange={handleAgeChange}
+                  placeholder="e.g. 28"
+                  type="text"
+                />
+                {regErrors.age && <p className="text-xs text-rose-600 mt-1">{regErrors.age}</p>}
               </div>
 
               {/* Address */}

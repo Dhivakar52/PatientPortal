@@ -1,16 +1,20 @@
 import React, { useState, useMemo } from 'react'
-import { Search, Filter, CalendarX, RotateCcw, X } from 'lucide-react'
+import { CalendarX, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { NativeSelect } from '@/components/ui/native-select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { DateField } from '@/components/FormPrimitives'
 import Pagination from '@/common/Pagination'
-import CustomPanel from '@/common/CustomPanel'
 import { AppointmentDetailsPanel } from '@/common/AppointmentDetailsPanel'
 import { VisitCard } from './VisitCard'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { todayStr } from '@/utils/patient.utils'
+import {
+  useSearchAndFilter,
+  SearchAndFilterControls,
+  FilterSummary,
+  FilterDrawer,
+  parseStandardDate,
+} from '@/common/SearchAndFilter'
 
 interface VisitsTableProps {
   appointments: Appointment[]
@@ -21,40 +25,6 @@ interface VisitsTableProps {
   isLoading?: boolean
   error?: string | null
   onRetry?: () => void
-}
-
-// Helper to parse date string into a Date object for range comparisons and sorting
-const parseStandardDate = (dateStr: string): Date | null => {
-  if (!dateStr) return null
-  // DD-MM-YYYY or DD/MM/YYYY
-  const ddMmMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
-  if (ddMmMatch) {
-    const day = parseInt(ddMmMatch[1], 10)
-    const month = parseInt(ddMmMatch[2], 10)
-    const year = parseInt(ddMmMatch[3], 10)
-    return new Date(year, month - 1, day)
-  }
-  // DD-MMM-YYYY
-  const ddMmmMatch = dateStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
-  if (ddMmmMatch) {
-    const day = parseInt(ddMmmMatch[1], 10)
-    const monthStr = ddMmmMatch[2].toUpperCase()
-    const year = parseInt(ddMmmMatch[3], 10)
-    const monthIndex = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(monthStr)
-    if (monthIndex !== -1) {
-      return new Date(year, monthIndex, day)
-    }
-  }
-  // YYYY-MM-DD
-  const isoMatch = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
-  if (isoMatch) {
-    const year = parseInt(isoMatch[1], 10)
-    const month = parseInt(isoMatch[2], 10)
-    const day = parseInt(isoMatch[3], 10)
-    return new Date(year, month - 1, day)
-  }
-  const parsed = new Date(dateStr)
-  return isNaN(parsed.getTime()) ? null : parsed
 }
 
 export const VisitsTable: React.FC<VisitsTableProps> = ({
@@ -69,55 +39,34 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
 }) => {
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(6)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
-
-  // Date Filter States
-  const [fromDate, setFromDate] = useState<Date | undefined>()
-  const [toDate, setToDate] = useState<Date | undefined>()
-
-  // Filter CustomPanel UI States
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
-  const [tempFromDate, setTempFromDate] = useState<Date | undefined>()
-  const [tempToDate, setTempToDate] = useState<Date | undefined>()
-  const [tempStatusFilter, setTempStatusFilter] = useState<string>('all')
-
-  // Search Toggle State
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [sortOrder] = useState<'newest' | 'oldest'>('newest')
 
   const today = todayStr()
 
-  // Open Filter Panel with Current Applied Values
-  const handleOpenFilterPanel = () => {
-    setTempFromDate(fromDate)
-    setTempToDate(toDate)
-    setTempStatusFilter(statusFilter)
-    setIsFilterPanelOpen(true)
-  }
-
-  // Apply Filter Values from CustomPanel
-  const handleApplyFilter = () => {
-    setFromDate(tempFromDate)
-    setToDate(tempToDate)
-    setStatusFilter(tempStatusFilter)
-    setPageIndex(0)
-    setIsFilterPanelOpen(false)
-  }
-
-  // Reset / Clear All Filters
-  const clearFilters = () => {
-    setSearchTerm('')
-    setStatusFilter('all')
-    setFromDate(undefined)
-    setToDate(undefined)
-    setTempFromDate(undefined)
-    setTempToDate(undefined)
-    setTempStatusFilter('all')
-    setSortOrder('newest')
-    setPageIndex(0)
-    setIsFilterPanelOpen(false)
-  }
+  // Reusable Search & Filter Hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    fromDate,
+    toDate,
+    isFiltered,
+    isFilterPanelOpen,
+    setIsFilterPanelOpen,
+    isSearchOpen,
+    setIsSearchOpen,
+    tempFromDate,
+    setTempFromDate,
+    tempToDate,
+    setTempToDate,
+    tempStatusFilter,
+    setTempStatusFilter,
+    handleOpenFilterPanel,
+    handleApplyFilter,
+    clearFilters,
+  } = useSearchAndFilter({
+    onFilterChange: () => setPageIndex(0),
+  })
 
   // State for View Details Panel Modal
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
@@ -224,8 +173,6 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
     return filteredAppointments.slice(start, start + pageSize)
   }, [filteredAppointments, pageIndex, pageSize])
 
-  const isFiltered = searchTerm !== '' || statusFilter !== 'all' || fromDate !== undefined || toDate !== undefined
-
   // ERROR STATE
   if (error) {
     return (
@@ -238,7 +185,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
             onClick={onRetry}
             className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold"
           >
-            <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Retry
+            <RotateCcw className="w-3.5 h-3.5 mr-1" /> Try Again
           </Button>
         )}
       </div>
@@ -249,7 +196,7 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
     <div className="space-y-4">
       {/* Header & Controls Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
-        {/* Left Side: Title, Total Visits Badge, Status Tabs */}
+        {/* Left Side: Title & Total Visits Badge */}
         <div className="flex flex-wrap items-center gap-3">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
             Visits History
@@ -260,70 +207,32 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
           </Badge>
         </div>
 
-        {/* Right Side: Search Icon & Filter Icon */}
-        <div className="flex items-center gap-2 relative">
-          {/* Search Toggle / Input */}
-          {isSearchOpen || searchTerm !== '' ? (
-            <div className="relative flex items-center min-w-[200px] sm:min-w-[220px]">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Search by doctor, dept, ID..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value)
-                  setPageIndex(0)
-                }}
-                className="w-full pl-8 pr-7 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchTerm('')
-                  setIsSearchOpen(false)
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                title="Clear search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(true)}
-              className="p-1.5  border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-2xs"
-              title="Search visits"
-              style={{ borderRadius: '4px' }}
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Filter Custom Panel Button */}
-          <button
-            type="button"
-            onClick={handleOpenFilterPanel}
-            className={`p-1.5  border transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold shadow-2xs ${isFilterPanelOpen || isFiltered
-              ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400'
-              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/70 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-              }`}
-            style={{ borderRadius: '4px' }}
-            title="Filter visits"
-          >
-            <Filter className="w-4 h-4" />
-            {isFiltered && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
-          </button>
-        </div>
+        {/* Right Side: Reusable Search & Filter Controls */}
+        <SearchAndFilterControls
+          searchTerm={searchTerm}
+          onSearchChange={(v) => {
+            setSearchTerm(v)
+            setPageIndex(0)
+          }}
+          isSearchOpen={isSearchOpen}
+          setIsSearchOpen={setIsSearchOpen}
+          onOpenFilterPanel={handleOpenFilterPanel}
+          isFiltered={isFiltered}
+          isFilterPanelOpen={isFilterPanelOpen}
+          searchPlaceholder="Search by doctor, dept, ID..."
+          searchTitle="Search visits"
+          filterTitle="Filter visits"
+        />
       </div>
 
       {/* Results Sub-counter when filtered */}
-      {isFiltered && (
-        <div className="text-xs text-slate-500 dark:text-slate-400 px-1">
-          Showing <span className="font-bold text-slate-800 dark:text-slate-200">{filteredAppointments.length}</span> {filteredAppointments.length === 1 ? 'visit' : 'visits'} (filtered from {appointments.length} total)
-        </div>
-      )}
+      <FilterSummary
+        isFiltered={isFiltered}
+        filteredCount={filteredAppointments.length}
+        totalCount={appointments.length}
+        unitName="visit"
+        onClearFilters={clearFilters}
+      />
 
       {/* LOADING SKELETON STATE */}
       {isLoading ? (
@@ -388,90 +297,37 @@ export const VisitsTable: React.FC<VisitsTableProps> = ({
         <Pagination table={tableObject as any} totalCount={filteredAppointments.length} />
       )}
 
-      {/* FILTER CUSTOM PANEL DRAWER */}
-      <CustomPanel
+      {/* REUSABLE FILTER CUSTOM PANEL DRAWER */}
+      <FilterDrawer
         isOpen={isFilterPanelOpen}
-        title="Filter Visits"
         onClose={() => setIsFilterPanelOpen(false)}
-        onSave={handleApplyFilter}
+        onApply={handleApplyFilter}
+        title="Filter Visits"
         saveLabel="Apply Filter"
         width="420px"
-      >
-        <div className="space-y-5">
-          {/* 1. Date Filter (From Date & To Date) with custom Popover Calendar */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Date Range
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
-                  From Date
-                </label>
-                <DateField
-                  value={tempFromDate}
-                  onChange={setTempFromDate}
-                  placeholder="Select From Date"
-                  defaultLabel="Select From Date"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
-                  To Date
-                </label>
-                <DateField
-                  value={tempToDate}
-                  onChange={setTempToDate}
-                  placeholder="Select To Date"
-                  defaultLabel="Select To Date"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Status Filter */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Status
-            </label>
-            <NativeSelect
-              value={tempStatusFilter}
-              onChange={(e) => setTempStatusFilter(e.target.value)}
-              size="sm"
-              className="w-full text-xs"
-            >
-              <option value="all">All Statuses</option>
-              <option value="visited">Visited</option>
-              <option value="not visited">Not Visited</option>
-              <option value="cancelled">Cancelled</option>
-            </NativeSelect>
-          </div>
-
-          {/* Reset Action inside Panel */}
-          {(tempFromDate !== undefined || tempToDate !== undefined || tempStatusFilter !== 'all') && (
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setTempFromDate(undefined)
-                  setTempToDate(undefined)
-                  setTempStatusFilter('all')
-                }}
-                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
-              >
-                Reset Filter Selections
-              </button>
-            </div>
-          )}
-        </div>
-      </CustomPanel>
+        showDateRange={true}
+        tempFromDate={tempFromDate}
+        setTempFromDate={setTempFromDate}
+        tempToDate={tempToDate}
+        setTempToDate={setTempToDate}
+        showStatusFilter={true}
+        statusLabel="Status"
+        tempStatusFilter={tempStatusFilter}
+        setTempStatusFilter={setTempStatusFilter}
+        statusOptions={[
+          { value: 'all', label: 'All Statuses' },
+          { value: 'visited', label: 'Visited' },
+          { value: 'not visited', label: 'Not Visited' },
+          { value: 'cancelled', label: 'Cancelled' },
+        ]}
+      />
 
       {/* VIEW DETAILS PANEL MODAL */}
       <AppointmentDetailsPanel
         isOpen={isViewPanelOpen}
+        onClose={handleClosePanel}
         appointment={selectedAppointment}
         currentPatient={currentPatient}
-        onClose={handleClosePanel}
         onViewReceipt={onViewReceipt}
       />
     </div>

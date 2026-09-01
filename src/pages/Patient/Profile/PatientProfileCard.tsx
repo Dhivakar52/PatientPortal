@@ -26,19 +26,21 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   onEditSuccess,
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const { data: statesList = [] } = useStatesQuery()
+  const { data: rawStates } = useStatesQuery()
+  const statesList = Array.isArray(rawStates) ? rawStates : []
 
   const rawState = currentPatient?.StateID ?? currentPatient?.stateID ?? currentPatient?.State ?? currentPatient?.PatientState ?? currentPatient?.state ?? ''
   const matchedState = statesList.find(
-    (s) => String(s.StateID) === String(rawState) || s.StateName?.toLowerCase() === String(rawState).toLowerCase()
+    (s) => String(s?.StateID) === String(rawState) || s?.StateName?.toLowerCase() === String(rawState).toLowerCase()
   )
   const displayState = matchedState ? matchedState.StateName : (String(rawState).match(/^\d+$/) ? '—' : (String(rawState) || '—'))
 
   const stateIdForCity = matchedState ? String(matchedState.StateID) : (String(rawState).match(/^\d+$/) ? String(rawState) : '')
-  const { data: citiesList = [] } = useCitiesQuery(stateIdForCity)
+  const { data: rawCities } = useCitiesQuery(stateIdForCity)
+  const citiesList = Array.isArray(rawCities) ? rawCities : []
   const rawCity = currentPatient?.CityID ?? currentPatient?.cityID ?? currentPatient?.City ?? currentPatient?.city ?? ''
   const matchedCity = citiesList.find(
-    (c) => String(c.CityID) === String(rawCity) || c.CityName?.toLowerCase() === String(rawCity).toLowerCase()
+    (c) => String(c?.CityID) === String(rawCity) || c?.CityName?.toLowerCase() === String(rawCity).toLowerCase()
   )
   const displayCity = matchedCity ? matchedCity.CityName : (String(rawCity).match(/^\d+$/) ? '—' : (String(rawCity) || '—'))
 
@@ -62,7 +64,6 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   const displayAddress = currentPatient?.Address || currentPatient?.PatientAddress || currentPatient?.address || '—'
   const displayPinCode = currentPatient?.PinCode || currentPatient?.pincode || '—'
   const displayUhid = currentPatient?.UHID || '—'
-  const displayRegisterNo = currentPatient?.RegisterNo || '—'
   const displayAbhaId = currentPatient?.AbhaID || '—'
 
   const getGenderIcon = () => {
@@ -202,12 +203,12 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
               </span>
             </div>
 
-            <div className="flex justify-between items-start gap-2">
+            {/* <div className="flex justify-between items-start gap-2">
               <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Register No.</span>
               <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 text-right">
                 {displayRegisterNo}
               </span>
-            </div>
+            </div> */}
 
             <div className="flex justify-between items-start gap-2">
               <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">ABHA ID</span>

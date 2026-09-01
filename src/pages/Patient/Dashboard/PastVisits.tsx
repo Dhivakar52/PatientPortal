@@ -1,49 +1,23 @@
 import React, { useState, useMemo } from 'react'
-import { Search, Filter, CalendarX, X } from 'lucide-react'
+import { CalendarX } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { NativeSelect } from '@/components/ui/native-select'
-import { DateField } from '@/components/FormPrimitives'
 import Pagination from '@/common/Pagination'
-import CustomPanel from '@/common/CustomPanel'
 import { VisitCard } from '../Visits/VisitCard'
 import { type Appointment, type Patient } from '@/types/patient.types'
+import {
+  useSearchAndFilter,
+  SearchAndFilterControls,
+  FilterSummary,
+  FilterDrawer,
+  parseStandardDate,
+} from '@/common/SearchAndFilter'
 
 interface PastVisitsProps {
   appointments: Appointment[]
   currentPatient?: Patient | null
   onView?: (appt: Appointment) => void
   onViewReceipt: (appt: Appointment) => void
-}
-
-const parseStandardDate = (dateStr: string): Date | null => {
-  if (!dateStr) return null
-  const ddMmMatch = dateStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/)
-  if (ddMmMatch) {
-    const day = parseInt(ddMmMatch[1], 10)
-    const month = parseInt(ddMmMatch[2], 10)
-    const year = parseInt(ddMmMatch[3], 10)
-    return new Date(year, month - 1, day)
-  }
-  const ddMmmMatch = dateStr.match(/^(\d{1,2})[-/]([A-Za-z]{3})[-/](\d{4})$/)
-  if (ddMmmMatch) {
-    const day = parseInt(ddMmmMatch[1], 10)
-    const monthStr = ddMmmMatch[2].toUpperCase()
-    const year = parseInt(ddMmmMatch[3], 10)
-    const monthIndex = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(monthStr)
-    if (monthIndex !== -1) {
-      return new Date(year, monthIndex, day)
-    }
-  }
-  const isoMatch = dateStr.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/)
-  if (isoMatch) {
-    const year = parseInt(isoMatch[1], 10)
-    const month = parseInt(isoMatch[2], 10)
-    const day = parseInt(isoMatch[3], 10)
-    return new Date(year, month - 1, day)
-  }
-  const parsed = new Date(dateStr)
-  return isNaN(parsed.getTime()) ? null : parsed
 }
 
 export const PastVisits: React.FC<PastVisitsProps> = ({
@@ -54,46 +28,31 @@ export const PastVisits: React.FC<PastVisitsProps> = ({
 }) => {
   const [pageIndex, setPageIndex] = useState(0)
   const [pageSize, setPageSize] = useState(5)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [fromDate, setFromDate] = useState<Date | undefined>()
-  const [toDate, setToDate] = useState<Date | undefined>()
 
-  // Filter Drawer UI States
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
-  const [tempFromDate, setTempFromDate] = useState<Date | undefined>()
-  const [tempToDate, setTempToDate] = useState<Date | undefined>()
-  const [tempStatusFilter, setTempStatusFilter] = useState<string>('all')
-
-  // Search Toggle State
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-
-  const handleOpenFilterPanel = () => {
-    setTempFromDate(fromDate)
-    setTempToDate(toDate)
-    setTempStatusFilter(statusFilter)
-    setIsFilterPanelOpen(true)
-  }
-
-  const handleApplyFilter = () => {
-    setFromDate(tempFromDate)
-    setToDate(tempToDate)
-    setStatusFilter(tempStatusFilter)
-    setPageIndex(0)
-    setIsFilterPanelOpen(false)
-  }
-
-  const clearFilters = () => {
-    setSearchTerm('')
-    setStatusFilter('all')
-    setFromDate(undefined)
-    setToDate(undefined)
-    setTempFromDate(undefined)
-    setTempToDate(undefined)
-    setTempStatusFilter('all')
-    setPageIndex(0)
-    setIsFilterPanelOpen(false)
-  }
+  // Reusable Search & Filter Hook
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    fromDate,
+    toDate,
+    isFiltered,
+    isFilterPanelOpen,
+    setIsFilterPanelOpen,
+    isSearchOpen,
+    setIsSearchOpen,
+    tempFromDate,
+    setTempFromDate,
+    tempToDate,
+    setTempToDate,
+    tempStatusFilter,
+    setTempStatusFilter,
+    handleOpenFilterPanel,
+    handleApplyFilter,
+    clearFilters,
+  } = useSearchAndFilter({
+    onFilterChange: () => setPageIndex(0),
+  })
 
   const filteredAppointments = useMemo(() => {
     return appointments
@@ -170,8 +129,6 @@ export const PastVisits: React.FC<PastVisitsProps> = ({
     return filteredAppointments.slice(start, start + pageSize)
   }, [filteredAppointments, pageIndex, pageSize])
 
-  const isFiltered = searchTerm !== '' || statusFilter !== 'all' || fromDate !== undefined || toDate !== undefined
-
   return (
     <div className="space-y-3">
       {/* Header Bar */}
@@ -185,80 +142,32 @@ export const PastVisits: React.FC<PastVisitsProps> = ({
           </Badge>
         </div>
 
-        {/* Search & Filter Controls */}
-        <div className="flex items-center gap-2">
-          {/* Search Toggle / Input */}
-          {isSearchOpen || searchTerm !== '' ? (
-            <div className="relative flex items-center min-w-[200px] sm:min-w-[220px]">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Search doctor, dept, ID..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value)
-                  setPageIndex(0)
-                }}
-                className="w-full pl-8 pr-7 py-1 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchTerm('')
-                  setIsSearchOpen(false)
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                title="Clear search"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(true)}
-              className="p-1.5 border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-2xs"
-              style={{ borderRadius: '4px' }}
-              title="Search past visits"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          )}
-
-          {/* Filter Button */}
-          <button
-            type="button"
-            onClick={handleOpenFilterPanel}
-            className={`p-1.5 border transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold shadow-2xs ${
-              isFilterPanelOpen || isFiltered
-                ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400'
-                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/70 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-            }`}
-            style={{ borderRadius: '4px' }}
-            title="Filter visits"
-          >
-            <Filter className="w-4 h-4" />
-            {isFiltered && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
-          </button>
-        </div>
+        {/* Reusable Search & Filter Controls */}
+        <SearchAndFilterControls
+          searchTerm={searchTerm}
+          onSearchChange={(v) => {
+            setSearchTerm(v)
+            setPageIndex(0)
+          }}
+          isSearchOpen={isSearchOpen}
+          setIsSearchOpen={setIsSearchOpen}
+          onOpenFilterPanel={handleOpenFilterPanel}
+          isFiltered={isFiltered}
+          isFilterPanelOpen={isFilterPanelOpen}
+          searchPlaceholder="Search doctor, dept, ID..."
+          searchTitle="Search past visits"
+          filterTitle="Filter visits"
+        />
       </div>
 
       {/* Filtered Sub-counter */}
-      {isFiltered && (
-        <div className="text-xs text-slate-500 dark:text-slate-400 px-1 flex items-center justify-between">
-          <span>
-            Showing <span className="font-bold text-slate-800 dark:text-slate-200">{filteredAppointments.length}</span> (filtered from {appointments.length} total)
-          </span>
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
-          >
-            Clear Filter
-          </button>
-        </div>
-      )}
+      <FilterSummary
+        isFiltered={isFiltered}
+        filteredCount={filteredAppointments.length}
+        totalCount={appointments.length}
+        unitName="visit"
+        onClearFilters={clearFilters}
+      />
 
       {/* Visits List (Max 5 per page) */}
       {paginatedData.length > 0 ? (
@@ -301,82 +210,30 @@ export const PastVisits: React.FC<PastVisitsProps> = ({
         <Pagination table={tableObject as any} totalCount={filteredAppointments.length} pageSizeOptions={[5, 10, 25]} />
       )}
 
-      {/* Filter CustomPanel Drawer */}
-      <CustomPanel
+      {/* Reusable Filter Drawer */}
+      <FilterDrawer
         isOpen={isFilterPanelOpen}
         title="Filter Past Visits"
         onClose={() => setIsFilterPanelOpen(false)}
-        onSave={handleApplyFilter}
+        onApply={handleApplyFilter}
         saveLabel="Apply Filter"
         width="420px"
-      >
-        <div className="space-y-5">
-          {/* Date Range */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Date Range
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
-                  From Date
-                </label>
-                <DateField
-                  value={tempFromDate}
-                  onChange={setTempFromDate}
-                  placeholder="Select From Date"
-                  defaultLabel="Select From Date"
-                />
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-1">
-                  To Date
-                </label>
-                <DateField
-                  value={tempToDate}
-                  onChange={setTempToDate}
-                  placeholder="Select To Date"
-                  defaultLabel="Select To Date"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Status Filter */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Status
-            </label>
-            <NativeSelect
-              value={tempStatusFilter}
-              onChange={(e) => setTempStatusFilter(e.target.value)}
-              size="sm"
-              className="w-full text-xs"
-            >
-              <option value="all">All Statuses</option>
-              <option value="visited">Visited / Completed</option>
-              <option value="not visited">Not Visited</option>
-              <option value="cancelled">Cancelled</option>
-            </NativeSelect>
-          </div>
-
-          {(tempFromDate !== undefined || tempToDate !== undefined || tempStatusFilter !== 'all') && (
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setTempFromDate(undefined)
-                  setTempToDate(undefined)
-                  setTempStatusFilter('all')
-                }}
-                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
-              >
-                Reset Filter Selections
-              </button>
-            </div>
-          )}
-        </div>
-      </CustomPanel>
+        showDateRange={true}
+        tempFromDate={tempFromDate}
+        setTempFromDate={setTempFromDate}
+        tempToDate={tempToDate}
+        setTempToDate={setTempToDate}
+        showStatusFilter={true}
+        statusLabel="Status"
+        tempStatusFilter={tempStatusFilter}
+        setTempStatusFilter={setTempStatusFilter}
+        statusOptions={[
+          { value: 'all', label: 'All Statuses' },
+          { value: 'visited', label: 'Visited / Completed' },
+          { value: 'not visited', label: 'Not Visited' },
+          { value: 'cancelled', label: 'Cancelled' },
+        ]}
+      />
     </div>
   )
 }

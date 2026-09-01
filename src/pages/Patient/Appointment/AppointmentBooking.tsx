@@ -115,14 +115,17 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   // API Data: Time Slot Hours from GET /api/timeslothours
   const { data: timeSlotHoursList = [], isLoading: isLoadingTimeSlotHours } = useTimeSlotHoursQuery()
 
-  // Auto-select first department
+  // Auto-select department ID 18 (or first available)
   useEffect(() => {
     if (departmentsList.length > 0) {
-      const firstDept = departmentsList[0]
-      const firstDeptId = String(firstDept.DepartmentID || firstDept.DeptID || (firstDept as any).id || '1')
-      if (!selectedDepartmentId || selectedDepartmentId !== firstDeptId) {
-        setSelectedDepartmentId(firstDeptId)
+      const dept18 = departmentsList.find((d) => Number(d.DepartmentID || d.DeptID || (d as any).id) === 18)
+      const targetDept = dept18 || departmentsList[0]
+      const targetDeptId = String(targetDept.DepartmentID || targetDept.DeptID || (targetDept as any).id || '18')
+      if (!selectedDepartmentId || selectedDepartmentId !== targetDeptId) {
+        setSelectedDepartmentId(targetDeptId)
       }
+    } else if (!selectedDepartmentId) {
+      setSelectedDepartmentId('18')
     }
   }, [departmentsList, selectedDepartmentId, setSelectedDepartmentId])
 
@@ -195,12 +198,13 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     setLocalErrors((prev) => ({ ...prev, slot: '' }))
   }
 
-  const firstDept = departmentsList.length > 0 ? departmentsList[0] : null
-  const defaultFirstDeptId = firstDept
-    ? String(firstDept.DepartmentID || firstDept.DeptID || (firstDept as any).id || '1')
-    : '1'
-  const firstDeptName = firstDept
-    ? (firstDept.DepartmentName || firstDept.DeptName || (firstDept as any).name || 'Gynecology')
+  const dept18 = departmentsList.find((d) => Number(d.DepartmentID || d.DeptID || (d as any).id) === 18)
+  const targetDept = dept18 || (departmentsList.length > 0 ? departmentsList[0] : null)
+  const defaultDeptId = targetDept
+    ? String(targetDept.DepartmentID || targetDept.DeptID || (targetDept as any).id || '18')
+    : '18'
+  const defaultDeptName = targetDept
+    ? (targetDept.DepartmentName || targetDept.DeptName || (targetDept as any).name || 'Gynecology')
     : 'Gynecology'
 
   const validateAndConfirm = () => {
@@ -217,7 +221,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       }
     }
 
-    const effectiveDeptId = selectedDepartmentId || defaultFirstDeptId
+    const effectiveDeptId = selectedDepartmentId || defaultDeptId || '18'
 
     if (!selectedTimeSlotId && !selectedSlot) {
       errors.slot = 'Please select an available time slot'
@@ -233,7 +237,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       deptID: effectiveDeptId,
       doctorID: '0',
       timeSlotID: selectedTimeSlotId || '1',
-      deptName: firstDeptName,
+      deptName: defaultDeptName,
     })
   }
 
@@ -268,7 +272,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                   <DropdownSkeleton />
                 ) : (
                   <TextField
-                    value={firstDeptName}
+                    value={defaultDeptName}
                     disabled={true}
                     placeholder="Department"
                   />

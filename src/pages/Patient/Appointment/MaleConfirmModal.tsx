@@ -1,17 +1,16 @@
 import React from 'react'
-import { Info, X } from 'lucide-react'
+import { AlertCircle, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface MaleConfirmModalProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: () => void
+  onConfirm?: () => void
 }
 
 export const MaleConfirmModal: React.FC<MaleConfirmModalProps> = ({
   isOpen,
   onClose,
-  onConfirm,
 }) => {
   if (!isOpen) return null
 
@@ -28,43 +27,35 @@ export const MaleConfirmModal: React.FC<MaleConfirmModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Information Icon (ⓘ) */}
-        <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-4 shadow-xs">
-          <Info className="w-7 h-7 stroke-[2.2]" />
+        {/* Warning Icon */}
+        <div className="w-14 h-14 rounded-full bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-4 shadow-xs">
+          <AlertCircle className="w-7 h-7 stroke-[2.2]" />
         </div>
 
         {/* Title */}
         <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-3">
-          Confirm Appointment
+          Booking Not Allowed
         </h3>
 
-        {/* Exact Message */}
+        {/* Message */}
         <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6 space-y-2">
           <p>
-            This appointment is for a Gynecology department, but the patient is registered as Male.
+            Appointment booking is not available for <span className="font-bold text-slate-900 dark:text-slate-100">Male</span> patients.
           </p>
-          <p className="font-medium text-slate-800 dark:text-slate-200">
-            Do you want to proceed with the booking?
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            This department provides specialized consultation exclusively for Female patients.
           </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-center gap-3">
+        {/* Action Button */}
+        <div className="flex items-center justify-center">
           <Button
             type="button"
-            variant="outline"
             onClick={onClose}
-            className="w-full sm:w-auto px-6 py-2 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold cursor-pointer rounded-md"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={onConfirm}
-            className="w-full sm:w-auto px-6 py-2 text-white font-semibold cursor-pointer rounded-md shadow-sm"
+            className="w-full sm:w-auto px-8 py-2 text-white font-semibold cursor-pointer rounded-md shadow-sm"
             style={{ background: 'var(--blue-btn)' }}
           >
-            Confirm
+            Okay, Understood
           </Button>
         </div>
       </div>

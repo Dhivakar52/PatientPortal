@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { X, Loader2, UserCheck, Calendar, Lock } from 'lucide-react'
+import { X, Loader2, UserCheck, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldLabel, TextField, DobDateField, SelectField } from '@/components/FormPrimitives'
 import { type Patient } from '@/types/patient.types'
@@ -63,6 +63,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
   const [name, setName] = useState('')
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>('Male')
   const [dob, setDob] = useState('')
+  const [age, setAge] = useState('')
   const [mobileNo, setMobileNo] = useState('')
   const [email, setEmail] = useState('')
   const [address, setAddress] = useState('')
@@ -75,10 +76,12 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Master Data Queries for States & Cities
-  const { data: statesList = [], isLoading: isLoadingStates } = useStatesQuery({ enabled: isOpen })
-  const { data: citiesList = [], isLoading: isLoadingCities } = useCitiesQuery(stateId || undefined, {
+  const { data: rawStates, isLoading: isLoadingStates } = useStatesQuery({ enabled: isOpen })
+  const statesList = Array.isArray(rawStates) ? rawStates : []
+  const { data: rawCities, isLoading: isLoadingCities } = useCitiesQuery(stateId || undefined, {
     enabled: isOpen && Boolean(stateId),
   })
+  const citiesList = Array.isArray(rawCities) ? rawCities : []
 
   // Pre-populate fields when patient changes or modal opens
   useEffect(() => {
@@ -96,6 +99,8 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
 
       const isoDob = parseDateToIso(patient.DOB || patient.dob || '')
       setDob(isoDob)
+      setAge(patient.Age !== undefined && patient.Age !== null ? String(patient.Age) : (isoDob ? String(calcAge(isoDob)) : ''))
+
       const registeredMobile =
         patient.PhoneNo ||
         patient.phoneNo ||
@@ -125,7 +130,6 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
 
   if (!isOpen || !patient) return null
 
-  const calculatedAge = calcAge(dob)
   const dobDate = dob ? new Date(dob) : undefined
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -133,10 +137,20 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
       const year = date.getFullYear()
       const month = String(date.getMonth() + 1).padStart(2, '0')
       const day = String(date.getDate()).padStart(2, '0')
-      setDob(`${year}-${month}-${day}`)
+      const dobStr = `${year}-${month}-${day}`
+      setDob(dobStr)
+      const computed = calcAge(dobStr)
+      if (typeof computed === 'number') {
+        setAge(String(computed))
+      }
     } else {
       setDob('')
     }
+  }
+
+  const handleAgeChange = (val: string) => {
+    const digits = digitsOnly(val, 3)
+    setAge(digits)
   }
 
   const handleStateChange = (newVal: string) => {
@@ -161,7 +175,16 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
     // Validation
     const newErrors: Record<string, string> = {}
     if (!name.trim()) newErrors.name = 'Patient name is required.'
-    if (!dob) newErrors.dob = 'Date of birth is required.'
+
+    // Check Date of Birth or Age (at least one is required)
+    const hasDob = Boolean(dob && dob.trim())
+    const parsedAge = parseInt(age, 10)
+    const hasAge = Boolean(age && !isNaN(parsedAge) && parsedAge > 0 && parsedAge <= 150)
+
+    if (!hasDob && !hasAge) {
+      newErrors.dob = 'Please enter Date of Birth or Age.'
+      newErrors.age = 'Please enter Date of Birth or Age.'
+    }
 
     const cleanMobile = mobileNo.trim()
     if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
@@ -186,7 +209,21 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
 
     const patientId = Number(patient.PatientID || patient.id)
     const genderCode = gender === 'Male' ? 1 : gender === 'Female' ? 2 : 3
-    const ageValue = typeof calculatedAge === 'number' ? calculatedAge : (patient.Age || 0)
+
+    let ageValue = 0
+    if (hasAge) {
+      ageValue = parsedAge
+    } else if (hasDob) {
+      const computedAge = calcAge(dob)
+      ageValue = typeof computedAge === 'number' ? computedAge : (patient.Age || 0)
+    }
+
+    let finalDob = dob.trim()
+    if (!finalDob && ageValue > 0) {
+      const birthYear = new Date().getFullYear() - ageValue
+      finalDob = `${birthYear}-01-01`
+    }
+
     const loggedInUserId = Number(currentUserId ?? patient.UserID ?? patient.userID ?? localStorage.getItem('userID') ?? 0) || 0
 
     const stateIdNum = Number(stateId) || Number(patient.StateID ?? patient.stateID ?? 0) || 0
@@ -355,7 +392,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
 
             {/* Date of Birth */}
             <div>
-              <FieldLabel required>Date of Birth</FieldLabel>
+              <FieldLabel>Date of Birth <span className="text-slate-400 font-normal text-[11px]">(or Age)</span></FieldLabel>
               <DobDateField
                 value={dobDate}
                 onChange={handleDateSelect}
@@ -366,13 +403,17 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
               {errors.dob && <p className="text-xs text-rose-600 mt-1">{errors.dob}</p>}
             </div>
 
-            {/* Age - Display Only */}
+            {/* Age */}
             <div>
-              <FieldLabel>Age</FieldLabel>
-              <div className="border border-slate-200 dark:border-slate-800 rounded p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs h-9 flex items-center font-medium">
-                <Calendar className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
-                {calculatedAge === '' ? '—' : `${calculatedAge} Years`}
-              </div>
+              <FieldLabel>Age <span className="text-slate-400 font-normal text-[11px]">(or DOB)</span></FieldLabel>
+              <TextField
+                value={age || (dob ? String(calcAge(dob)) : '')}
+                onChange={handleAgeChange}
+                placeholder="e.g. 28"
+                type="text"
+                disabled={isSubmitting}
+              />
+              {errors.age && <p className="text-xs text-rose-600 mt-1">{errors.age}</p>}
             </div>
 
             {/* Email */}
