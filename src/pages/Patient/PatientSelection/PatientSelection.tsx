@@ -140,6 +140,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                 return (
                   <div
                     key={pId}
+                    data-cy="patient-card"
                     onClick={() => setSpSelectedId(pId)}
                     className={`flex items-center gap-3 px-6 py-4 cursor-pointer transition-all duration-200 group ${
                       isActive
@@ -156,7 +157,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                     >
                       {initials(pRawName)}
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0" data-cy="select-patient-btn">
                       <div className="flex items-center gap-2">
                         <span
                           className={`font-bold text-sm truncate ${
@@ -189,6 +190,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                       {/* Edit Button */}
                       <button
                         type="button"
+                        data-cy="edit-patient-btn"
                         onClick={(e) => handleOpenEdit(p, e)}
                         title="Edit Patient"
                         className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
@@ -200,6 +202,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                       {onDeletePatient && (
                         <button
                           type="button"
+                          data-cy="delete-patient-btn"
                           onClick={(e) => handleOpenDelete(p, e)}
                           title="Delete Patient"
                           className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
@@ -220,6 +223,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
 
           {/* Register New Patient Button */}
           <button
+            data-cy="add-new-patient-btn"
             onClick={onAddPatient}
             className="w-full text-left px-6 py-4 border-t border-slate-200 dark:border-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all duration-200 flex items-center gap-3 cursor-pointer group"
           >
@@ -239,6 +243,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
           {/* Continue Button */}
           <div className="p-6 bg-slate-50/50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800">
             <Button
+              data-cy="patient-select-continue-btn"
               disabled={isLoading || !spSelectedId || patients.length === 0}
               onClick={onContinue}
               className="w-full text-white font-semibold cursor-pointer py-5 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"

@@ -34,7 +34,7 @@ export function DeleteConfirmationDialog({
 }: DeleteConfirmationDialogProps) {
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="rounded-xl border border-slate-200">
+      <AlertDialogContent data-cy="delete-dialog" className="rounded-xl border border-slate-200">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-base font-semibold text-slate-900">{title}</AlertDialogTitle>
           <AlertDialogDescription className="text-xs text-slate-600">
@@ -42,10 +42,11 @@ export function DeleteConfirmationDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="mt-2 gap-2">
-          <AlertDialogCancel disabled={isDeleting} className="text-xs h-9 cursor-pointer">
+          <AlertDialogCancel data-cy="delete-cancel-btn" disabled={isDeleting} className="text-xs h-9 cursor-pointer">
             {cancelLabel}
           </AlertDialogCancel>
           <AlertDialogAction 
+            data-cy="delete-confirm-btn"
             onClick={onConfirm} 
             className="bg-red-600 hover:bg-red-700 text-white text-xs h-9 cursor-pointer"
             disabled={isDeleting}

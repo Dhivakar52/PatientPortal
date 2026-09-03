@@ -52,6 +52,7 @@ export function TextField({
   value,
   defaultValue,
   onChange,
+  dataCy,
 }: {
   placeholder?: string;
   disabled?: boolean;
@@ -59,6 +60,7 @@ export function TextField({
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
+  dataCy?: string;
 }) {
   return (
     <Input
@@ -68,6 +70,7 @@ export function TextField({
       value={value}
       defaultValue={defaultValue}
       onChange={(e) => onChange?.(e.target.value)}
+      data-cy={dataCy}
       className="h-9 text-[13px] rounded-[4px]"  // ✅ Already 4px
     />
   );
@@ -82,12 +85,14 @@ export function SelectField({
   value,
   onChange,
   disabled,
+  dataCy,
 }: {
   options: readonly SelectOption[];
   placeholder?: string;
   value?: string | number;
   onChange?: (value: string) => void;
   disabled?: boolean;
+  dataCy?: string;
 }) {
   const strVal = value !== undefined && value !== null && String(value) !== "" ? String(value) : undefined;
 
@@ -111,7 +116,7 @@ export function SelectField({
       onValueChange={(val: string) => onChange?.(val ?? "")}
       disabled={disabled}
     >
-      <SelectTrigger className="h-9 text-[13px] w-full rounded-[4px] bg-background border border-input">
+      <SelectTrigger data-cy={dataCy} className="h-9 text-[13px] w-full rounded-[4px] bg-background border border-input">
         <SelectValue placeholder={placeholder}>
           {displayLabel}
         </SelectValue>
@@ -121,7 +126,7 @@ export function SelectField({
           const optValue = typeof opt === "object" ? String(opt.value) : opt;
           const optLabel = typeof opt === "object" ? opt.label : opt;
           return (
-            <SelectItem key={optValue} value={optValue}>
+            <SelectItem key={optValue} value={optValue} data-cy={`select-option-${optValue}`}>
               {optLabel}
             </SelectItem>
           );
@@ -141,6 +146,7 @@ export function DateField({
   disabled,
   fromMonth,
   toMonth,
+  dataCy,
 }: {
   placeholder?: string;
   defaultLabel?: string;
@@ -149,6 +155,7 @@ export function DateField({
   disabled?: React.ComponentProps<typeof Calendar>["disabled"];
   fromMonth?: Date;
   toMonth?: Date;
+  dataCy?: string;
 }) {
   const [internalDate, setInternalDate] = React.useState<Date | undefined>();
   const [open, setOpen] = React.useState(false);
@@ -167,7 +174,7 @@ export function DateField({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger className="w-full">
+      <PopoverTrigger className="w-full" data-cy={dataCy}>
         <Button
           variant="outline"
           type="button"
@@ -203,6 +210,7 @@ export function DobDateField({
   fromYear = 1900,
   toYear,
   disabled,
+  dataCy,
 }: {
   placeholder?: string;
   defaultLabel?: string;
@@ -211,6 +219,7 @@ export function DobDateField({
   fromYear?: number;
   toYear?: number;
   disabled?: boolean;
+  dataCy?: string;
 }) {
   const [internalDate, setInternalDate] = React.useState<Date | undefined>();
   const date = value !== undefined ? value : internalDate;
@@ -232,7 +241,8 @@ export function DobDateField({
       fromYear={fromYear}
       toYear={toYear}
       disabled={disabled}
-      className="rounded-[4px]"  // ✅ Added rounded-[4px] prop if DatePickerDob accepts it
+      data-cy={dataCy}
+      className="rounded-[4px]"
     />
   );
 }

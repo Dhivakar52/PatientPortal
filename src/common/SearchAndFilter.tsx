@@ -278,6 +278,7 @@ export const SearchAndFilterControls: React.FC<SearchAndFilterControlsProps> = (
           <input
             type="text"
             autoFocus
+            data-cy="search-input"
             placeholder={searchPlaceholder}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -285,6 +286,7 @@ export const SearchAndFilterControls: React.FC<SearchAndFilterControlsProps> = (
           />
           <button
             type="button"
+            data-cy="search-clear-btn"
             onClick={() => {
               onSearchChange('')
               setIsSearchOpen(false)
@@ -298,6 +300,7 @@ export const SearchAndFilterControls: React.FC<SearchAndFilterControlsProps> = (
       ) : (
         <button
           type="button"
+          data-cy="search-toggle-btn"
           onClick={() => setIsSearchOpen(true)}
           className="p-1.5 border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer shadow-2xs"
           title={searchTitle}
@@ -310,6 +313,7 @@ export const SearchAndFilterControls: React.FC<SearchAndFilterControlsProps> = (
       {/* Filter Button */}
       <button
         type="button"
+        data-cy="filter-drawer-btn"
         onClick={onOpenFilterPanel}
         className={`p-1.5 border transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold shadow-2xs ${isFilterPanelOpen || isFiltered
           ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400'
@@ -350,13 +354,14 @@ export const FilterSummary: React.FC<FilterSummaryProps> = ({
   const unitPlural = filteredCount === 1 ? unitName : `${unitName}s`
 
   return (
-    <div className="text-xs text-slate-500 dark:text-slate-400 px-1 flex items-center justify-between animate-in fade-in-50">
+    <div data-cy="filter-summary-bar" className="text-xs text-slate-500 dark:text-slate-400 px-1 flex items-center justify-between animate-in fade-in-50">
       <span>
         Showing <span className="font-bold text-slate-800 dark:text-slate-200">{filteredCount}</span> {unitPlural} (filtered from {totalCount} total)
       </span>
       {showClearButton && onClearFilters && (
         <button
           type="button"
+          data-cy="filter-clear-btn"
           onClick={onClearFilters}
           className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
         >

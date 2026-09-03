@@ -52,6 +52,7 @@ export const LoginOtp: React.FC<LoginOtpProps> = ({
           <input
             type="tel"
             inputMode="numeric"
+            data-cy="otp-input"
             value={loginOtpInput}
             onChange={(e) => setLoginOtpInput(digitsOnly(e.target.value, 4))}
             onKeyDown={(e) => e.key === 'Enter' && loginOtpInput.length === 4 && !isVerifyingOtp && onVerify()}
@@ -63,7 +64,7 @@ export const LoginOtp: React.FC<LoginOtpProps> = ({
           />
         </div>
         {loginOtpErr && (
-          <div className="flex items-center gap-1.5 mt-2 animate-in fade-in duration-200">
+          <div data-cy="login-otp-error" className="flex items-center gap-1.5 mt-2 animate-in fade-in duration-200">
             <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
             <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{loginOtpErr}</p>
           </div>
@@ -73,6 +74,7 @@ export const LoginOtp: React.FC<LoginOtpProps> = ({
       {/* Verify Button */}
       <Button
         onClick={onVerify}
+        data-cy="verify-otp-btn"
         className="w-full text-white font-semibold cursor-pointer py-5 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative z-10"
         style={{ background: 'var(--blue-btn)', borderRadius: "4px" }}
         disabled={loginOtpInput.length !== 4 || isVerifyingOtp}
@@ -95,6 +97,7 @@ export const LoginOtp: React.FC<LoginOtpProps> = ({
       <div className="flex items-center justify-center gap-2 relative z-10">
         <button
           type="button"
+          data-cy="resend-otp-btn"
           onClick={onResend}
           disabled={isGeneratingOtp || isVerifyingOtp}
           className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-all cursor-pointer bg-white/50 dark:bg-slate-800/50 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800/50 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"

@@ -143,7 +143,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
             </p>
 
             {regErrors.form && (
-              <div className="mb-5 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 text-xs font-medium">
+              <div data-cy="reg-form-error" className="mb-5 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 text-xs font-medium">
                 {regErrors.form}
               </div>
             )}
@@ -152,10 +152,10 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
               {/* Mobile Number - Readonly */}
               <div>
                 <FieldLabel required>Mobile Number</FieldLabel>
-                <div className="border border-slate-200 dark:border-slate-800 rounded p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-sm h-9 flex items-center">
+                <div data-cy="reg-mobile-display" className="border border-slate-200 dark:border-slate-800 rounded p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold text-sm h-9 flex items-center">
                   +91 {pendingMobile}
                 </div>
-                {regErrors.mobile && <p className="text-xs text-rose-600 mt-1">{regErrors.mobile}</p>}
+                {regErrors.mobile && <p data-cy="reg-mobile-error" className="text-xs text-rose-600 mt-1">{regErrors.mobile}</p>}
               </div>
 
               {/* Full Name */}
@@ -165,8 +165,9 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   value={regName}
                   onChange={setRegName}
                   placeholder="e.g. Priya Kumar"
+                  dataCy="reg-name"
                 />
-                {regErrors.name && <p className="text-xs text-rose-600 mt-1">{regErrors.name}</p>}
+                {regErrors.name && <p data-cy="reg-name-error" className="text-xs text-rose-600 mt-1">{regErrors.name}</p>}
               </div>
 
               {/* Gender */}
@@ -179,6 +180,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                         type="radio"
                         name="regGender"
                         value={g}
+                        data-cy={`reg-gender-${g.toLowerCase()}`}
                         checked={regGender === g}
                         onChange={() => setRegGender(g)}
                         className="accent-blue-600"
@@ -197,8 +199,9 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   onChange={handleDateSelect}
                   placeholder="Select Date of Birth"
                   defaultLabel="Select Date of Birth"
+                  dataCy="reg-dob"
                 />
-                {regErrors.dob && <p className="text-xs text-rose-600 mt-1">{regErrors.dob}</p>}
+                {regErrors.dob && <p data-cy="reg-dob-error" className="text-xs text-rose-600 mt-1">{regErrors.dob}</p>}
               </div>
 
               {/* Age */}
@@ -209,8 +212,9 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   onChange={handleAgeChange}
                   placeholder="e.g. 28"
                   type="text"
+                  dataCy="reg-age"
                 />
-                {regErrors.age && <p className="text-xs text-rose-600 mt-1">{regErrors.age}</p>}
+                {regErrors.age && <p data-cy="reg-age-error" className="text-xs text-rose-600 mt-1">{regErrors.age}</p>}
               </div>
 
               {/* Address */}
@@ -220,8 +224,9 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   value={regAddress}
                   onChange={setRegAddress}
                   placeholder="House no, street"
+                  dataCy="reg-address"
                 />
-                {regErrors.address && <p className="text-xs text-rose-600 mt-1">{regErrors.address}</p>}
+                {regErrors.address && <p data-cy="reg-address-error" className="text-xs text-rose-600 mt-1">{regErrors.address}</p>}
               </div>
 
               {/* State */}
@@ -232,8 +237,9 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   value={regState}
                   onChange={handleStateChange}
                   placeholder="Select State"
+                  dataCy="reg-state"
                 />
-                {regErrors.state && <p className="text-xs text-rose-600 mt-1">{regErrors.state}</p>}
+                {regErrors.state && <p data-cy="reg-state-error" className="text-xs text-rose-600 mt-1">{regErrors.state}</p>}
               </div>
 
               {/* City */}
@@ -244,8 +250,9 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   value={regCity}
                   onChange={setRegCity}
                   placeholder="Select City"
+                  dataCy="reg-city"
                 />
-                {regErrors.city && <p className="text-xs text-rose-600 mt-1">{regErrors.city}</p>}
+                {regErrors.city && <p data-cy="reg-city-error" className="text-xs text-rose-600 mt-1">{regErrors.city}</p>}
               </div>
 
               {/* PIN Code */}
@@ -255,8 +262,9 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   value={regPincode}
                   onChange={(v) => setRegPincode(digitsOnly(v, 6))}
                   placeholder="6-digit PIN"
+                  dataCy="reg-pincode"
                 />
-                {regErrors.pincode && <p className="text-xs text-rose-600 mt-1">{regErrors.pincode}</p>}
+                {regErrors.pincode && <p data-cy="reg-pincode-error" className="text-xs text-rose-600 mt-1">{regErrors.pincode}</p>}
               </div>
 
               {/* Email Address */}
@@ -267,20 +275,22 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   onChange={(v) => setRegEmail && setRegEmail(v)}
                   placeholder="e.g. user@example.com"
                   type="email"
+                  dataCy="reg-email"
                 />
-                {regErrors.email && <p className="text-xs text-rose-600 mt-1">{regErrors.email}</p>}
+                {regErrors.email && <p data-cy="reg-email-error" className="text-xs text-rose-600 mt-1">{regErrors.email}</p>}
               </div>
             </div>
           </div>
 
           {/* Footer actions */}
           <div className="flex justify-end items-center gap-3 border-t border-slate-200 dark:border-slate-800 px-6 sm:px-8 py-4">
-            <Button variant="outline" onClick={onBack} disabled={isSubmitting} className="cursor-pointer">
+            <Button variant="outline" onClick={onBack} disabled={isSubmitting} className="cursor-pointer" data-cy="reg-back-btn">
               Back
             </Button>
             <Button
               onClick={onSubmit}
               disabled={isSubmitting}
+              data-cy="reg-submit-btn"
               className="text-white cursor-pointer font-semibold px-6 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ background: 'var(--blue-btn)' }}
             >

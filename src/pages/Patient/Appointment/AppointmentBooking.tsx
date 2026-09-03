@@ -293,13 +293,14 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 defaultLabel="Select date"
                 fromMonth={tomorrow}
                 toMonth={maxDate}
+                dataCy="book-date-picker"
                 disabled={(date) => {
                   if (date < tomorrow || date > maxDate) return true
                   return !isAppointmentDayEnabled(date)
                 }}
               />
               {(bookErrors.date || localErrors.date) && (
-                <p className="text-xs text-rose-600 mt-1">{bookErrors.date || localErrors.date}</p>
+                <p data-cy="book-date-error" className="text-xs text-rose-600 mt-1">{bookErrors.date || localErrors.date}</p>
               )}
             </div>
 
@@ -316,6 +317,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                     value={selectedTimeSlotHoursId}
                     onChange={handleHourRangeChange}
                     disabled={isLoadingTimeSlotHours}
+                    dataCy="book-slot-hours-select"
                   />
                 )}
                 {isLoadingTimeSlotHours && (
@@ -325,14 +327,14 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 )}
               </div>
               {(bookErrors.slot || localErrors.slot) && (
-                <p className="text-xs text-rose-600 mt-1">{bookErrors.slot || localErrors.slot}</p>
+                <p data-cy="book-slot-error" className="text-xs text-rose-600 mt-1">{bookErrors.slot || localErrors.slot}</p>
               )}
             </div>
           </div>
 
           {/* Available Time Slots Grid (GET /api/timeslot?timeSlotHoursID=...) */}
           {selectedTimeSlotHoursId && (
-            <div className="space-y-3 pt-6 mt-6 border-t border-slate-200 dark:border-slate-800 animate-in fade-in-50 duration-300">
+            <div data-cy="available-slots-section" className="space-y-3 pt-6 mt-6 border-t border-slate-200 dark:border-slate-800 animate-in fade-in-50 duration-300">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <FieldLabel required>Available Time Slots</FieldLabel>
                 {selectedHourRangeLabel && (
@@ -360,6 +362,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                         <button
                           key={slotId}
                           type="button"
+                          data-cy="slot-pill"
                           onClick={() => handleTimeSlotSelect(slotId, slotLabel)}
                           className={`
                             px-3 py-2.5 text-center text-xs font-semibold rounded-lg border-2 
@@ -411,6 +414,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
           <Button
             onClick={validateAndConfirm}
+            data-cy="book-submit-btn"
             disabled={!selectedTimeSlotId || !selectedSlot || !bookDate || isConfirming || isLoadingTimeSlots}
             className="w-full sm:w-auto text-white cursor-pointer font-semibold px-6 py-2.5 flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}

@@ -331,6 +331,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
           <Button
             type="button"
             variant="outline"
+            data-cy="edit-appointment-cancel-btn"
             onClick={onClose}
             disabled={isUpdating}
             className="text-xs font-medium px-4 py-2 cursor-pointer border-slate-300 dark:border-slate-700"
@@ -340,6 +341,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
           </Button>
           <Button
             type="button"
+            data-cy="edit-appointment-submit-btn"
             onClick={handleUpdate}
             disabled={!selectedDateStr || !selectedTimeSlotId || isUpdating || isLoadingTimeSlots}
             className="text-white font-semibold text-xs px-5 py-2 cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -357,10 +359,10 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
         </div>
       }
     >
-      <div className="space-y-5">
+      <div data-cy="edit-appointment-panel" className="space-y-5">
         {/* Error Alert */}
         {errorMsg && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 text-xs font-medium animate-in fade-in-50">
+          <div data-cy="edit-appointment-error" className="flex items-center gap-2 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 text-xs font-medium animate-in fade-in-50">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
@@ -407,6 +409,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
             onChange={handleDateChange}
             placeholder="Select appointment date"
             defaultLabel="Select appointment date"
+            dataCy="edit-appointment-date"
             fromMonth={tomorrow}
             toMonth={maxDate}
             disabled={(date) => {
@@ -426,6 +429,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
               value={selectedTimeSlotHoursId}
               onChange={handleHourRangeChange}
               disabled={isLoadingHours}
+              dataCy="edit-appointment-slot-hours"
             />
             {isLoadingHours && (
               <span className="absolute right-8 top-2.5 text-blue-600">
@@ -465,6 +469,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
                       <button
                         key={slotId}
                         type="button"
+                        data-cy="edit-slot-pill"
                         onClick={() => handleSlotSelect(slotId, slotLabel)}
                         className={`
                           px-2.5 py-2 text-center text-xs font-semibold rounded-md border 

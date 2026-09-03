@@ -130,7 +130,7 @@ export const PastVisits: React.FC<PastVisitsProps> = ({
   }, [filteredAppointments, pageIndex, pageSize])
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-cy="past-visits-section">
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">

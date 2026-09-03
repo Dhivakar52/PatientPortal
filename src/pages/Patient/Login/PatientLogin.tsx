@@ -137,6 +137,7 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                   <input
                     type="tel"
                     inputMode="numeric"
+                    data-cy="login-mobile"
                     value={loginMobileInput}
                     onChange={(e) => setLoginMobileInput(digitsOnly(e.target.value, 10))}
                     onKeyDown={(e) => e.key === 'Enter' && !isGeneratingOtp && onGenerateOtp()}
@@ -154,7 +155,7 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                 </div>
 
                 {loginMobileErr && (
-                  <p className="text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5 animate-in fade-in duration-200">
+                  <p data-cy="login-mobile-error" className="text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5 animate-in fade-in duration-200">
                     <span className="inline-block w-1 h-1 rounded-full bg-rose-500"></span>
                     {loginMobileErr}
                   </p>
@@ -165,6 +166,7 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
               {!showLoginOtpBlock && (
                 <Button
                   onClick={onGenerateOtp}
+                  data-cy="generate-otp-btn"
                   className="w-full text-white font-semibold py-3.5 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                   style={{ background: 'var(--blue-btn)', borderRadius: "10px" }}
                   disabled={loginMobileInput.length !== 10 || isGeneratingOtp}

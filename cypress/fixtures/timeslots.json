@@ -1,0 +1,50 @@
+[
+  {
+    "TimeSlotID": 1,
+    "TimeSlot": "08:00 AM - 08:10 AM",
+    "SlotRange": "08:00 AM - 09:00 AM",
+    "DoctorID": 101,
+    "UnitID": 1,
+    "IsBooked": false
+  },
+  {
+    "TimeSlotID": 2,
+    "TimeSlot": "08:10 AM - 08:20 AM",
+    "SlotRange": "08:00 AM - 09:00 AM",
+    "DoctorID": 101,
+    "UnitID": 1,
+    "IsBooked": false
+  },
+  {
+    "TimeSlotID": 3,
+    "TimeSlot": "08:20 AM - 08:30 AM",
+    "SlotRange": "08:00 AM - 09:00 AM",
+    "DoctorID": 101,
+    "UnitID": 1,
+    "IsBooked": false
+  },
+  {
+    "TimeSlotID": 4,
+    "TimeSlot": "09:00 AM - 09:10 AM",
+    "SlotRange": "09:00 AM - 10:00 AM",
+    "DoctorID": 101,
+    "UnitID": 1,
+    "IsBooked": false
+  },
+  {
+    "TimeSlotID": 5,
+    "TimeSlot": "09:10 AM - 09:20 AM",
+    "SlotRange": "09:00 AM - 10:00 AM",
+    "DoctorID": 101,
+    "UnitID": 1,
+    "IsBooked": false
+  },
+  {
+    "TimeSlotID": 6,
+    "TimeSlot": "10:00 AM - 10:10 AM",
+    "SlotRange": "10:00 AM - 11:00 AM",
+    "DoctorID": 101,
+    "UnitID": 1,
+    "IsBooked": false
+  }
+]

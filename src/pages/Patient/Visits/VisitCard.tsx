@@ -219,7 +219,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
   return (
     <>
-      <div className="group border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 relative w-full max-w-full overflow-visible">
+      <div data-cy="visit-card" className="group border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200 relative w-full max-w-full overflow-visible">
         <div className="p-3.5 sm:p-4 w-full">
           {/* Mobile Top Header: Date Box + Status Badge + 3-dots menu */}
           <div className="flex sm:hidden items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
@@ -249,6 +249,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
             {/* Right: Status Badge & 3-dots Menu on Mobile */}
             <div className="flex items-center gap-1.5 shrink-0">
               <span
+                data-cy="visit-card-status"
                 className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${getStatusColor(
                   computedStatus
                 )}`}
@@ -262,6 +263,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                     render={
                       <button
                         type="button"
+                        data-cy="visit-card-menu-btn"
                         className="p-1 rounded-md text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer outline-none"
                         title="More actions"
                       >
@@ -272,6 +274,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                   <DropdownMenuContent align="end" className="w-48 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg z-[100] text-xs">
                     {showDownload && !!onDownloadReceipt && (
                       <DropdownMenuItem
+                        data-cy="visit-card-download-btn"
                         onClick={handleDownload}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-md text-xs"
                       >
@@ -282,6 +285,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
                     {onView && (
                       <DropdownMenuItem
+                        data-cy="visit-card-view-btn"
                         onClick={handleCardClick}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-md text-xs"
                       >
@@ -292,6 +296,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
                     {onEditAppointment && isEditable && (
                       <DropdownMenuItem
+                        data-cy="visit-card-edit-btn"
                         onClick={() => onEditAppointment(appointment)}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-medium rounded-md text-xs"
                       >
@@ -302,6 +307,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
                     {isCancellable && (
                       <DropdownMenuItem
+                        data-cy="visit-card-cancel-btn"
                         onClick={handleCancelClick}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium rounded-md text-xs"
                       >
@@ -389,6 +395,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
             {/* Desktop Right Side: Status Badge & 3-dots Menu */}
             <div className="hidden sm:flex items-center gap-2 shrink-0 self-center">
               <span
+                data-cy="visit-card-status"
                 className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${getStatusColor(
                   computedStatus
                 )}`}
@@ -402,6 +409,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                     render={
                       <button
                         type="button"
+                        data-cy="visit-card-menu-btn"
                         className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer outline-none"
                         title="More actions"
                       >
@@ -412,6 +420,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                   <DropdownMenuContent align="end" className="w-52 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg z-[100] text-xs">
                     {showDownload && !!onDownloadReceipt && (
                       <DropdownMenuItem
+                        data-cy="visit-card-download-btn"
                         onClick={handleDownload}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-md text-xs"
                       >
@@ -422,6 +431,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
                     {onView && (
                       <DropdownMenuItem
+                        data-cy="visit-card-view-btn"
                         onClick={handleCardClick}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-md text-xs"
                       >
@@ -432,6 +442,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
                     {onEditAppointment && isEditable && (
                       <DropdownMenuItem
+                        data-cy="visit-card-edit-btn"
                         onClick={() => onEditAppointment(appointment)}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 font-medium rounded-md text-xs"
                       >
@@ -442,6 +453,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
 
                     {isCancellable && (
                       <DropdownMenuItem
+                        data-cy="visit-card-cancel-btn"
                         onClick={handleCancelClick}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-medium rounded-md text-xs"
                       >

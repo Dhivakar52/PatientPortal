@@ -53,7 +53,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
   const otherAccounts = knownAccounts.filter((a) => a.phoneNo && a.phoneNo !== activePhone)
 
   return (
-    <header className="text-white px-4 sm:px-5 py-3 flex items-center justify-between shadow-md sticky top-0 z-50 overflow-visible" style={{ background: "var(--blue-text-color)" }}>
+    <header data-cy="patient-header" className="text-white px-4 sm:px-5 py-3 flex items-center justify-between shadow-md sticky top-0 z-50 overflow-visible" style={{ background: "var(--blue-text-color)" }}>
       <div className="flex items-center gap-3 min-w-0 flex-1">
         <div className="bg-white rounded p-1 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center overflow-hidden shrink-0">
           <img src={srmLogo} alt="SRM Logo" className="w-9 sm:w-10 h-auto object-contain" />
@@ -71,6 +71,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
         <button
           type="button"
           onClick={toggleTheme}
+          data-cy="theme-toggle-btn"
           className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-colors cursor-pointer outline-none"
           aria-label="Toggle theme"
           title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
@@ -85,12 +86,13 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
         {currentPatient && (
           <DropdownMenu>
             <DropdownMenuTrigger
+              data-cy="account-switch-dropdown"
               className="flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 text-xs font-semibold cursor-pointer text-white transition-colors outline-none rounded-[4px]"
             >
               <div className="w-6 h-6 rounded-full bg-blue-200 text-[#14213D] flex items-center justify-center font-bold text-xs">
                 {initials(rawName)}
               </div>
-              <span className="hidden sm:inline">{displayName}</span>
+              <span className="hidden sm:inline" data-cy="header-display-name">{displayName}</span>
               <ChevronDown className="w-3.5 h-3.5 opacity-80" />
             </DropdownMenuTrigger>
 
@@ -121,6 +123,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                   return (
                     <DropdownMenuItem
                       key={pId}
+                      data-cy="switch-patient-item"
                       onClick={() => onSelectPatient?.(pId)}
                       className={`flex items-center gap-2.5 px-2.5 py-2 cursor-pointer rounded-lg text-xs transition-colors ${isActive
                         ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-900 dark:text-blue-200 font-semibold'
@@ -154,6 +157,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
               {/* Profile Action for Mobile View (Hidden on Desktop) */}
               <DropdownMenuSeparator className="my-1.5 lg:hidden" />
               <DropdownMenuItem
+                data-cy="header-profile-link"
                 onClick={() => navigate('/profile')}
                 className="flex lg:hidden items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg"
               >
@@ -166,6 +170,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                 <>
                   <DropdownMenuSeparator className="my-1.5" />
                   <DropdownMenuItem
+                    data-cy="header-add-patient-btn"
                     onClick={onAddPatient}
                     className="flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg"
                   >
@@ -180,6 +185,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                 <>
                   <DropdownMenuSeparator className="my-1.5" />
                   <DropdownMenuItem
+                    data-cy="header-view-all-profiles-btn"
                     onClick={onSelectPatientClick}
                     className="flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg"
                   >
@@ -203,6 +209,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                     {otherAccounts.map((acc) => (
                       <DropdownMenuItem
                         key={acc.phoneNo}
+                        data-cy="switch-account-item"
                         onClick={() => {
                           switchAccount(acc)
                           if (acc.activePatientId) {
@@ -232,6 +239,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                 <>
                   <DropdownMenuSeparator className="my-1.5" />
                   <DropdownMenuItem
+                    data-cy="header-logout-btn"
                     onClick={onLogout}
                     className="flex items-center gap-2 px-2.5 py-2 cursor-pointer text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg"
                   >

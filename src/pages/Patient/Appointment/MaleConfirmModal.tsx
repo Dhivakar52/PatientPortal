@@ -15,11 +15,12 @@ export const MaleConfirmModal: React.FC<MaleConfirmModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div data-cy="male-restriction-modal" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8 shadow-2xl text-center relative transform transition-all">
         {/* Close button */}
         <button
           type="button"
+          data-cy="male-restriction-close-btn"
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1 rounded-md transition-colors"
           title="Close"
@@ -51,6 +52,7 @@ export const MaleConfirmModal: React.FC<MaleConfirmModalProps> = ({
         <div className="flex items-center justify-center">
           <Button
             type="button"
+            data-cy="male-restriction-ack-btn"
             onClick={onClose}
             className="w-full sm:w-auto px-8 py-2 text-white font-semibold cursor-pointer rounded-md shadow-sm"
             style={{ background: 'var(--blue-btn)' }}

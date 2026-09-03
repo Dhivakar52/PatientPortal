@@ -51,10 +51,11 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
   const displayDate = appointment.date || appointment.AppointmentDate || ''
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div data-cy="cancel-modal" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
+          data-cy="cancel-modal-close-btn"
           disabled={isGeneratingOtp || isVerifying}
           className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer disabled:opacity-50"
         >
@@ -73,10 +74,6 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
             <span className="text-slate-500">Appointment:</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">#{apptNo}</span>
           </div>
-          {/* <div className="flex justify-between">
-            <span className="text-slate-500">Doctor:</span>
-            <span className="font-semibold text-slate-800 dark:text-slate-200">{displayDoc}</span>
-          </div> */}
           <div className="flex justify-between">
             <span className="text-slate-500">Date:</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200">{displayDate}</span>
@@ -92,6 +89,7 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
               </label>
               <textarea
                 value={reason}
+                data-cy="cancel-reason-input"
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Enter cancellation reason"
                 rows={3}
@@ -99,7 +97,7 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
                 autoFocus
               />
               {reasonErr && (
-                <div className="flex items-center gap-1 text-xs text-rose-600 mt-1">
+                <div data-cy="cancel-reason-error" className="flex items-center gap-1 text-xs text-rose-600 mt-1">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{reasonErr}</span>
                 </div>
@@ -119,6 +117,7 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
               </Button>
               <Button
                 type="button"
+                data-cy="cancel-continue-btn"
                 onClick={onContinueToOtp}
                 disabled={!reason.trim() || isGeneratingOtp}
                 className="flex-1 text-white font-semibold cursor-pointer py-2.5 text-xs bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -154,6 +153,7 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
               <input
                 type="tel"
                 inputMode="numeric"
+                data-cy="cancel-otp-input"
                 value={otpInput}
                 onChange={(e) => setOtpInput(digitsOnly(e.target.value, 4))}
                 onKeyDown={(e) => e.key === 'Enter' && otpInput.length === 4 && !isVerifying && onVerify()}
@@ -163,7 +163,7 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
                 autoFocus
               />
               {otpErr && (
-                <div className="flex items-center gap-1 text-xs text-rose-600 mt-1.5">
+                <div data-cy="cancel-otp-error" className="flex items-center gap-1 text-xs text-rose-600 mt-1.5">
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{otpErr}</span>
                 </div>
@@ -174,6 +174,7 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
               <Button
                 type="button"
                 variant="outline"
+                data-cy="cancel-back-btn"
                 onClick={onBackToReason}
                 disabled={isVerifying}
                 className="flex-1 text-xs font-medium py-2.5 border-slate-200 dark:border-slate-700 cursor-pointer"
@@ -183,6 +184,7 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
               </Button>
               <Button
                 type="button"
+                data-cy="cancel-verify-otp-btn"
                 onClick={onVerify}
                 disabled={otpInput.length !== 4 || isVerifying}
                 className="flex-1 text-white font-semibold cursor-pointer py-2.5 text-xs bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -202,6 +204,7 @@ export const CancelOtpModal: React.FC<CancelOtpModalProps> = ({
             <div className="text-center">
               <button
                 type="button"
+                data-cy="cancel-resend-otp-btn"
                 onClick={onResend}
                 disabled={isResending || isVerifying}
                 className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer disabled:opacity-50"

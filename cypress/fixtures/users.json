@@ -1,0 +1,39 @@
+[
+  {
+    "UserID": 101,
+    "PhoneNo": "9876543210",
+    "UserName": "Priya Sharma",
+    "Patients": [
+      {
+        "PatientID": 1001,
+        "PatientName": "Priya Sharma",
+        "GenderID": 2,
+        "Gender": "Female",
+        "Age": 28,
+        "DOB": "1998-05-15",
+        "PhoneNo": "9876543210",
+        "Address": "123 Anna Nagar, Chennai",
+        "StateID": 1,
+        "CityID": 1,
+        "PinCode": "600040",
+        "Email": "priya.sharma@example.com",
+        "UHID": "UHID-2026-1001"
+      },
+      {
+        "PatientID": 1002,
+        "PatientName": "Rahul Sharma",
+        "GenderID": 1,
+        "Gender": "Male",
+        "Age": 32,
+        "DOB": "1994-08-20",
+        "PhoneNo": "9876543210",
+        "Address": "123 Anna Nagar, Chennai",
+        "StateID": 1,
+        "CityID": 1,
+        "PinCode": "600040",
+        "Email": "rahul.sharma@example.com",
+        "UHID": "UHID-2026-1002"
+      }
+    ]
+  }
+]

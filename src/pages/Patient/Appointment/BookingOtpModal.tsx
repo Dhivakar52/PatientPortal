@@ -27,10 +27,11 @@ export const BookingOtpModal: React.FC<BookingOtpModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div data-cy="booking-otp-modal" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
+          data-cy="booking-otp-close-btn"
           className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
         >
           <X className="w-5 h-5" />
@@ -51,6 +52,7 @@ export const BookingOtpModal: React.FC<BookingOtpModalProps> = ({
             <input
               type="tel"
               inputMode="numeric"
+              data-cy="booking-otp-input"
               value={bookOtpInput}
               onChange={(e) => setBookOtpInput(digitsOnly(e.target.value, 4))}
               onKeyDown={(e) => e.key === 'Enter' && bookOtpInput.length === 4 && onVerify()}
@@ -59,11 +61,12 @@ export const BookingOtpModal: React.FC<BookingOtpModalProps> = ({
               maxLength={4}
               autoFocus
             />
-            {bookOtpErr && <p className="text-xs text-rose-600 mt-1.5">{bookOtpErr}</p>}
+            {bookOtpErr && <p data-cy="booking-otp-error" className="text-xs text-rose-600 mt-1.5">{bookOtpErr}</p>}
           </div>
 
           <Button
             onClick={onVerify}
+            data-cy="booking-otp-submit-btn"
             disabled={bookOtpInput.length !== 4}
             className="w-full text-white font-semibold cursor-pointer py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
@@ -74,6 +77,7 @@ export const BookingOtpModal: React.FC<BookingOtpModalProps> = ({
           <div className="text-center">
             <button
               type="button"
+              data-cy="booking-otp-resend-btn"
               onClick={onResend}
               className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
             >

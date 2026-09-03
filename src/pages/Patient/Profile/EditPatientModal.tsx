@@ -301,7 +301,6 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
         }
       } else if (error.message) {
         message = error.message
-      }
       toast.error(message)
     } finally {
       setIsSubmitting(false)
@@ -309,8 +308,8 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+    <div data-cy="edit-patient-modal" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
           <div className="flex items-center gap-2.5">
@@ -324,6 +323,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
           </div>
           <button
             type="button"
+            data-cy="edit-patient-close-btn"
             onClick={onClose}
             disabled={isSubmitting}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
@@ -343,6 +343,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 onChange={setName}
                 placeholder="Full Name"
                 disabled={isSubmitting}
+                dataCy="edit-patient-name"
               />
               {errors.name && <p className="text-xs text-rose-600 mt-1">{errors.name}</p>}
             </div>
@@ -361,6 +362,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                   onChange={(v) => setMobileNo(digitsOnly(v, 10))}
                   placeholder="10-digit Mobile Number"
                   disabled={true}
+                  dataCy="edit-patient-mobile"
                 />
                 <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                   <Lock className="w-3.5 h-3.5" />
@@ -379,6 +381,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                       type="radio"
                       name="editGender"
                       value={g}
+                      data-cy={`edit-patient-gender-${g.toLowerCase()}`}
                       checked={gender === g}
                       onChange={() => setGender(g)}
                       disabled={isSubmitting}
@@ -399,6 +402,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 placeholder="Select Date of Birth"
                 defaultLabel="Select Date of Birth"
                 disabled={isSubmitting}
+                dataCy="edit-patient-dob"
               />
               {errors.dob && <p className="text-xs text-rose-600 mt-1">{errors.dob}</p>}
             </div>
@@ -412,6 +416,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 placeholder="e.g. 28"
                 type="text"
                 disabled={isSubmitting}
+                dataCy="edit-patient-age"
               />
               {errors.age && <p className="text-xs text-rose-600 mt-1">{errors.age}</p>}
             </div>
@@ -424,6 +429,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 onChange={setEmail}
                 placeholder="e.g. patient@example.com"
                 disabled={isSubmitting}
+                dataCy="edit-patient-email"
               />
               {errors.email && <p className="text-xs text-rose-600 mt-1">{errors.email}</p>}
             </div>
@@ -437,6 +443,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 onChange={handleStateChange}
                 placeholder={isLoadingStates ? 'Loading states...' : 'Select State'}
                 disabled={isSubmitting || isLoadingStates}
+                dataCy="edit-patient-state"
               />
             </div>
 
@@ -449,6 +456,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 onChange={setCityId}
                 placeholder={!stateId ? 'Select state first' : isLoadingCities ? 'Loading cities...' : 'Select City'}
                 disabled={isSubmitting || !stateId || isLoadingCities}
+                dataCy="edit-patient-city"
               />
             </div>
 
@@ -460,6 +468,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 onChange={(v) => setPinCode(digitsOnly(v, 6))}
                 placeholder="6-digit PIN"
                 disabled={isSubmitting}
+                dataCy="edit-patient-pincode"
               />
               {errors.pinCode && <p className="text-xs text-rose-600 mt-1">{errors.pinCode}</p>}
             </div>
@@ -472,6 +481,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 onChange={setArea}
                 placeholder="e.g. Vadapalani"
                 disabled={isSubmitting}
+                dataCy="edit-patient-area"
               />
             </div>
 
@@ -483,6 +493,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 onChange={setAddress}
                 placeholder="House no, street, area"
                 disabled={isSubmitting}
+                dataCy="edit-patient-address"
               />
             </div>
           </div>
@@ -493,6 +504,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
           <Button
             type="button"
             variant="outline"
+            data-cy="edit-patient-cancel-btn"
             onClick={onClose}
             disabled={isSubmitting}
             className="text-xs cursor-pointer border-slate-300 dark:border-slate-700"
@@ -501,6 +513,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
           </Button>
           <Button
             type="button"
+            data-cy="edit-patient-submit-btn"
             onClick={handleSubmit}
             disabled={isSubmitting}
             className="text-white font-semibold cursor-pointer text-xs px-5 py-2 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"

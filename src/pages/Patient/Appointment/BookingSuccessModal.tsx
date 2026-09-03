@@ -31,7 +31,7 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
   const slotStr = lastBookedAppt.slot || lastBookedAppt.TimeSlot || lastBookedAppt.Timeslot || '08:00 AM - 08:10 AM'
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+    <div data-cy="booking-success-modal" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-200">
 
         {/* Success Header */}
@@ -52,7 +52,7 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
           {/* Appointment Number Banner */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Appointment No</span>
-            <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
+            <span data-cy="booking-success-appt-no" className="font-mono text-sm font-bold text-blue-600 dark:blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded border border-blue-200 dark:border-blue-800">
               {apptNo}
             </span>
           </div>
@@ -123,6 +123,7 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
         {/* Footer Button */}
         <Button
           onClick={onClose}
+          data-cy="booking-success-dashboard-btn"
           className="w-full text-white font-semibold cursor-pointer py-2.5 shadow-md hover:shadow-lg transition-all"
           style={{ background: 'var(--blue-btn)', borderRadius: '6px' }}
         >
