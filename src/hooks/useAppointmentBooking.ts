@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { genApptNo } from '@/utils/patient.utils'
-import { saveAppointment, generateOtp, validateOtp, cancelAppointment, fetchAppointments, type SaveAppointmentRequest } from '@/services/apiService'
+import { saveAppointment, generateOtp, sendSmsRequest, validateOtp, cancelAppointment, fetchAppointments, SmsTemplateId, type SaveAppointmentRequest } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
 import { todayStr } from '@/utils/patient.utils'
 import { queryClient } from '@/lib/queryClient'
@@ -137,6 +137,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const [isVerifyingCancelOtp, setIsVerifyingCancelOtp] = useState(false)
   const [isResendingCancelOtp, setIsResendingCancelOtp] = useState(false)
 
+  // Track OTP ReferenceID for Template 2 (Booking confirmation) and Template 3 (Cancel confirmation)
+  const [bookReferenceId, setBookReferenceId] = useState<number | string | null>(null)
+  const [cancelReferenceId, setCancelReferenceId] = useState<number | string | null>(null)
+
   const [pendingBookingPayload, setPendingBookingPayload] = useState<SaveAppointmentRequest | null>(null)
 
   // Male Patient Restriction Modal State
@@ -199,7 +203,11 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     try {
       // 1. Generate OTP (do NOT save appointment before OTP verification)
       const targetMobile = currentPatient?.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
-      await generateOtp(targetMobile, numericPatientId)
+      const refId = await generateOtp(targetMobile, numericPatientId)
+      if (refId) {
+        setBookReferenceId(refId)
+        await sendSmsRequest({ referenceID: refId, templateID: SmsTemplateId.LOGIN_OTP, smsNotify: true })
+      }
       setBookOtpInput('')
       setBookOtpErr('')
       setShowBookOtpModal(true)
@@ -366,6 +374,21 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       setLastBookedAppt(confirmedAppt)
       setShowSuccessModal(true)
       onSuccess()
+
+      // 3. Send Booking Confirmation SMS notification using TemplateID 2 and OTP ReferenceID
+      try {
+        const bookingRefId = bookReferenceId
+        console.log(`📱 Sending booking confirmation SMS: TemplateID=${SmsTemplateId.BOOKING_APPOINTMENT} (2), ReferenceID=${bookingRefId}`)
+        if (bookingRefId) {
+          await sendSmsRequest({
+            referenceID: bookingRefId,
+            templateID: SmsTemplateId.BOOKING_APPOINTMENT, // 2
+            smsNotify: true,
+          })
+        }
+      } catch (smsErr) {
+        console.warn('Booking confirmation SMS notification error (non-blocking):', smsErr)
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
@@ -389,7 +412,11 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     const targetMobile = currentPatient.PhoneNo || currentPatient.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
 
     try {
-      await generateOtp(targetMobile, numericPatientId)
+      const refId = await generateOtp(targetMobile, numericPatientId)
+      if (refId) {
+        setBookReferenceId(refId)
+        await sendSmsRequest({ referenceID: refId, templateID: SmsTemplateId.LOGIN_OTP, smsNotify: true })
+      }
       setBookOtpErr('')
       toast.success('OTP resent successfully!')
     } catch (err: unknown) {
@@ -461,7 +488,11 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setIsGeneratingCancelOtp(true)
     try {
       console.log(`📱 Generating OTP for cancellation: POST /api/generateotp?PhoneNo=${targetMobile}&PatientID=${patientId}`)
-      await generateOtp(targetMobile, patientId)
+      const refId = await generateOtp(targetMobile, patientId)
+      if (refId) {
+        setCancelReferenceId(refId)
+        await sendSmsRequest({ referenceID: refId, templateID: SmsTemplateId.LOGIN_OTP, smsNotify: true })
+      }
       setCancelStep('otp')
       setCancelOtpInput('')
       setCancelOtpErr('')
@@ -543,7 +574,23 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       // Strictly execute cancel API only after valid OTP
       const trimmedReason = cancelReason.trim() || 'Cancelled by patient'
       console.log(`🗑️ Cancelling appointment: PUT /api/cancelappointment/${appointmentId}?updatedBy=${patientId}&cancelledReason=${encodeURIComponent(trimmedReason)}`)
-      await cancelAppointment(appointmentId, patientId, trimmedReason)
+      const cancelRes = (await cancelAppointment(appointmentId, patientId, trimmedReason)) as Record<string, unknown> | null
+      console.log('Cancel appointment response:', cancelRes)
+
+      // Send cancellation notification SMS using TemplateID 3 and OTP ReferenceID
+      try {
+        const cancelRefId = cancelReferenceId
+        console.log(`📱 Sending cancellation notification SMS: TemplateID=${SmsTemplateId.CANCEL_APPOINTMENT} (3), ReferenceID=${cancelRefId}`)
+        if (cancelRefId) {
+          await sendSmsRequest({
+            referenceID: cancelRefId,
+            templateID: SmsTemplateId.CANCEL_APPOINTMENT, // 3
+            smsNotify: true,
+          })
+        }
+      } catch (smsErr) {
+        console.warn('Cancel notification SMS error (non-blocking):', smsErr)
+      }
 
       toast.success('Appointment cancelled successfully.')
       setShowCancelOtpModal(false)
@@ -593,7 +640,11 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
     setIsResendingCancelOtp(true)
     try {
-      await generateOtp(targetMobile, patientId)
+      const refId = await generateOtp(targetMobile, patientId)
+      if (refId) {
+        setCancelReferenceId(refId)
+        await sendSmsRequest({ referenceID: refId, templateID: SmsTemplateId.LOGIN_OTP, smsNotify: true })
+      }
       setCancelOtpErr('')
       toast.success('Cancellation OTP resent successfully!')
     } catch (err: unknown) {

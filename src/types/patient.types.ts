@@ -31,6 +31,7 @@ export interface Patient {
   EmailID?: string | null
   emailID?: string | null
   area?: string
+  Area?: string
 
   // Convenience aliases for existing components
   id?: string

@@ -69,6 +69,8 @@ const PatientModule: React.FC = () => {
                     setLoginOtpInput={auth.setLoginOtpInput}
                     loginOtpErr={auth.loginOtpErr}
                     isGeneratingOtp={auth.isGeneratingOtp}
+                    isSendingSms={auth.isSendingSms}
+                    isValidatingOtp={auth.isValidatingOtp}
                     isVerifyingOtp={auth.isVerifyingOtp}
                     onGenerateOtp={auth.handleGenerateLoginOtp}
                     onVerifyOtp={auth.handleVerifyLoginOtp}
@@ -97,6 +99,8 @@ const PatientModule: React.FC = () => {
                         setRegState={reg.setRegState}
                         regPincode={reg.regPincode}
                         setRegPincode={reg.setRegPincode}
+                        regArea={reg.regArea}
+                        setRegArea={reg.setRegArea}
                         regEmail={reg.regEmail}
                         setRegEmail={reg.setRegEmail}
                         regErrors={reg.regErrors}

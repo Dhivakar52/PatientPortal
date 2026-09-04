@@ -6,6 +6,7 @@ import {
   getTimeSlots,
   getStates,
   getCities,
+  getAreas,
   type Department,
   type Doctor,
   type TimeSlotHour,
@@ -13,6 +14,8 @@ import {
   type GetTimeSlotsParams,
   type StateOption,
   type CityOption,
+  type AreaOption,
+  type GetAreasParams,
 } from '@/services/apiService'
 
 export const masterDataQueryKeys = {
@@ -22,6 +25,7 @@ export const masterDataQueryKeys = {
   timeSlots: (params?: GetTimeSlotsParams | number) => ['timeSlots', params] as const,
   states: ['states'] as const,
   cities: (stateId?: number | string) => ['cities', stateId] as const,
+  areas: (cityId?: number | string, searchText?: string, areaid?: number | string) => ['areas', cityId, searchText, areaid] as const,
 }
 
 export function useDepartmentsQuery(options?: { enabled?: boolean }) {
@@ -85,6 +89,25 @@ export function useCitiesQuery(stateId?: number | string, options?: { enabled?: 
     queryKey: masterDataQueryKeys.cities(stateId),
     queryFn: async () => {
       const res = await getCities(stateId)
+      return Array.isArray(res) ? res : []
+    },
+    enabled: options?.enabled !== false,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  })
+}
+
+export function useAreasQuery(
+  params?: GetAreasParams | number | string,
+  options?: { enabled?: boolean }
+) {
+  const cityId = typeof params === 'object' && params !== null ? (params.cityId ?? params.CityID) : params
+  const searchText = typeof params === 'object' && params !== null ? params.searchText : undefined
+  const areaid = typeof params === 'object' && params !== null ? (params.areaid ?? params.AreaID) : undefined
+
+  return useQuery<AreaOption[]>({
+    queryKey: masterDataQueryKeys.areas(cityId, searchText, areaid),
+    queryFn: async () => {
+      const res = await getAreas(params)
       return Array.isArray(res) ? res : []
     },
     enabled: options?.enabled !== false,

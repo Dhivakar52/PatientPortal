@@ -62,7 +62,7 @@ export function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   };
 
   const handleGoHome = () => {
-    window.location.assign("/dashboard");
+    window.location.assign("/");
   };
 
   return (

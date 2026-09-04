@@ -1,12 +1,17 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { UserRecord, Patient, FlowScreen, RegisterContext } from '@/types/patient.types'
-import { generateOtp, validateOtp, fetchPatient, getUsers, deletePatient, type UserData } from '@/services/apiService'
+import { fetchPatient, getUsers, deletePatient, SmsTemplateId, type UserData } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { queryClient } from '@/lib/queryClient'
 import { appointmentsQueryKeys } from './queries/useAppointmentsQuery'
 import { dashboardQueryKeys } from './queries/useDashboardQuery'
+import {
+  useGenerateOtpMutation,
+  useSendSmsMutation,
+  useValidateOtpMutation,
+} from './queries/useAuthQueries'
 
 const getScreenFromPath = (path: string): FlowScreen => {
   if (path === '/patient/register') return 'register'
@@ -144,7 +149,7 @@ export function usePatientAuth() {
 
             const pinCode = String(p.PinCode || p.pinCode || p.pincode || '')
             const phoneNo = String(p.PhoneNo || p.phoneNo || matchedUser.phoneNo || targetMobile)
-            const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? null
+            const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? p.emailId ?? p.EmailId ?? null
             const email = emailRaw != null && String(emailRaw).trim() !== '' ? String(emailRaw).trim() : null
 
             userPatients.push({
@@ -171,6 +176,10 @@ export function usePatientAuth() {
               PhoneNo: phoneNo,
               Email: email,
               email: email,
+              EmailID: email,
+              emailID: email,
+              area: String(p.area || p.Area || ''),
+              Area: String(p.area || p.Area || ''),
               id: String(patientId),
               name: patientName,
               mobile: phoneNo,
@@ -214,12 +223,14 @@ export function usePatientAuth() {
 
       if (Array.isArray(list) && list.length > 0) {
         const rawMatched = list.find((p) => String(p.PatientID) === String(targetId)) || list[0]
-        const existingEmail = rawMatched.Email || rawMatched.email ||
+        const existingEmail = rawMatched.Email || rawMatched.email || (rawMatched as any).EmailID || (rawMatched as any).emailID || (rawMatched as any).emailId ||
           apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.Email ||
           apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.email ||
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.EmailID ||
+          apiPatientsList.find((p) => String(p.PatientID || p.id) === String(targetId))?.emailID ||
           currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId))?.Email ||
           currentUserRecord?.patients?.find((p) => String(p.PatientID || p.id) === String(targetId))?.email ||
-          (apiPatient && String(apiPatient.PatientID || apiPatient.id) === String(targetId) ? (apiPatient.Email || apiPatient.email) : null) ||
+          (apiPatient && String(apiPatient.PatientID || apiPatient.id) === String(targetId) ? (apiPatient.Email || apiPatient.email || (apiPatient as any).EmailID || (apiPatient as any).emailID) : null) ||
           null
 
         const existingState = rawMatched.State || rawMatched.PatientState ||
@@ -244,6 +255,10 @@ export function usePatientAuth() {
           ...rawMatched,
           Email: existingEmail,
           email: existingEmail,
+          EmailID: existingEmail,
+          emailID: existingEmail,
+          area: String(rawMatched.area || (rawMatched as any).Area || ''),
+          Area: String(rawMatched.area || (rawMatched as any).Area || ''),
           State: rawMatched.State || existingState || '',
           PatientState: rawMatched.PatientState || rawMatched.State || existingState || '',
           StateID: rawMatched.StateID ?? rawMatched.stateID ?? existingStateId,
@@ -361,14 +376,25 @@ export function usePatientAuth() {
 
   const [registerContext, setRegisterContext] = useState<RegisterContext>('newAccount')
 
+  // TanStack Query Mutations for Authentication
+  const generateOtpMutation = useGenerateOtpMutation()
+  const sendSmsMutation = useSendSmsMutation()
+  const validateOtpMutation = useValidateOtpMutation()
+
   // Login OTP State
   const [loginMobileInput, setLoginMobileInput] = useState('')
   const [loginMobileErr, setLoginMobileErr] = useState('')
   const [showLoginOtpBlock, setShowLoginOtpBlock] = useState(false)
   const [loginOtpInput, setLoginOtpInput] = useState('')
   const [loginOtpErr, setLoginOtpErr] = useState('')
-  const [isGeneratingOtp, setIsGeneratingOtp] = useState(false)
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const [isGeneratingOtpLocal, setIsGeneratingOtpLocal] = useState(false)
+  const [isSendingSmsLocal, setIsSendingSmsLocal] = useState(false)
+  const [isVerifyingOtpLocal, setIsVerifyingOtpLocal] = useState(false)
+
+  const isGeneratingOtp = isGeneratingOtpLocal || generateOtpMutation.isPending
+  const isSendingSms = isSendingSmsLocal || sendSmsMutation.isPending
+  const isValidatingOtp = isVerifyingOtpLocal || validateOtpMutation.isPending
+  const isVerifyingOtp = isValidatingOtp
 
   // Derived active record & patient
   const currentUserRecord = usersDB[currentMobile] || null
@@ -377,7 +403,7 @@ export function usePatientAuth() {
 
     // 1. If apiPatient is loaded and matches the active patient ID, return it
     if (apiPatient && (!targetActiveId || String(apiPatient.PatientID || apiPatient.id) === targetActiveId)) {
-      const email = apiPatient.Email || apiPatient.email || null
+      const email = apiPatient.Email || apiPatient.email || (apiPatient as any).EmailID || (apiPatient as any).emailID || (apiPatient as any).emailId || (apiPatient as any).EmailId || null
       return {
         ...apiPatient,
         id: String(apiPatient.PatientID || apiPatient.id),
@@ -393,8 +419,12 @@ export function usePatientAuth() {
         CityID: apiPatient.CityID ?? apiPatient.cityID,
         cityID: apiPatient.cityID ?? apiPatient.CityID,
         pincode: apiPatient.PinCode || apiPatient.pincode,
+        area: apiPatient.area || (apiPatient as any).Area || '',
+        Area: apiPatient.area || (apiPatient as any).Area || '',
         Email: email,
         email: email,
+        EmailID: email,
+        emailID: email,
       }
     }
 
@@ -404,7 +434,7 @@ export function usePatientAuth() {
         ? apiPatientsList.find((p) => String(p.PatientID || p.id) === targetActiveId) || apiPatientsList[0]
         : apiPatientsList[0]
       if (matched) {
-        const email = matched.Email || matched.email || null
+        const email = matched.Email || matched.email || (matched as any).EmailID || (matched as any).emailID || (matched as any).emailId || (matched as any).EmailId || null
         return {
           ...matched,
           id: String(matched.PatientID || matched.id),
@@ -420,8 +450,12 @@ export function usePatientAuth() {
           CityID: matched.CityID ?? matched.cityID,
           cityID: matched.cityID ?? matched.CityID,
           pincode: matched.PinCode || matched.pincode,
+          area: matched.area || (matched as any).Area || '',
+          Area: matched.area || (matched as any).Area || '',
           Email: email,
           email: email,
+          EmailID: email,
+          emailID: email,
         }
       }
     }
@@ -432,7 +466,7 @@ export function usePatientAuth() {
         ? currentUserRecord.patients.find((p) => String(p.PatientID || p.id) === targetActiveId) || currentUserRecord.patients[0]
         : currentUserRecord.patients[0]
       if (matched) {
-        const email = matched.Email || matched.email || null
+        const email = matched.Email || matched.email || (matched as any).EmailID || (matched as any).emailID || (matched as any).emailId || (matched as any).EmailId || null
         return {
           ...matched,
           id: String(matched.PatientID || matched.id),
@@ -448,14 +482,18 @@ export function usePatientAuth() {
           CityID: matched.CityID ?? matched.cityID,
           cityID: matched.cityID ?? matched.CityID,
           pincode: matched.PinCode || matched.pincode,
+          area: matched.area || (matched as any).Area || '',
+          Area: matched.area || (matched as any).Area || '',
           Email: email,
           email: email,
+          EmailID: email,
+          emailID: email,
         }
       }
     }
 
     if (apiPatient) {
-      const email = apiPatient.Email || apiPatient.email || null
+      const email = apiPatient.Email || apiPatient.email || (apiPatient as any).EmailID || (apiPatient as any).emailID || (apiPatient as any).emailId || (apiPatient as any).EmailId || null
       return {
         ...apiPatient,
         id: String(apiPatient.PatientID || apiPatient.id),
@@ -471,22 +509,32 @@ export function usePatientAuth() {
         CityID: apiPatient.CityID ?? apiPatient.cityID,
         cityID: apiPatient.cityID ?? apiPatient.CityID,
         pincode: apiPatient.PinCode || apiPatient.pincode,
+        area: apiPatient.area || (apiPatient as any).Area || '',
+        Area: apiPatient.area || (apiPatient as any).Area || '',
         Email: email,
         email: email,
+        EmailID: email,
+        emailID: email,
       }
     }
 
     return null
   }, [apiPatient, apiPatientsList, currentUserRecord, activePatientId])
 
+  // Patients list for switcher
   const patientsList: Patient[] = useMemo(() => {
     if (apiPatientsList && apiPatientsList.length > 0) {
       return apiPatientsList
     }
     if (currentUserData && Array.isArray(currentUserData.Patients) && currentUserData.Patients.length > 0) {
-      return currentUserData.Patients
+      return currentUserData.Patients.map((p) => ({
+        ...p,
+        id: String(p.PatientID || p.id),
+        name: p.PatientName || p.name,
+        mobile: p.PhoneNo || p.mobile,
+      }))
     }
-    if (currentUserRecord && Array.isArray(currentUserRecord.patients) && currentUserRecord.patients.length > 0) {
+    if (currentUserRecord?.patients && currentUserRecord.patients.length > 0) {
       return currentUserRecord.patients
     }
     if (apiPatient) {
@@ -495,9 +543,8 @@ export function usePatientAuth() {
     return []
   }, [apiPatientsList, currentUserData, currentUserRecord, apiPatient])
 
-
   const handleGenerateLoginOtp = async () => {
-    if (isGeneratingOtp) return
+    if (isGeneratingOtp || isSendingSms) return
     setLoginMobileErr('')
     setLoginOtpErr('')
 
@@ -506,14 +553,62 @@ export function usePatientAuth() {
       return
     }
 
-    setIsGeneratingOtp(true)
+    setIsGeneratingOtpLocal(true)
+    setIsSendingSmsLocal(false)
+
     try {
-      await generateOtp(loginMobileInput)
-      setPendingMobile(loginMobileInput)
-      setShowLoginOtpBlock(true)
-      setLoginOtpInput('')
-      setLoginOtpErr('')
+      // Step 1: POST /api/generateotp?PhoneNo={PhoneNo}&PatientID={PatientID}
+      console.log(`📱 Step 1: Generating OTP for ${loginMobileInput}...`)
+      const refResponse = await generateOtpMutation.mutateAsync({ phoneNo: loginMobileInput })
+      console.log('OTP generation reference ID result:', refResponse)
+
+      // Parse and validate Reference ID
+      let referenceId: number | string | null = null
+      if (typeof refResponse === 'number') {
+        referenceId = refResponse
+      } else if (typeof refResponse === 'string' && refResponse.trim() !== '') {
+        const parsed = Number(refResponse.trim())
+        referenceId = isNaN(parsed) ? refResponse.trim() : parsed
+      } else if (refResponse && typeof refResponse === 'object') {
+        const obj = refResponse as Record<string, unknown>
+        referenceId = (obj.referenceId || obj.ReferenceID || obj.data || obj.id || null) as (number | string | null)
+      }
+
+      if (referenceId === null || referenceId === undefined || referenceId === '' || (typeof referenceId === 'number' && isNaN(referenceId))) {
+        const errorMsg = 'Invalid OTP reference ID received. Please try again.'
+        setLoginMobileErr(errorMsg)
+        toast.error(errorMsg)
+        setShowLoginOtpBlock(false)
+        return
+      }
+
+      // Step 2: POST /api/sendsmsrequest?TemplateID=1&ReferenceID={referenceId}&SMSNotify=true
+      setIsGeneratingOtpLocal(false)
+      setIsSendingSmsLocal(true)
+      console.log(`✉️ Step 2: Sending SMS request for ReferenceID: ${referenceId}...`)
+
+      const smsResponse = await sendSmsMutation.mutateAsync({
+        templateID: SmsTemplateId.LOGIN_OTP,
+        referenceID: referenceId,
+        smsNotify: true,
+      })
+      console.log('Send SMS API response:', smsResponse)
+
+      // Step 3: Success Handling
+      if (smsResponse && smsResponse.success === true) {
+        setPendingMobile(loginMobileInput)
+        setShowLoginOtpBlock(true)
+        setLoginOtpInput('')
+        setLoginOtpErr('')
+        toast.success(smsResponse.message || 'OTP sent successfully.')
+      } else {
+        const errorMsg = smsResponse?.message || 'Unable to send OTP. Please try again.'
+        setLoginMobileErr(errorMsg)
+        setShowLoginOtpBlock(false)
+        toast.error(errorMsg)
+      }
     } catch (err: unknown) {
+      setShowLoginOtpBlock(false)
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
       let message = 'Failed to generate OTP. Please try again.'
@@ -525,8 +620,10 @@ export function usePatientAuth() {
         message = error.message
       }
       setLoginMobileErr(message)
+      toast.error(message)
     } finally {
-      setIsGeneratingOtp(false)
+      setIsGeneratingOtpLocal(false)
+      setIsSendingSmsLocal(false)
     }
   }
 
@@ -536,13 +633,55 @@ export function usePatientAuth() {
       setLoginMobileErr('Enter a valid 10-digit mobile number.')
       return
     }
-    if (isGeneratingOtp) return
+    if (isGeneratingOtp || isSendingSms) return
 
-    setIsGeneratingOtp(true)
+    setIsGeneratingOtpLocal(true)
+    setIsSendingSmsLocal(false)
     setLoginOtpErr('')
+
     try {
-      await generateOtp(targetMobile)
-      setLoginOtpInput('')
+      // Step 1: Generate OTP
+      console.log(`📱 Resending OTP: Step 1 Generate OTP for ${targetMobile}...`)
+      const refResponse = await generateOtpMutation.mutateAsync({ phoneNo: targetMobile })
+      
+      let referenceId: number | string | null = null
+      if (typeof refResponse === 'number') {
+        referenceId = refResponse
+      } else if (typeof refResponse === 'string' && refResponse.trim() !== '') {
+        const parsed = Number(refResponse.trim())
+        referenceId = isNaN(parsed) ? refResponse.trim() : parsed
+      } else if (refResponse && typeof refResponse === 'object') {
+        const obj = refResponse as Record<string, unknown>
+        referenceId = (obj.referenceId || obj.ReferenceID || obj.data || obj.id || null) as (number | string | null)
+      }
+
+      if (referenceId === null || referenceId === undefined || referenceId === '' || (typeof referenceId === 'number' && isNaN(referenceId))) {
+        const errorMsg = 'Invalid OTP reference ID received. Please try again.'
+        setLoginOtpErr(errorMsg)
+        toast.error(errorMsg)
+        return
+      }
+
+      // Step 2: Send SMS
+      setIsGeneratingOtpLocal(false)
+      setIsSendingSmsLocal(true)
+      console.log(`✉️ Resending OTP: Step 2 Send SMS for ReferenceID ${referenceId}...`)
+
+      const smsResponse = await sendSmsMutation.mutateAsync({
+        templateID: SmsTemplateId.LOGIN_OTP,
+        referenceID: referenceId,
+        smsNotify: true,
+      })
+
+      if (smsResponse && smsResponse.success === true) {
+        setLoginOtpInput('')
+        setLoginOtpErr('')
+        toast.success(smsResponse.message || 'OTP resent successfully.')
+      } else {
+        const errorMsg = smsResponse?.message || 'Unable to resend OTP. Please try again.'
+        setLoginOtpErr(errorMsg)
+        toast.error(errorMsg)
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
@@ -555,8 +694,10 @@ export function usePatientAuth() {
         message = error.message
       }
       setLoginOtpErr(message)
+      toast.error(message)
     } finally {
-      setIsGeneratingOtp(false)
+      setIsGeneratingOtpLocal(false)
+      setIsSendingSmsLocal(false)
     }
   }
 
@@ -570,16 +711,28 @@ export function usePatientAuth() {
       setLoginOtpErr('Enter the 4-digit OTP to continue.')
       return
     }
-    if (isVerifyingOtp) return
+    if (isValidatingOtp) return
 
-    setIsVerifyingOtp(true)
+    setIsVerifyingOtpLocal(true)
     setLoginOtpErr('')
 
     try {
-      const response = await validateOtp(targetMobile, loginOtpInput)
-      const isSuccess =
-        response?.Result &&
-        response.Result.toLowerCase().trim() === 'otp successfully validated'
+      console.log(`🔍 Step 3: Validating OTP ${loginOtpInput} for ${targetMobile}...`)
+      const response = await validateOtpMutation.mutateAsync({
+        phoneNo: targetMobile,
+        otp: loginOtpInput,
+      })
+      console.log('Validate OTP response:', response)
+
+      const resultText = String(response?.Result || '').toLowerCase().trim()
+      const isExpired = resultText.includes('expired') || (response?.UserID === 0 && !response?.ExistUser && !resultText.includes('successfully validated'))
+      const isSuccess = resultText === 'otp successfully validated' || resultText.includes('successfully validated')
+
+      if (isExpired) {
+        setLoginOtpErr('OTP has expired. Please generate a new OTP.')
+        setLoginOtpInput('')
+        return
+      }
 
       if (isSuccess) {
         setLoginOtpErr('')
@@ -745,8 +898,9 @@ export function usePatientAuth() {
           setScreenState('register')
         }
       } else {
-        const errorMsg = response?.Result || 'Incorrect OTP. Please try again.'
+        const errorMsg = response?.Result || 'Invalid OTP entered. Please try again.'
         setLoginOtpErr(errorMsg)
+        setLoginOtpInput('')
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
@@ -760,8 +914,9 @@ export function usePatientAuth() {
         message = error.message
       }
       setLoginOtpErr(message)
+      setLoginOtpInput('')
     } finally {
-      setIsVerifyingOtp(false)
+      setIsVerifyingOtpLocal(false)
     }
   }
 
@@ -908,16 +1063,61 @@ export function usePatientAuth() {
   }
 
   const handleUpdatePatientSuccess = async (updatedPatient: Patient) => {
-    // 1. Refresh user patients list from backend
+    const pid = updatedPatient.PatientID || updatedPatient.id
+
+    // 1. Immediately update apiPatient and apiPatientsList state so UI updates instantly
+    setApiPatient((prev) => {
+      if (!prev || String(prev.PatientID || prev.id) === String(pid)) {
+        return { ...(prev || {}), ...updatedPatient }
+      }
+      return prev
+    })
+
+    setApiPatientsList((prevList) => {
+      const exists = prevList.some((p) => String(p.PatientID || p.id) === String(pid))
+      if (exists) {
+        return prevList.map((p) => (String(p.PatientID || p.id) === String(pid) ? { ...p, ...updatedPatient } : p))
+      }
+      return [...prevList, updatedPatient]
+    })
+
+    // 2. Also update in usersDB & currentUserData for immediate cache persistence
+    setUsersDB((prev) => {
+      const mobile = currentMobile || localStorage.getItem('srm_patient_current_mobile') || ''
+      if (!mobile || !prev[mobile]) return prev
+      const user = prev[mobile]
+      const updatedPatients = (user.patients || []).map((p) =>
+        String(p.PatientID || p.id) === String(pid) ? { ...p, ...updatedPatient } : p
+      )
+      return {
+        ...prev,
+        [mobile]: {
+          ...user,
+          patients: updatedPatients,
+        },
+      }
+    })
+
+    setCurrentUserData((prev) => {
+      if (!prev) return prev
+      const updatedPatients = (prev.Patients || []).map((p) =>
+        String(p.PatientID || p.id) === String(pid) ? { ...p, ...updatedPatient } : p
+      )
+      return {
+        ...prev,
+        Patients: updatedPatients,
+      }
+    })
+
+    // 3. Refresh user patients list from backend
     await refreshUserPatients(currentMobile)
 
-    // 2. If the updated patient is the active patient, re-fetch profile and update state
-    const pid = updatedPatient.PatientID || updatedPatient.id
+    // 4. If the updated patient is the active patient, re-fetch profile from backend
     if (pid && String(activePatientId) === String(pid)) {
       await fetchCurrentPatient(pid)
     }
 
-    // 3. Invalidate query caches
+    // 5. Invalidate query caches
     queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.all })
     queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all })
   }
@@ -982,6 +1182,8 @@ export function usePatientAuth() {
     setLoginOtpInput,
     loginOtpErr,
     isGeneratingOtp,
+    isSendingSms,
+    isValidatingOtp,
     isVerifyingOtp,
     handleGenerateLoginOtp,
     handleResendLoginOtp,

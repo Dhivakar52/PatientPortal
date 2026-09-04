@@ -36,6 +36,7 @@ export function usePatientRegistration({
   const [regCity, setRegCity] = useState('')
   const [regState, setRegState] = useState('')
   const [regPincode, setRegPincode] = useState('')
+  const [regArea, setRegArea] = useState('')
   const [regEmail, setRegEmail] = useState('')
   const [regErrors, setRegErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -49,6 +50,7 @@ export function usePatientRegistration({
     setRegCity('')
     setRegState('')
     setRegPincode('')
+    setRegArea('')
     setRegEmail('')
     setRegErrors({})
   }
@@ -119,6 +121,7 @@ export function usePatientRegistration({
     const stateIdNum = regState ? Number(regState) : undefined
     const cityIdNum = regCity ? Number(regCity) : undefined
 
+    const areaVal = regArea.trim()
     const payload: RegisterPatientRequest = {
       userID: loggedInUserId || 0,  // Link to existing user
       name: regName.trim(),
@@ -129,6 +132,7 @@ export function usePatientRegistration({
       mobileNo: targetMobile,
       address: regAddress.trim(),
       pinCode: regPincode.trim(),
+      area: areaVal,
       createdBy: loggedInUserId || 0,
       updatedBy: loggedInUserId || 0,
       countryID: 1,
@@ -136,11 +140,23 @@ export function usePatientRegistration({
       cityID: cityIdNum,
       StateID: stateIdNum,
       CityID: cityIdNum,
+      CountryID: 1,
+      Area: areaVal,
       state: regState.trim(),
       city: regCity.trim(),
       Email: emailVal,
       EmailID: emailVal,
       emailID: emailVal,
+      PatientName: regName.trim(),
+      MobileNo: targetMobile,
+      PhoneNo: targetMobile,
+      phoneNo: targetMobile,
+      Address: regAddress.trim(),
+      PinCode: regPincode.trim(),
+      pincode: regPincode.trim(),
+      DOB: finalDob,
+      Age: ageValue,
+      GenderID: genderCode,
     }
 
     console.log('📤 Registering new patient with payload:', payload)
@@ -352,6 +368,8 @@ export function usePatientRegistration({
     setRegState,
     regPincode,
     setRegPincode,
+    regArea,
+    setRegArea,
     regEmail,
     setRegEmail,
     regErrors,

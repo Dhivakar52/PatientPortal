@@ -26,13 +26,26 @@ export interface RegisterPatientRequest {
     stateID?: number;
     area?: string;
     // Compatibility fields
+    Area?: string;
     StateID?: number;
     CityID?: number;
+    CountryID?: number;
     state?: string;
     city?: string;
     Email?: string;
     EmailID?: string;
     emailID?: string;
+    emailId?: string;
+    PatientName?: string;
+    MobileNo?: string;
+    PhoneNo?: string;
+    phoneNo?: string;
+    Address?: string;
+    PinCode?: string;
+    pincode?: string;
+    DOB?: string;
+    Age?: number;
+    GenderID?: number;
 }
 
 export interface DashboardParams {
@@ -63,6 +76,27 @@ export interface CityOption {
     StateID?: number;
     StateName?: string;
     StateCode?: string;
+}
+
+export interface AreaOption {
+    TotalCount?: number;
+    AreaID: number;
+    AreaName: string;
+    Pincode?: number | string;
+    pincode?: number | string;
+    PinCode?: number | string;
+    CityID?: number;
+    cityID?: number;
+    CityName?: string;
+    cityName?: string;
+}
+
+export interface GetAreasParams {
+    searchText?: string;
+    cityId?: number | string;
+    CityID?: number | string;
+    areaid?: number | string;
+    AreaID?: number | string;
 }
 
 export interface TimeSlotHour {
@@ -115,11 +149,29 @@ export interface SaveAppointmentRequest {
     cancelledReason?: string;
 }
 
+import { SmsTemplateId, SMS_TEMPLATE_IDS, type SmsTemplateIdType } from '@/constants/sms.constants';
+
+export { SmsTemplateId, SMS_TEMPLATE_IDS, type SmsTemplateIdType };
+
+export interface SendSmsRequestParams {
+    templateID?: SmsTemplateId | number;
+    referenceID: number | string;
+    smsNotify?: boolean;
+}
+
+export interface SendSmsResponse {
+    success: boolean;
+    message?: string;
+    providerResponse?: string;
+    requestId?: string;
+}
+
 /**
  * Generate OTP for the given phone number and optional patient ID
  * Calls POST /api/generateotp?PhoneNo={phoneNo}&PatientID={patientID}
+ * Returns numeric reference ID (e.g. 55)
  */
-export const generateOtp = async (phoneNo: string, patientID?: number) => {
+export const generateOtp = async (phoneNo: string, patientID?: number): Promise<number | string> => {
     try {
         const response = await axiosInstance.post('/api/generateotp', null, {
             params: {
@@ -127,9 +179,31 @@ export const generateOtp = async (phoneNo: string, patientID?: number) => {
                 ...(patientID !== undefined && { PatientID: patientID }),
             },
         });
+        console.log("Generate OTP Response (ReferenceID):", response.data);
         return response.data;
     } catch (error) {
         console.error('Generate OTP Error:', error);
+        throw error;
+    }
+};
+
+/**
+ * Send SMS Request after OTP generation
+ * Calls POST /api/sendsmsrequest?TemplateID={templateId}&ReferenceID={referenceId}&SMSNotify=true
+ */
+export const sendSmsRequest = async (params: SendSmsRequestParams): Promise<SendSmsResponse> => {
+    try {
+        const response = await axiosInstance.post<SendSmsResponse>('/api/sendsmsrequest', null, {
+            params: {
+                TemplateID: params.templateID ?? SmsTemplateId.LOGIN_OTP,
+                ReferenceID: params.referenceID,
+                SMSNotify: params.smsNotify ?? true,
+            },
+        });
+        console.log("Send SMS Response:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Send SMS Request Error:', error);
         throw error;
     }
 };
@@ -158,10 +232,9 @@ export const saveAppointment = async (data: SaveAppointmentRequest) => {
     }
 };
 
-
 /**
  * Validate OTP for the given phone number and OTP code
- * Calls GET /api/validateotp?PhoneNo={phoneNo}&otp={otp}
+ * Calls GET /api/validateotp?PhoneNo={phoneNo}&otp={otp}&PatientID={patientID}
  */
 export const validateOtp = async (phoneNo: string, otp: string, patientID?: number): Promise<ValidateOtpResponse> => {
     try {
@@ -172,7 +245,7 @@ export const validateOtp = async (phoneNo: string, otp: string, patientID?: numb
                 ...(patientID !== undefined && { PatientID: patientID }),
             },
         });
-        console.log("Validate OTP", response.data)
+        console.log("Validate OTP Response:", response.data);
         return response.data;
     } catch (error) {
         console.error('Validate OTP Error:', error);
@@ -196,6 +269,32 @@ export interface UpdatePatientRequest {
     cityID: number;
     stateID: number;
     area: string;
+    // Compatibility fields
+    patientID?: number;
+    PatientID?: number;
+    Email?: string;
+    EmailID?: string;
+    emailID?: string;
+    emailId?: string;
+    PatientName?: string;
+    GenderID?: number;
+    DOB?: string;
+    Age?: number;
+    MobileNo?: string;
+    PhoneNo?: string;
+    phoneNo?: string;
+    Address?: string;
+    PatientAddress?: string;
+    PinCode?: string;
+    pincode?: string;
+    Area?: string;
+    CountryID?: number;
+    CityID?: number;
+    StateID?: number;
+    State?: string;
+    City?: string;
+    state?: string;
+    city?: string;
 }
 
 /**
@@ -402,6 +501,45 @@ export const getCities = async (stateId?: number | string): Promise<CityOption[]
     }
 };
 
+/**
+ * Get areas list, optionally filtered by cityId, searchText, areaid
+ * Calls GET /api/area
+ */
+export const getAreas = async (params?: GetAreasParams | number | string): Promise<AreaOption[]> => {
+    try {
+        const queryParams: Record<string, unknown> = {};
+        if (typeof params === 'object' && params !== null) {
+            if (params.searchText) queryParams.searchText = params.searchText;
+            const cId = params.cityId ?? params.CityID;
+            if (cId !== undefined && cId !== '') {
+                queryParams.cityId = cId;
+            }
+            const aId = params.areaid ?? params.AreaID;
+            if (aId !== undefined && aId !== '') {
+                queryParams.areaid = aId;
+            }
+        } else if (params !== undefined && params !== '') {
+            queryParams.cityId = params;
+        }
+
+        const response = await axiosInstance.get<unknown>('/api/area', {
+            params: queryParams,
+        });
+        console.log("Areas response:", response.data);
+        const data = response.data;
+        if (Array.isArray(data)) return data;
+        if (data && typeof data === 'object') {
+            if (Array.isArray((data as any).data)) return (data as any).data;
+            if (Array.isArray((data as any).Areas)) return (data as any).Areas;
+            if (Array.isArray((data as any).result)) return (data as any).result;
+        }
+        return [];
+    } catch (error) {
+        console.error('Get Areas Error:', error);
+        return [];
+    }
+};
+
 export interface FetchPatientParams {
     patientID?: number | string;
     userID?: number | string;
@@ -486,7 +624,7 @@ export const fetchPatient = async (params?: FetchPatientParams): Promise<Patient
             const uhid = p.UHID != null ? String(p.UHID) : null;
             const registerNo = p.RegisterNo != null ? String(p.RegisterNo) : null;
             const abhaId = p.AbhaID != null ? String(p.AbhaID) : null;
-            const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? null;
+            const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? p.emailId ?? p.EmailId ?? null;
             const email = emailRaw != null && String(emailRaw).trim() !== '' ? String(emailRaw).trim() : null;
 
             return {
@@ -516,6 +654,10 @@ export const fetchPatient = async (params?: FetchPatientParams): Promise<Patient
                 PhoneNo: phoneNo,
                 Email: email,
                 email: email,
+                EmailID: email,
+                emailID: email,
+                area: String(p.area || p.Area || ''),
+                Area: String(p.area || p.Area || ''),
 
                 // Convenience aliases for existing components
                 id: String(patientId),

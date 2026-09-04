@@ -4,7 +4,7 @@ import { FieldLabel, TextField, DobDateField, SelectField } from '@/components/F
 import { PatientHeader } from '@/common/PatientHeader'
 import { calcAge, digitsOnly } from '@/utils/patient.utils'
 import { Loader2 } from 'lucide-react'
-import { useStatesQuery, useCitiesQuery } from '@/hooks/queries/useMasterDataQueries'
+import { useStatesQuery, useCitiesQuery, useAreasQuery } from '@/hooks/queries/useMasterDataQueries'
 
 interface PatientRegistrationProps {
   pendingMobile: string
@@ -24,6 +24,8 @@ interface PatientRegistrationProps {
   setRegState: (v: string) => void
   regPincode: string
   setRegPincode: (v: string) => void
+  regArea?: string
+  setRegArea?: (v: string) => void
   regEmail?: string
   setRegEmail?: (v: string) => void
   regErrors: Record<string, string>
@@ -50,6 +52,8 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   setRegState,
   regPincode,
   setRegPincode,
+  regArea = '',
+  setRegArea,
   regEmail = '',
   setRegEmail,
   regErrors,
@@ -73,6 +77,21 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   const { data: rawCities } = useCitiesQuery(resolvedStateId)
   const citiesList = Array.isArray(rawCities) ? rawCities : []
 
+  // Resolve City ID for areas query in case regCity is a name or ID
+  const resolvedCityId = React.useMemo(() => {
+    if (!regCity) return ''
+    if (/^\d+$/.test(regCity)) return regCity
+    const found = citiesList.find(
+      (c) => c?.CityName?.toLowerCase() === regCity.toLowerCase() || String(c?.CityID) === regCity
+    )
+    return found ? String(found.CityID) : regCity
+  }, [regCity, citiesList])
+
+  const { data: rawAreas, isLoading: isLoadingAreas } = useAreasQuery(resolvedCityId || undefined, {
+    enabled: Boolean(resolvedCityId),
+  })
+  const areasList = Array.isArray(rawAreas) ? rawAreas : []
+
   const stateOptions = statesList.map((s) => ({
     value: String(s.StateID),
     label: s.StateName,
@@ -83,9 +102,37 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     label: c.CityName,
   }))
 
+  const areaOptions = React.useMemo(() => {
+    const opts = areasList.map((a) => ({
+      value: a.AreaName || String(a.AreaID),
+      label: a.AreaName || String(a.AreaID),
+    }))
+    if (regArea && !opts.some((o) => o.value.toLowerCase() === regArea.toLowerCase())) {
+      opts.unshift({ value: regArea, label: regArea })
+    }
+    return opts
+  }, [areasList, regArea])
+
   const handleStateChange = (val: string) => {
     setRegState(val)
     setRegCity('')
+    if (setRegArea) setRegArea('')
+  }
+
+  const handleCityChange = (val: string) => {
+    setRegCity(val)
+    if (setRegArea) setRegArea('')
+  }
+
+  const handleAreaChange = (val: string) => {
+    if (setRegArea) setRegArea(val)
+    const matched = areasList.find(
+      (a) => (a.AreaName && a.AreaName.toLowerCase() === val.toLowerCase()) || String(a.AreaID) === val
+    )
+    const pin = matched?.Pincode ?? matched?.PinCode ?? matched?.pincode
+    if (pin && setRegPincode) {
+      setRegPincode(digitsOnly(String(pin), 6))
+    }
   }
 
   const dobDate = regDob ? new Date(regDob) : undefined
@@ -242,10 +289,31 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 <SelectField
                   options={cityOptions}
                   value={regCity}
-                  onChange={setRegCity}
-                  placeholder="Select City"
+                  onChange={handleCityChange}
+                  placeholder={!regState ? 'Select state first' : 'Select City'}
                 />
                 {regErrors.city && <p className="text-xs text-rose-600 mt-1">{regErrors.city}</p>}
+              </div>
+
+              {/* Area */}
+              <div>
+                <FieldLabel>Area / Locality</FieldLabel>
+                {resolvedCityId && areasList.length > 0 ? (
+                  <SelectField
+                    options={areaOptions}
+                    value={regArea}
+                    onChange={handleAreaChange}
+                    placeholder={isLoadingAreas ? 'Loading areas...' : 'Select Area'}
+                    disabled={isSubmitting || isLoadingAreas}
+                  />
+                ) : (
+                  <TextField
+                    value={regArea}
+                    onChange={(v) => setRegArea && setRegArea(v)}
+                    placeholder={!resolvedCityId ? 'Select city first' : (isLoadingAreas ? 'Loading areas...' : 'e.g. Kattankulathur')}
+                    disabled={isSubmitting}
+                  />
+                )}
               </div>
 
               {/* PIN Code */}

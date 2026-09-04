@@ -8,7 +8,9 @@ interface LoginOtpProps {
   setLoginOtpInput: (v: string) => void
   loginOtpErr: string
   isVerifyingOtp?: boolean
+  isValidatingOtp?: boolean
   isGeneratingOtp?: boolean
+  isSendingSms?: boolean
   onVerify: () => void
   onResend: () => void
 }
@@ -18,10 +20,14 @@ export const LoginOtp: React.FC<LoginOtpProps> = ({
   setLoginOtpInput,
   loginOtpErr,
   isVerifyingOtp = false,
+  isValidatingOtp = false,
   isGeneratingOtp = false,
+  isSendingSms = false,
   onVerify,
   onResend,
 }) => {
+  const isBusyVerifying = isVerifyingOtp || isValidatingOtp
+  const isBusyResending = isGeneratingOtp || isSendingSms
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 border-2 border-blue-200 dark:border-blue-800/50 rounded-2xl p-6 space-y-4 transition-all duration-300">
       {/* Decorative elements */}
@@ -54,11 +60,11 @@ export const LoginOtp: React.FC<LoginOtpProps> = ({
             inputMode="numeric"
             value={loginOtpInput}
             onChange={(e) => setLoginOtpInput(digitsOnly(e.target.value, 4))}
-            onKeyDown={(e) => e.key === 'Enter' && loginOtpInput.length === 4 && !isVerifyingOtp && onVerify()}
+            onKeyDown={(e) => e.key === 'Enter' && loginOtpInput.length === 4 && !isBusyVerifying && onVerify()}
             placeholder="• • • •"
             className="w-full text-center tracking-[8px] text-xl font-bold border-2 border-slate-200 dark:border-slate-700 rounded-xl py-3 pl-10 pr-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-900/30 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-all duration-200 placeholder:text-slate-300 dark:placeholder:text-slate-600 disabled:opacity-50"
             maxLength={4}
-            disabled={isVerifyingOtp}
+            disabled={isBusyVerifying}
             autoFocus
           />
         </div>
@@ -75,9 +81,9 @@ export const LoginOtp: React.FC<LoginOtpProps> = ({
         onClick={onVerify}
         className="w-full text-white font-semibold cursor-pointer py-5 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative z-10"
         style={{ background: 'var(--blue-btn)', borderRadius: "4px" }}
-        disabled={loginOtpInput.length !== 4 || isVerifyingOtp}
+        disabled={loginOtpInput.length !== 4 || isBusyVerifying}
       >
-        {isVerifyingOtp ? (
+        {isBusyVerifying ? (
           <>
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             Verifying OTP...
@@ -96,12 +102,12 @@ export const LoginOtp: React.FC<LoginOtpProps> = ({
         <button
           type="button"
           onClick={onResend}
-          disabled={isGeneratingOtp || isVerifyingOtp}
+          disabled={isBusyResending || isBusyVerifying}
           className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-all cursor-pointer bg-white/50 dark:bg-slate-800/50 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800/50 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ color: "var(--blue-text-color)" }}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingOtp ? 'animate-spin' : ''}`} />
-          {isGeneratingOtp ? 'Resending OTP...' : 'Resend OTP'}
+          <RefreshCw className={`w-3.5 h-3.5 ${isBusyResending ? 'animate-spin' : ''}`} />
+          {isSendingSms ? 'Sending SMS...' : isGeneratingOtp ? 'Generating OTP...' : 'Resend OTP'}
         </button>
       </div>
 

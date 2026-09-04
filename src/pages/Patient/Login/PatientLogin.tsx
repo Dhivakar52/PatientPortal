@@ -15,6 +15,8 @@ interface PatientLoginProps {
   setLoginOtpInput: (v: string) => void
   loginOtpErr: string
   isGeneratingOtp?: boolean
+  isSendingSms?: boolean
+  isValidatingOtp?: boolean
   isVerifyingOtp?: boolean
   onGenerateOtp: () => void
   onVerifyOtp: () => void
@@ -30,12 +32,15 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
   setLoginOtpInput,
   loginOtpErr,
   isGeneratingOtp = false,
+  isSendingSms = false,
+  isValidatingOtp = false,
   isVerifyingOtp = false,
   onGenerateOtp,
   onVerifyOtp,
   onResendOtp,
 }) => {
-  if (isVerifyingOtp) {
+  const isChecking = isValidatingOtp || isVerifyingOtp
+  if (isChecking) {
     return (
       <PageLoader
         message="Validating & Loading Data..."
@@ -167,9 +172,14 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                   onClick={onGenerateOtp}
                   className="w-full text-white font-semibold py-3.5 text-base transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                   style={{ background: 'var(--blue-btn)', borderRadius: "10px" }}
-                  disabled={loginMobileInput.length !== 10 || isGeneratingOtp}
+                  disabled={loginMobileInput.length !== 10 || isGeneratingOtp || isSendingSms}
                 >
-                  {isGeneratingOtp ? (
+                  {isSendingSms ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Sending SMS...
+                    </>
+                  ) : isGeneratingOtp ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Generating OTP...
@@ -191,8 +201,9 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                     loginOtpInput={loginOtpInput}
                     setLoginOtpInput={setLoginOtpInput}
                     loginOtpErr={loginOtpErr}
-                    isVerifyingOtp={isVerifyingOtp}
+                    isVerifyingOtp={isVerifyingOtp || isValidatingOtp}
                     isGeneratingOtp={isGeneratingOtp}
+                    isSendingSms={isSendingSms}
                     onVerify={onVerifyOtp}
                     onResend={onResendOtp}
                   />
