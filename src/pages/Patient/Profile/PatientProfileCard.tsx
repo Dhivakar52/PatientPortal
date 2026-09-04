@@ -60,8 +60,9 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
     : (currentPatient?.dob ? calcAge(currentPatient.dob) : '—')
 
   const displayPhone = currentPatient?.PhoneNo || currentPatient?.phoneNo || currentPatient?.mobile || '—'
-  const displayEmail = currentPatient?.Email || currentPatient?.email || '—'
+  const displayEmail = currentPatient?.Email || currentPatient?.email || (currentPatient as any)?.EmailID || (currentPatient as any)?.emailID || (currentPatient as any)?.emailId || '—'
   const displayAddress = currentPatient?.Address || currentPatient?.PatientAddress || currentPatient?.address || '—'
+  const displayArea = currentPatient?.area || (currentPatient as any)?.Area || '—'
   const displayPinCode = currentPatient?.PinCode || currentPatient?.pincode || '—'
   const displayUhid = currentPatient?.UHID || '—'
   const displayAbhaId = currentPatient?.AbhaID || '—'
@@ -170,6 +171,13 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
             <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Address</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200 text-right break-words">
               {displayAddress}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-start gap-2">
+            <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">Area</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-right break-words">
+              {displayArea}
             </span>
           </div>
 

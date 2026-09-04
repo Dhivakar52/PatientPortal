@@ -1,4 +1,5 @@
 import { type UserRecord, type Appointment } from '../types/patient.types'
+export { SmsTemplateId, SMS_TEMPLATE_IDS, type SmsTemplateIdType } from './sms.constants'
 
 export const DOCTORS = ['Dr. Madhumitha', 'Dr. Ravi', 'Dr. Ganesh', 'Dr. Anu']
 export const HOSPITAL_NAME = 'SRM Medical College Hospital and Research Centre'

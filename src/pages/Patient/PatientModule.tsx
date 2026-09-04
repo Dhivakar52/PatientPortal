@@ -99,6 +99,8 @@ const PatientModule: React.FC = () => {
                         setRegState={reg.setRegState}
                         regPincode={reg.regPincode}
                         setRegPincode={reg.setRegPincode}
+                        regArea={reg.regArea}
+                        setRegArea={reg.setRegArea}
                         regEmail={reg.regEmail}
                         setRegEmail={reg.setRegEmail}
                         regErrors={reg.regErrors}

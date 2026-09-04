@@ -6,7 +6,7 @@ import { type Patient } from '@/types/patient.types'
 import { updatePatient, type UpdatePatientRequest } from '@/services/apiService'
 import { calcAge, digitsOnly } from '@/utils/patient.utils'
 import { toast } from '@/components/ui/toast'
-import { useStatesQuery, useCitiesQuery } from '@/hooks/queries/useMasterDataQueries'
+import { useStatesQuery, useCitiesQuery, useAreasQuery } from '@/hooks/queries/useMasterDataQueries'
 
 interface EditPatientModalProps {
   isOpen: boolean
@@ -75,13 +75,17 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Master Data Queries for States & Cities
+  // Master Data Queries for States, Cities & Areas
   const { data: rawStates, isLoading: isLoadingStates } = useStatesQuery({ enabled: isOpen })
   const statesList = Array.isArray(rawStates) ? rawStates : []
   const { data: rawCities, isLoading: isLoadingCities } = useCitiesQuery(stateId || undefined, {
     enabled: isOpen && Boolean(stateId),
   })
   const citiesList = Array.isArray(rawCities) ? rawCities : []
+  const { data: rawAreas, isLoading: isLoadingAreas } = useAreasQuery(cityId || undefined, {
+    enabled: isOpen && Boolean(cityId),
+  })
+  const areasList = Array.isArray(rawAreas) ? rawAreas : []
 
   // Pre-populate fields when patient changes or modal opens
   useEffect(() => {
@@ -113,7 +117,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
         localStorage.getItem('userMobile') ||
         ''
       setMobileNo(registeredMobile)
-      setEmail(patient.Email || patient.email || '')
+      setEmail(patient.Email || patient.email || (patient as any).EmailID || (patient as any).emailID || (patient as any).emailId || '')
       setAddress(patient.Address || patient.PatientAddress || patient.address || '')
       
       const existingStateId = patient.StateID ?? patient.stateID ?? ''
@@ -156,6 +160,23 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
   const handleStateChange = (newVal: string) => {
     setStateId(newVal)
     setCityId('') // Reset city on state change
+    setArea('') // Reset area on state change
+  }
+
+  const handleCityChange = (newVal: string) => {
+    setCityId(newVal)
+    setArea('') // Reset area on city change
+  }
+
+  const handleAreaChange = (val: string) => {
+    setArea(val)
+    const matched = areasList.find(
+      (a) => (a.AreaName && a.AreaName.toLowerCase() === val.toLowerCase()) || String(a.AreaID) === val
+    )
+    const pin = matched?.Pincode ?? matched?.PinCode ?? matched?.pincode
+    if (pin) {
+      setPinCode(digitsOnly(String(pin), 6))
+    }
   }
 
   const stateOptions = statesList.map((s) => ({
@@ -167,6 +188,17 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
     value: String(c.CityID),
     label: c.CityName,
   }))
+
+  const areaOptions = React.useMemo(() => {
+    const opts = areasList.map((a) => ({
+      value: a.AreaName || String(a.AreaID),
+      label: a.AreaName || String(a.AreaID),
+    }))
+    if (area && !opts.some((o) => o.value.toLowerCase() === area.toLowerCase())) {
+      opts.unshift({ value: area, label: area })
+    }
+    return opts
+  }, [areasList, area])
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -229,12 +261,13 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
     const stateIdNum = Number(stateId) || Number(patient.StateID ?? patient.stateID ?? 0) || 0
     const cityIdNum = Number(cityId) || Number(patient.CityID ?? patient.cityID ?? 0) || 0
     const countryIdNum = Number(patient.CountryID ?? patient.countryID ?? 1) || 1
-    const finalFormattedDob = parseDateToIso(dob)
+    const finalFormattedDob = parseDateToIso(finalDob) || finalDob || '2000-01-01'
 
+    const emailVal = email.trim()
     const payload: UpdatePatientRequest = {
       userID: Number(patient.UserID ?? patient.userID ?? loggedInUserId) || 0,
       name: name.trim(),
-      email: email.trim(),
+      email: emailVal,
       gender: genderCode,
       dob: finalFormattedDob,
       age: Number(ageValue) || 0,
@@ -247,6 +280,30 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
       cityID: cityIdNum,
       stateID: stateIdNum,
       area: area.trim(),
+      // Compatibility fields for backend C# Web API / SQL stored procedures
+      patientID: patientId,
+      PatientID: patientId,
+      Email: emailVal,
+      EmailID: emailVal,
+      emailID: emailVal,
+      emailId: emailVal,
+      PatientName: name.trim(),
+      GenderID: genderCode,
+      DOB: finalFormattedDob,
+      Age: Number(ageValue) || 0,
+      PhoneNo: cleanMobile,
+      phoneNo: cleanMobile,
+      MobileNo: cleanMobile,
+      Address: address.trim(),
+      PatientAddress: address.trim(),
+      PinCode: pinCode.trim(),
+      pincode: pinCode.trim(),
+      Area: area.trim(),
+      CountryID: countryIdNum,
+      CityID: cityIdNum,
+      StateID: stateIdNum,
+      State: stateOptions.find((s) => s.value === stateId)?.label || '',
+      City: cityOptions.find((c) => c.value === cityId)?.label || '',
     }
 
     try {
@@ -268,8 +325,10 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
         PhoneNo: cleanMobile,
         mobile: cleanMobile,
         phoneNo: cleanMobile,
-        Email: email.trim() || undefined,
-        email: email.trim() || undefined,
+        Email: emailVal || undefined,
+        email: emailVal || undefined,
+        EmailID: emailVal || undefined,
+        emailID: emailVal || undefined,
         Address: address.trim(),
         PatientAddress: address.trim(),
         address: address.trim(),
@@ -279,6 +338,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
         cityID: cityIdNum,
         PinCode: pinCode.trim(),
         pincode: pinCode.trim(),
+        area: area.trim(),
       }
 
       onSuccess?.(updatedPatientObj)
@@ -446,10 +506,31 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
               <SelectField
                 options={cityOptions}
                 value={cityId}
-                onChange={setCityId}
+                onChange={handleCityChange}
                 placeholder={!stateId ? 'Select state first' : isLoadingCities ? 'Loading cities...' : 'Select City'}
                 disabled={isSubmitting || !stateId || isLoadingCities}
               />
+            </div>
+
+            {/* Area */}
+            <div>
+              <FieldLabel>Area</FieldLabel>
+              {cityId && areasList.length > 0 ? (
+                <SelectField
+                  options={areaOptions}
+                  value={area}
+                  onChange={handleAreaChange}
+                  placeholder={isLoadingAreas ? 'Loading areas...' : 'Select Area'}
+                  disabled={isSubmitting || isLoadingAreas}
+                />
+              ) : (
+                <TextField
+                  value={area}
+                  onChange={setArea}
+                  placeholder={!cityId ? 'Select city first' : (isLoadingAreas ? 'Loading areas...' : 'e.g. Vadapalani')}
+                  disabled={isSubmitting}
+                />
+              )}
             </div>
 
             {/* PIN Code */}
@@ -462,17 +543,6 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
                 disabled={isSubmitting}
               />
               {errors.pinCode && <p className="text-xs text-rose-600 mt-1">{errors.pinCode}</p>}
-            </div>
-
-            {/* Area */}
-            <div>
-              <FieldLabel>Area</FieldLabel>
-              <TextField
-                value={area}
-                onChange={setArea}
-                placeholder="e.g. Vadapalani"
-                disabled={isSubmitting}
-              />
             </div>
 
             {/* Address */}
