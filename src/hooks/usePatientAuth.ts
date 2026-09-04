@@ -1,12 +1,17 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import type { UserRecord, Patient, FlowScreen, RegisterContext } from '@/types/patient.types'
-import { generateOtp, validateOtp, fetchPatient, getUsers, deletePatient, type UserData } from '@/services/apiService'
+import { fetchPatient, getUsers, deletePatient, type UserData } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { queryClient } from '@/lib/queryClient'
 import { appointmentsQueryKeys } from './queries/useAppointmentsQuery'
 import { dashboardQueryKeys } from './queries/useDashboardQuery'
+import {
+  useGenerateOtpMutation,
+  useSendSmsMutation,
+  useValidateOtpMutation,
+} from './queries/useAuthQueries'
 
 const getScreenFromPath = (path: string): FlowScreen => {
   if (path === '/patient/register') return 'register'
@@ -361,14 +366,25 @@ export function usePatientAuth() {
 
   const [registerContext, setRegisterContext] = useState<RegisterContext>('newAccount')
 
+  // TanStack Query Mutations for Authentication
+  const generateOtpMutation = useGenerateOtpMutation()
+  const sendSmsMutation = useSendSmsMutation()
+  const validateOtpMutation = useValidateOtpMutation()
+
   // Login OTP State
   const [loginMobileInput, setLoginMobileInput] = useState('')
   const [loginMobileErr, setLoginMobileErr] = useState('')
   const [showLoginOtpBlock, setShowLoginOtpBlock] = useState(false)
   const [loginOtpInput, setLoginOtpInput] = useState('')
   const [loginOtpErr, setLoginOtpErr] = useState('')
-  const [isGeneratingOtp, setIsGeneratingOtp] = useState(false)
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const [isGeneratingOtpLocal, setIsGeneratingOtpLocal] = useState(false)
+  const [isSendingSmsLocal, setIsSendingSmsLocal] = useState(false)
+  const [isVerifyingOtpLocal, setIsVerifyingOtpLocal] = useState(false)
+
+  const isGeneratingOtp = isGeneratingOtpLocal || generateOtpMutation.isPending
+  const isSendingSms = isSendingSmsLocal || sendSmsMutation.isPending
+  const isValidatingOtp = isVerifyingOtpLocal || validateOtpMutation.isPending
+  const isVerifyingOtp = isValidatingOtp
 
   // Derived active record & patient
   const currentUserRecord = usersDB[currentMobile] || null
@@ -479,14 +495,20 @@ export function usePatientAuth() {
     return null
   }, [apiPatient, apiPatientsList, currentUserRecord, activePatientId])
 
+  // Patients list for switcher
   const patientsList: Patient[] = useMemo(() => {
     if (apiPatientsList && apiPatientsList.length > 0) {
       return apiPatientsList
     }
     if (currentUserData && Array.isArray(currentUserData.Patients) && currentUserData.Patients.length > 0) {
-      return currentUserData.Patients
+      return currentUserData.Patients.map((p) => ({
+        ...p,
+        id: String(p.PatientID || p.id),
+        name: p.PatientName || p.name,
+        mobile: p.PhoneNo || p.mobile,
+      }))
     }
-    if (currentUserRecord && Array.isArray(currentUserRecord.patients) && currentUserRecord.patients.length > 0) {
+    if (currentUserRecord?.patients && currentUserRecord.patients.length > 0) {
       return currentUserRecord.patients
     }
     if (apiPatient) {
@@ -495,9 +517,8 @@ export function usePatientAuth() {
     return []
   }, [apiPatientsList, currentUserData, currentUserRecord, apiPatient])
 
-
   const handleGenerateLoginOtp = async () => {
-    if (isGeneratingOtp) return
+    if (isGeneratingOtp || isSendingSms) return
     setLoginMobileErr('')
     setLoginOtpErr('')
 
@@ -506,14 +527,62 @@ export function usePatientAuth() {
       return
     }
 
-    setIsGeneratingOtp(true)
+    setIsGeneratingOtpLocal(true)
+    setIsSendingSmsLocal(false)
+
     try {
-      await generateOtp(loginMobileInput)
-      setPendingMobile(loginMobileInput)
-      setShowLoginOtpBlock(true)
-      setLoginOtpInput('')
-      setLoginOtpErr('')
+      // Step 1: POST /api/generateotp?PhoneNo={PhoneNo}&PatientID={PatientID}
+      console.log(`📱 Step 1: Generating OTP for ${loginMobileInput}...`)
+      const refResponse = await generateOtpMutation.mutateAsync({ phoneNo: loginMobileInput })
+      console.log('OTP generation reference ID result:', refResponse)
+
+      // Parse and validate Reference ID
+      let referenceId: number | string | null = null
+      if (typeof refResponse === 'number') {
+        referenceId = refResponse
+      } else if (typeof refResponse === 'string' && refResponse.trim() !== '') {
+        const parsed = Number(refResponse.trim())
+        referenceId = isNaN(parsed) ? refResponse.trim() : parsed
+      } else if (refResponse && typeof refResponse === 'object') {
+        const obj = refResponse as Record<string, unknown>
+        referenceId = (obj.referenceId || obj.ReferenceID || obj.data || obj.id || null) as (number | string | null)
+      }
+
+      if (referenceId === null || referenceId === undefined || referenceId === '' || (typeof referenceId === 'number' && isNaN(referenceId))) {
+        const errorMsg = 'Invalid OTP reference ID received. Please try again.'
+        setLoginMobileErr(errorMsg)
+        toast.error(errorMsg)
+        setShowLoginOtpBlock(false)
+        return
+      }
+
+      // Step 2: POST /api/sendsmsrequest?TemplateID=1&ReferenceID={referenceId}&SMSNotify=true
+      setIsGeneratingOtpLocal(false)
+      setIsSendingSmsLocal(true)
+      console.log(`✉️ Step 2: Sending SMS request for ReferenceID: ${referenceId}...`)
+
+      const smsResponse = await sendSmsMutation.mutateAsync({
+        templateID: 1,
+        referenceID: referenceId,
+        smsNotify: true,
+      })
+      console.log('Send SMS API response:', smsResponse)
+
+      // Step 3: Success Handling
+      if (smsResponse && smsResponse.success === true) {
+        setPendingMobile(loginMobileInput)
+        setShowLoginOtpBlock(true)
+        setLoginOtpInput('')
+        setLoginOtpErr('')
+        toast.success(smsResponse.message || 'OTP sent successfully.')
+      } else {
+        const errorMsg = smsResponse?.message || 'Unable to send OTP. Please try again.'
+        setLoginMobileErr(errorMsg)
+        setShowLoginOtpBlock(false)
+        toast.error(errorMsg)
+      }
     } catch (err: unknown) {
+      setShowLoginOtpBlock(false)
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
       let message = 'Failed to generate OTP. Please try again.'
@@ -525,8 +594,10 @@ export function usePatientAuth() {
         message = error.message
       }
       setLoginMobileErr(message)
+      toast.error(message)
     } finally {
-      setIsGeneratingOtp(false)
+      setIsGeneratingOtpLocal(false)
+      setIsSendingSmsLocal(false)
     }
   }
 
@@ -536,13 +607,55 @@ export function usePatientAuth() {
       setLoginMobileErr('Enter a valid 10-digit mobile number.')
       return
     }
-    if (isGeneratingOtp) return
+    if (isGeneratingOtp || isSendingSms) return
 
-    setIsGeneratingOtp(true)
+    setIsGeneratingOtpLocal(true)
+    setIsSendingSmsLocal(false)
     setLoginOtpErr('')
+
     try {
-      await generateOtp(targetMobile)
-      setLoginOtpInput('')
+      // Step 1: Generate OTP
+      console.log(`📱 Resending OTP: Step 1 Generate OTP for ${targetMobile}...`)
+      const refResponse = await generateOtpMutation.mutateAsync({ phoneNo: targetMobile })
+      
+      let referenceId: number | string | null = null
+      if (typeof refResponse === 'number') {
+        referenceId = refResponse
+      } else if (typeof refResponse === 'string' && refResponse.trim() !== '') {
+        const parsed = Number(refResponse.trim())
+        referenceId = isNaN(parsed) ? refResponse.trim() : parsed
+      } else if (refResponse && typeof refResponse === 'object') {
+        const obj = refResponse as Record<string, unknown>
+        referenceId = (obj.referenceId || obj.ReferenceID || obj.data || obj.id || null) as (number | string | null)
+      }
+
+      if (referenceId === null || referenceId === undefined || referenceId === '' || (typeof referenceId === 'number' && isNaN(referenceId))) {
+        const errorMsg = 'Invalid OTP reference ID received. Please try again.'
+        setLoginOtpErr(errorMsg)
+        toast.error(errorMsg)
+        return
+      }
+
+      // Step 2: Send SMS
+      setIsGeneratingOtpLocal(false)
+      setIsSendingSmsLocal(true)
+      console.log(`✉️ Resending OTP: Step 2 Send SMS for ReferenceID ${referenceId}...`)
+
+      const smsResponse = await sendSmsMutation.mutateAsync({
+        templateID: 1,
+        referenceID: referenceId,
+        smsNotify: true,
+      })
+
+      if (smsResponse && smsResponse.success === true) {
+        setLoginOtpInput('')
+        setLoginOtpErr('')
+        toast.success(smsResponse.message || 'OTP resent successfully.')
+      } else {
+        const errorMsg = smsResponse?.message || 'Unable to resend OTP. Please try again.'
+        setLoginOtpErr(errorMsg)
+        toast.error(errorMsg)
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
@@ -555,8 +668,10 @@ export function usePatientAuth() {
         message = error.message
       }
       setLoginOtpErr(message)
+      toast.error(message)
     } finally {
-      setIsGeneratingOtp(false)
+      setIsGeneratingOtpLocal(false)
+      setIsSendingSmsLocal(false)
     }
   }
 
@@ -570,16 +685,28 @@ export function usePatientAuth() {
       setLoginOtpErr('Enter the 4-digit OTP to continue.')
       return
     }
-    if (isVerifyingOtp) return
+    if (isValidatingOtp) return
 
-    setIsVerifyingOtp(true)
+    setIsVerifyingOtpLocal(true)
     setLoginOtpErr('')
 
     try {
-      const response = await validateOtp(targetMobile, loginOtpInput)
-      const isSuccess =
-        response?.Result &&
-        response.Result.toLowerCase().trim() === 'otp successfully validated'
+      console.log(`🔍 Step 3: Validating OTP ${loginOtpInput} for ${targetMobile}...`)
+      const response = await validateOtpMutation.mutateAsync({
+        phoneNo: targetMobile,
+        otp: loginOtpInput,
+      })
+      console.log('Validate OTP response:', response)
+
+      const resultText = String(response?.Result || '').toLowerCase().trim()
+      const isExpired = resultText.includes('expired') || (response?.UserID === 0 && !response?.ExistUser && !resultText.includes('successfully validated'))
+      const isSuccess = resultText === 'otp successfully validated' || resultText.includes('successfully validated')
+
+      if (isExpired) {
+        setLoginOtpErr('OTP has expired. Please generate a new OTP.')
+        setLoginOtpInput('')
+        return
+      }
 
       if (isSuccess) {
         setLoginOtpErr('')
@@ -745,8 +872,9 @@ export function usePatientAuth() {
           setScreenState('register')
         }
       } else {
-        const errorMsg = response?.Result || 'Incorrect OTP. Please try again.'
+        const errorMsg = response?.Result || 'Invalid OTP entered. Please try again.'
         setLoginOtpErr(errorMsg)
+        setLoginOtpInput('')
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
@@ -760,8 +888,9 @@ export function usePatientAuth() {
         message = error.message
       }
       setLoginOtpErr(message)
+      setLoginOtpInput('')
     } finally {
-      setIsVerifyingOtp(false)
+      setIsVerifyingOtpLocal(false)
     }
   }
 
@@ -982,6 +1111,8 @@ export function usePatientAuth() {
     setLoginOtpInput,
     loginOtpErr,
     isGeneratingOtp,
+    isSendingSms,
+    isValidatingOtp,
     isVerifyingOtp,
     handleGenerateLoginOtp,
     handleResendLoginOtp,

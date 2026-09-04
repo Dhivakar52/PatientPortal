@@ -69,6 +69,8 @@ const PatientModule: React.FC = () => {
                     setLoginOtpInput={auth.setLoginOtpInput}
                     loginOtpErr={auth.loginOtpErr}
                     isGeneratingOtp={auth.isGeneratingOtp}
+                    isSendingSms={auth.isSendingSms}
+                    isValidatingOtp={auth.isValidatingOtp}
                     isVerifyingOtp={auth.isVerifyingOtp}
                     onGenerateOtp={auth.handleGenerateLoginOtp}
                     onVerifyOtp={auth.handleVerifyLoginOtp}

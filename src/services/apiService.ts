@@ -115,11 +115,25 @@ export interface SaveAppointmentRequest {
     cancelledReason?: string;
 }
 
+export interface SendSmsRequestParams {
+    templateID?: number;
+    referenceID: number | string;
+    smsNotify?: boolean;
+}
+
+export interface SendSmsResponse {
+    success: boolean;
+    message?: string;
+    providerResponse?: string;
+    requestId?: string;
+}
+
 /**
  * Generate OTP for the given phone number and optional patient ID
  * Calls POST /api/generateotp?PhoneNo={phoneNo}&PatientID={patientID}
+ * Returns numeric reference ID (e.g. 55)
  */
-export const generateOtp = async (phoneNo: string, patientID?: number) => {
+export const generateOtp = async (phoneNo: string, patientID?: number): Promise<number | string> => {
     try {
         const response = await axiosInstance.post('/api/generateotp', null, {
             params: {
@@ -127,9 +141,31 @@ export const generateOtp = async (phoneNo: string, patientID?: number) => {
                 ...(patientID !== undefined && { PatientID: patientID }),
             },
         });
+        console.log("Generate OTP Response (ReferenceID):", response.data);
         return response.data;
     } catch (error) {
         console.error('Generate OTP Error:', error);
+        throw error;
+    }
+};
+
+/**
+ * Send SMS Request after OTP generation
+ * Calls POST /api/sendsmsrequest?TemplateID=1&ReferenceID={referenceId}&SMSNotify=true
+ */
+export const sendSmsRequest = async (params: SendSmsRequestParams): Promise<SendSmsResponse> => {
+    try {
+        const response = await axiosInstance.post<SendSmsResponse>('/api/sendsmsrequest', null, {
+            params: {
+                TemplateID: params.templateID ?? 1,
+                ReferenceID: params.referenceID,
+                SMSNotify: params.smsNotify ?? true,
+            },
+        });
+        console.log("Send SMS Response:", response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Send SMS Request Error:', error);
         throw error;
     }
 };
@@ -158,10 +194,9 @@ export const saveAppointment = async (data: SaveAppointmentRequest) => {
     }
 };
 
-
 /**
  * Validate OTP for the given phone number and OTP code
- * Calls GET /api/validateotp?PhoneNo={phoneNo}&otp={otp}
+ * Calls GET /api/validateotp?PhoneNo={phoneNo}&otp={otp}&PatientID={patientID}
  */
 export const validateOtp = async (phoneNo: string, otp: string, patientID?: number): Promise<ValidateOtpResponse> => {
     try {
@@ -172,7 +207,7 @@ export const validateOtp = async (phoneNo: string, otp: string, patientID?: numb
                 ...(patientID !== undefined && { PatientID: patientID }),
             },
         });
-        console.log("Validate OTP", response.data)
+        console.log("Validate OTP Response:", response.data);
         return response.data;
     } catch (error) {
         console.error('Validate OTP Error:', error);

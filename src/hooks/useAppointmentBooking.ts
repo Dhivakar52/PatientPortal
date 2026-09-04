@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { genApptNo } from '@/utils/patient.utils'
-import { saveAppointment, generateOtp, validateOtp, cancelAppointment, fetchAppointments, type SaveAppointmentRequest } from '@/services/apiService'
+import { saveAppointment, generateOtp, sendSmsRequest, validateOtp, cancelAppointment, fetchAppointments, type SaveAppointmentRequest } from '@/services/apiService'
 import { toast } from '@/components/ui/toast'
 import { todayStr } from '@/utils/patient.utils'
 import { queryClient } from '@/lib/queryClient'
@@ -199,7 +199,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     try {
       // 1. Generate OTP (do NOT save appointment before OTP verification)
       const targetMobile = currentPatient?.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
-      await generateOtp(targetMobile, numericPatientId)
+      const refId = await generateOtp(targetMobile, numericPatientId)
+      if (refId) {
+        await sendSmsRequest({ referenceID: refId, templateID: 1, smsNotify: true })
+      }
       setBookOtpInput('')
       setBookOtpErr('')
       setShowBookOtpModal(true)
@@ -389,7 +392,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     const targetMobile = currentPatient.PhoneNo || currentPatient.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
 
     try {
-      await generateOtp(targetMobile, numericPatientId)
+      const refId = await generateOtp(targetMobile, numericPatientId)
+      if (refId) {
+        await sendSmsRequest({ referenceID: refId, templateID: 1, smsNotify: true })
+      }
       setBookOtpErr('')
       toast.success('OTP resent successfully!')
     } catch (err: unknown) {
@@ -461,7 +467,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setIsGeneratingCancelOtp(true)
     try {
       console.log(`📱 Generating OTP for cancellation: POST /api/generateotp?PhoneNo=${targetMobile}&PatientID=${patientId}`)
-      await generateOtp(targetMobile, patientId)
+      const refId = await generateOtp(targetMobile, patientId)
+      if (refId) {
+        await sendSmsRequest({ referenceID: refId, templateID: 1, smsNotify: true })
+      }
       setCancelStep('otp')
       setCancelOtpInput('')
       setCancelOtpErr('')
@@ -593,7 +602,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
     setIsResendingCancelOtp(true)
     try {
-      await generateOtp(targetMobile, patientId)
+      const refId = await generateOtp(targetMobile, patientId)
+      if (refId) {
+        await sendSmsRequest({ referenceID: refId, templateID: 1, smsNotify: true })
+      }
       setCancelOtpErr('')
       toast.success('Cancellation OTP resent successfully!')
     } catch (err: unknown) {
