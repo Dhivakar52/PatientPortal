@@ -1,5 +1,5 @@
-import React from 'react'
-import { CheckCircle2, Calendar, Clock, User, Building2 } from 'lucide-react'
+import React, { useEffect } from 'react'
+import { CheckCircle2, Calendar, Clock, User, Building2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { type Appointment } from '@/types/patient.types'
 import { formatDateFull, capitalizeName } from '@/utils/patient.utils'
@@ -15,6 +15,17 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
   lastBookedAppt,
   onClose,
 }) => {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   if (!isOpen || !lastBookedAppt) return null
 
   const apptNo = String(
@@ -31,8 +42,27 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
   const slotStr = lastBookedAppt.slot || lastBookedAppt.TimeSlot || lastBookedAppt.Timeslot || '08:00 AM - 08:10 AM'
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <div
+        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 sm:p-8 shadow-2xl animate-in zoom-in-95 duration-200 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button (X) */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        >
+          <X className="w-5 h-5" />
+        </button>
 
         {/* Success Header */}
         <div className="text-center mb-5">
