@@ -112,10 +112,13 @@ const PatientLogin: React.FC<PatientLoginProps> = ({
                     Mobile Number
                   </label>
                   {showLoginOtpBlock && (
-                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Verified
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setLoginMobileInput('')}
+                      className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      Change Number
+                    </button>
                   )}
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 -mt-1">

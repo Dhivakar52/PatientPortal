@@ -382,7 +382,7 @@ export function usePatientAuth() {
   const validateOtpMutation = useValidateOtpMutation()
 
   // Login OTP State
-  const [loginMobileInput, setLoginMobileInput] = useState('')
+  const [loginMobileInput, setLoginMobileInputRaw] = useState('')
   const [loginMobileErr, setLoginMobileErr] = useState('')
   const [showLoginOtpBlock, setShowLoginOtpBlock] = useState(false)
   const [loginOtpInput, setLoginOtpInput] = useState('')
@@ -390,6 +390,17 @@ export function usePatientAuth() {
   const [isGeneratingOtpLocal, setIsGeneratingOtpLocal] = useState(false)
   const [isSendingSmsLocal, setIsSendingSmsLocal] = useState(false)
   const [isVerifyingOtpLocal, setIsVerifyingOtpLocal] = useState(false)
+
+  const setLoginMobileInput = (val: string) => {
+    setLoginMobileInputRaw(val)
+    if (loginMobileErr) setLoginMobileErr('')
+    // If mobile number is changed or edited after OTP was generated, reset OTP block to show Generate OTP button
+    if (showLoginOtpBlock) {
+      setShowLoginOtpBlock(false)
+      setLoginOtpInput('')
+      setLoginOtpErr('')
+    }
+  }
 
   const isGeneratingOtp = isGeneratingOtpLocal || generateOtpMutation.isPending
   const isSendingSms = isSendingSmsLocal || sendSmsMutation.isPending
