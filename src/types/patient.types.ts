@@ -64,6 +64,7 @@ export interface UserRecord {
 
 export interface Appointment {
   AppointmentID?: number
+  AppointmentId?: number
   PatientID?: number
   PatientName?: string
   AppointmentStatus?: string

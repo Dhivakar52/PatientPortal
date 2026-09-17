@@ -87,6 +87,17 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
   })
   const areasList = Array.isArray(rawAreas) ? rawAreas : []
 
+  const areaOptions = React.useMemo(() => {
+    const opts = areasList.map((a) => ({
+      value: a.AreaName || String(a.AreaID),
+      label: a.AreaName || String(a.AreaID),
+    }))
+    if (area && !opts.some((o) => o.value.toLowerCase() === area.toLowerCase())) {
+      opts.unshift({ value: area, label: area })
+    }
+    return opts
+  }, [areasList, area])
+
   // Pre-populate fields when patient changes or modal opens
   useEffect(() => {
     if (patient && isOpen) {
@@ -131,8 +142,6 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
       setErrors({})
     }
   }, [patient, isOpen])
-
-  if (!isOpen || !patient) return null
 
   const dobDate = dob ? new Date(dob) : undefined
 
@@ -189,20 +198,9 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
     label: c.CityName,
   }))
 
-  const areaOptions = React.useMemo(() => {
-    const opts = areasList.map((a) => ({
-      value: a.AreaName || String(a.AreaID),
-      label: a.AreaName || String(a.AreaID),
-    }))
-    if (area && !opts.some((o) => o.value.toLowerCase() === area.toLowerCase())) {
-      opts.unshift({ value: area, label: area })
-    }
-    return opts
-  }, [areasList, area])
-
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    if (isSubmitting) return
+    if (isSubmitting || !patient) return
 
     // Validation
     const newErrors: Record<string, string> = {}
@@ -367,6 +365,8 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
       setIsSubmitting(false)
     }
   }
+
+  if (!isOpen || !patient) return null
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">

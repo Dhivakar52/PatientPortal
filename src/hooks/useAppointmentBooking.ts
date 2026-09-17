@@ -38,10 +38,15 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         pageNo: 1,
         recordCount: 50,
       })
-      if (Array.isArray(res)) {
-        const mapped: Appointment[] = res.map((item: Record<string, unknown>, idx: number) => {
+      if (Array.isArray(res) || Array.isArray((res as any)?.data) || Array.isArray((res as any)?.result)) {
+        const rawList: Record<string, unknown>[] = Array.isArray(res)
+          ? res
+          : (Array.isArray((res as any)?.data) ? (res as any).data : (res as any).result || [])
+        const mapped: Appointment[] = rawList.map((item: Record<string, unknown>, idx: number) => {
           const apptStatus = String(item.AppointmentStatus || item.Status || item.status || '')
-          const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : `APT-${item.AppointmentID || idx + 1}`
+          const rawApptId = item.AppointmentID ?? (item as any).AppointmentId ?? (item as any).appointmentId ?? (item as any).appointmentID ?? (item as any).id
+          const parsedApptId = rawApptId !== undefined && rawApptId !== null && !isNaN(Number(rawApptId)) ? Number(rawApptId) : undefined
+          const apptNo = item.AppointmentNo && String(item.AppointmentNo).trim() !== '' ? String(item.AppointmentNo) : (parsedApptId ? `APT-${parsedApptId}` : `APT-${idx + 1}`)
           const apptDate = String(item.AppointmentDate || item.date || item.Date || todayStr())
           const deptName = String(item.DeptName || item.Department || item.DepartmentName || item.department || 'General')
           const rawDoctor = String(item.DoctorName || item.Doctor_Name || item.doctor || '')
@@ -50,7 +55,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
           const bookedOn = String(item.CreatedAt || item.BookedOn || item.bookedOn || new Date().toISOString())
 
           return {
-            AppointmentID: Number(item.AppointmentID || idx + 1),
+            AppointmentID: parsedApptId ?? (idx + 1),
+            AppointmentId: parsedApptId,
             PatientID: Number(item.PatientID || pId),
             PatientName: String(item.PatientName || ''),
             AppointmentStatus: apptStatus,
@@ -351,7 +357,12 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
         if (Array.isArray(freshList) && freshList.length > 0) {
           // Find the exact matching upcoming appointment from backend
+          const savedApptId = saveRes?.AppointmentID ?? (saveRes as any)?.AppointmentId ?? (saveRes as any)?.appointmentId
+          const savedApptNo = saveRes?.AppointmentNo ?? (saveRes as any)?.appointmentNo
+
           const matched =
+            (savedApptId ? freshList.find((a) => a.AppointmentID === Number(savedApptId) || a.AppointmentId === Number(savedApptId)) : undefined) ||
+            (savedApptNo ? freshList.find((a) => a.AppointmentNo === String(savedApptNo) || a.apptNo === String(savedApptNo)) : undefined) ||
             freshList.find(
               (a) =>
                 (a.date === bookDate || a.AppointmentDate === bookDate) &&
@@ -371,24 +382,34 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         }
       }
 
-      setLastBookedAppt(confirmedAppt)
-      setShowSuccessModal(true)
-      onSuccess()
+      // Extract AppointmentId from the fetched appointments or confirmedAppt / saveRes
+      const appointmentIdToSend =
+        confirmedAppt.AppointmentID ??
+        confirmedAppt.AppointmentId ??
+        saveRes?.AppointmentID ??
+        (saveRes as any)?.AppointmentId ??
+        (saveRes as any)?.appointmentId ??
+        (bookReferenceId !== null ? bookReferenceId : undefined)
 
-      // 3. Send Booking Confirmation SMS notification using TemplateID 2 and OTP ReferenceID
+      // 3. Send Booking Confirmation SMS notification using TemplateID 2 and AppointmentId BEFORE showing success modal
       try {
-        const bookingRefId = bookReferenceId
-        console.log(`📱 Sending booking confirmation SMS: TemplateID=${SmsTemplateId.BOOKING_APPOINTMENT} (2), ReferenceID=${bookingRefId}`)
-        if (bookingRefId) {
+        console.log(`📱 Sending booking confirmation SMS: TemplateID=${SmsTemplateId.BOOKING_APPOINTMENT} (2), ReferenceID=${appointmentIdToSend}`)
+        if (appointmentIdToSend) {
           await sendSmsRequest({
-            referenceID: bookingRefId,
+            referenceID: appointmentIdToSend,
             templateID: SmsTemplateId.BOOKING_APPOINTMENT, // 2
             smsNotify: true,
           })
+        } else {
+          console.warn('Could not find AppointmentId to send booking SMS')
         }
       } catch (smsErr) {
         console.warn('Booking confirmation SMS notification error (non-blocking):', smsErr)
       }
+
+      setLastBookedAppt(confirmedAppt)
+      setShowSuccessModal(true)
+      onSuccess()
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
