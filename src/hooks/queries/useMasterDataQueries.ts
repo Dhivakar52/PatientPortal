@@ -131,8 +131,8 @@ export function useAppointmentDaysQuery(
   deptId?: number | string,
   options?: { enabled?: boolean }
 ) {
-  const numPatientId = patientId ? Number(patientId) : undefined
-  const numDeptId = deptId ? Number(deptId) : undefined
+  const numPatientId = patientId && !isNaN(Number(patientId)) ? Number(patientId) : undefined
+  const numDeptId = deptId && !isNaN(Number(deptId)) ? Number(deptId) : undefined
 
   return useQuery<AppointmentDaysResponse>({
     queryKey: masterDataQueryKeys.appointmentDays(numPatientId, numDeptId),
@@ -143,7 +143,8 @@ export function useAppointmentDaysQuery(
       return getAppointmentDays({ patientID: numPatientId, departmentID: numDeptId })
     },
     enabled: options?.enabled !== false && !!numPatientId && !!numDeptId,
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 0, // Always fresh so booked slots appear immediately without page refresh
+    refetchOnMount: 'always',
   })
 }
 

@@ -114,7 +114,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const [bookDoctor, setBookDoctor] = useState('')
   const [bookUnit, setBookUnit] = useState('')
   const [selectedSlot, setSelectedSlot] = useState('')
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState('1')
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('18')
   const [selectedDoctorId, setSelectedDoctorId] = useState('')
   const [selectedTimeSlotId, setSelectedTimeSlotId] = useState('')
   const [bookErrors, setBookErrors] = useState<Record<string, string>>({})
@@ -401,6 +401,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.user(userId) })
         queryClient.invalidateQueries({ queryKey: ['appointments', userId, numericPatientId] })
         queryClient.invalidateQueries({ queryKey: ['dashboard', userId, numericPatientId] })
+        queryClient.invalidateQueries({ queryKey: ['appointmentDays'] })
 
         if (Array.isArray(freshList) && freshList.length > 0) {
           // Find the exact matching upcoming appointment from backend
@@ -668,6 +669,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       // Invalidate TanStack Query cache and re-fetch pure API data
       const userId = useAuthStore.getState().userId
       queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.user(userId) })
+      queryClient.invalidateQueries({ queryKey: ['appointmentDays'] })
       if (patientId) {
         queryClient.invalidateQueries({ queryKey: ['appointments', userId, patientId] })
         await refreshAppointments(patientId)
