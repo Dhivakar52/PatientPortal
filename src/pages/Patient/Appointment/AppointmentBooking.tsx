@@ -61,10 +61,16 @@ export const formatToDDMMYYYY = (date: Date | string): string => {
   if (!date) return ''
   if (typeof date === 'string') {
     const trimmed = date.trim()
-    if (/^\d{2}-\d{2}-\d{4}$/.test(trimmed)) {
-      return trimmed
+    // Match DD-MM-YYYY or DD/MM/YYYY (with optional time portion)
+    const ddmmyyyyMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/)
+    if (ddmmyyyyMatch) {
+      const day = ddmmyyyyMatch[1].padStart(2, '0')
+      const month = ddmmyyyyMatch[2].padStart(2, '0')
+      const year = ddmmyyyyMatch[3]
+      return `${day}-${month}-${year}`
     }
-    const ymdMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+    // Match YYYY-MM-DD or YYYY/MM/DD (with optional time portion)
+    const ymdMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/)
     if (ymdMatch) {
       const year = ymdMatch[1]
       const month = ymdMatch[2].padStart(2, '0')
@@ -127,19 +133,24 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   maxDate.setDate(maxDate.getDate() + 90)
   maxDate.setHours(23, 59, 59, 999)
 
-  // Resolve numeric PatientID
+  // Resolve numeric PatientID safely
   const numericPatientId = useMemo(() => {
-    if (patientIdProp) return Number(patientIdProp)
-    if (currentPatient?.PatientID) return Number(currentPatient.PatientID)
-    if (currentPatient?.id) {
-      const parsed = Number(String(currentPatient.id).replace(/\D/g, ''))
-      if (!isNaN(parsed) && parsed > 0) return parsed
+    const parseId = (val: unknown): number | undefined => {
+      if (!val) return undefined
+      if (typeof val === 'number' && !isNaN(val) && val > 0) return val
+      const cleaned = String(val).replace(/\D/g, '')
+      const num = Number(cleaned)
+      return !isNaN(num) && num > 0 ? num : undefined
     }
-    const storedActive = localStorage.getItem('srm_patient_active_id')
-    if (storedActive && /^\d+$/.test(storedActive)) return Number(storedActive)
-    const storedUid = localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')
-    if (storedUid && /^\d+$/.test(storedUid)) return Number(storedUid)
-    return undefined
+
+    return (
+      parseId(patientIdProp) ||
+      parseId(currentPatient?.PatientID) ||
+      parseId(currentPatient?.id) ||
+      parseId(localStorage.getItem('srm_patient_active_id')) ||
+      parseId(localStorage.getItem('userID')) ||
+      parseId(localStorage.getItem('srm_patient_user_id'))
+    )
   }, [patientIdProp, currentPatient])
 
   const [internalDeptId, setInternalDeptId] = useState<string>('')
@@ -170,7 +181,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
   useEffect(() => {
     if (departmentsList.length > 0) {
-      if (!selectedDepartmentId || selectedDepartmentId !== defaultDeptId) {
+      if (!selectedDepartmentId) {
         setSelectedDepartmentId(defaultDeptId)
       }
     } else if (!selectedDepartmentId) {
@@ -237,6 +248,21 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     }
     return undefined
   })
+
+  // Synchronize internal dateValue with bookDate prop
+  useEffect(() => {
+    if (bookDate) {
+      const parsed = new Date(bookDate)
+      if (!isNaN(parsed.getTime())) {
+        setDateValue((prev) => {
+          if (prev && prev.getTime() === parsed.getTime()) return prev
+          return parsed
+        })
+      }
+    } else {
+      setDateValue(undefined)
+    }
+  }, [bookDate])
 
   // Auto-validate dateValue whenever enabledDayIndices updates
   useEffect(() => {
