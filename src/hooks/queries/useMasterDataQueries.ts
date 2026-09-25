@@ -7,6 +7,7 @@ import {
   getStates,
   getCities,
   getAreas,
+  getAppointmentDays,
   type Department,
   type Doctor,
   type TimeSlotHour,
@@ -16,7 +17,16 @@ import {
   type CityOption,
   type AreaOption,
   type GetAreasParams,
+  type AppointmentDaysResponse,
+  type AvailableDay,
+  type BookedAppointmentDate,
 } from '@/services/apiService'
+
+export {
+  type AppointmentDaysResponse,
+  type AvailableDay,
+  type BookedAppointmentDate,
+}
 
 export const masterDataQueryKeys = {
   departments: ['departments'] as const,
@@ -26,6 +36,7 @@ export const masterDataQueryKeys = {
   states: ['states'] as const,
   cities: (stateId?: number | string) => ['cities', stateId] as const,
   areas: (cityId?: number | string, searchText?: string, areaid?: number | string) => ['areas', cityId, searchText, areaid] as const,
+  appointmentDays: (patientId?: number | string, deptId?: number | string) => ['appointmentDays', patientId, deptId] as const,
 }
 
 export function useDepartmentsQuery(options?: { enabled?: boolean }) {
@@ -114,3 +125,25 @@ export function useAreasQuery(
     staleTime: 1000 * 60 * 30, // 30 minutes
   })
 }
+
+export function useAppointmentDaysQuery(
+  patientId?: number | string,
+  deptId?: number | string,
+  options?: { enabled?: boolean }
+) {
+  const numPatientId = patientId ? Number(patientId) : undefined
+  const numDeptId = deptId ? Number(deptId) : undefined
+
+  return useQuery<AppointmentDaysResponse>({
+    queryKey: masterDataQueryKeys.appointmentDays(numPatientId, numDeptId),
+    queryFn: async () => {
+      if (!numPatientId || !numDeptId) {
+        return { AvailableDays: [], AppointmentDates: [] }
+      }
+      return getAppointmentDays({ patientID: numPatientId, departmentID: numDeptId })
+    },
+    enabled: options?.enabled !== false && !!numPatientId && !!numDeptId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  })
+}
+

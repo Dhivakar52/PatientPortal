@@ -435,6 +435,8 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
               {activeTab === 'book' && (
                 <AppointmentBooking
+                  currentPatient={currentPatient}
+                  patientId={patientNumericId}
                   bookDate={bookDate}
                   setBookDate={setBookDate}
                   bookDoctor={bookDoctor}
