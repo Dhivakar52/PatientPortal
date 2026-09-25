@@ -880,4 +880,54 @@ export const getUsers = async (params?: GetUsersParams): Promise<UserData[]> => 
     }
 };
 
+export interface AvailableDay {
+    DayID: number;
+    DayName: string;
+}
+
+export interface BookedAppointmentDate {
+    AppointmentDates: string;
+    BookedTimeSlotId: number;
+}
+
+export interface AppointmentDaysResponse {
+    AvailableDays: AvailableDay[];
+    AppointmentDates: BookedAppointmentDate[];
+}
+
+export interface GetAppointmentDaysParams {
+    patientID: number | string;
+    departmentID: number | string;
+}
+
+/**
+ * Get available appointment days and already booked dates & time slots
+ * Calls GET /api/appointmentdays?PatientID={PatientID}&DepartmentID={DepartmentID}
+ */
+export const getAppointmentDays = async (
+    params: GetAppointmentDaysParams
+): Promise<AppointmentDaysResponse> => {
+    try {
+        const response = await axiosInstance.get<AppointmentDaysResponse>('/api/appointmentdays', {
+            params: {
+                PatientID: params.patientID,
+                DepartmentID: params.departmentID,
+            },
+        });
+        console.log("Appointment Days Response:", response.data);
+        const data = response.data || ({} as AppointmentDaysResponse);
+        return {
+            AvailableDays: Array.isArray(data.AvailableDays) ? data.AvailableDays : [],
+            AppointmentDates: Array.isArray(data.AppointmentDates) ? data.AppointmentDates : [],
+        };
+    } catch (error) {
+        console.error('Get Appointment Days Error:', error);
+        return {
+            AvailableDays: [],
+            AppointmentDates: [],
+        };
+    }
+};
+
+
 

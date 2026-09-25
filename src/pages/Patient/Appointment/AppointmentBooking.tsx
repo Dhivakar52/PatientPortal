@@ -2,9 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { CalendarPlus, CalendarCheck, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldLabel, DateField, SelectField, TextField } from '@/components/FormPrimitives'
-import { useDepartmentsQuery, useTimeSlotHoursQuery, useTimeSlotsQuery } from '@/hooks/queries/useMasterDataQueries'
+import {
+  useDepartmentsQuery,
+  useTimeSlotHoursQuery,
+  useTimeSlotsQuery,
+  useAppointmentDaysQuery,
+  type BookedAppointmentDate,
+} from '@/hooks/queries/useMasterDataQueries'
+import { type Patient } from '@/types/patient.types'
 
 interface AppointmentBookingProps {
+  currentPatient?: Patient | null
+  patientId?: number | string
   bookDate: string
   setBookDate: (v: string) => void
   bookDoctor?: string
@@ -24,28 +33,57 @@ interface AppointmentBookingProps {
   onConfirm: (data?: { deptID: string; doctorID: string; timeSlotID: string; deptName?: string }) => void
 }
 
-// Day-wise Appointment Availability Configuration (1 = Enabled, 0 = Disabled)
-// Mapping: Monday=1, Tuesday=2, Wednesday=3, Thursday=4, Friday=5, Saturday=6
-// Sunday is always disabled and excluded from configuration
-export const appointmentDayConfig: Record<number, 0 | 1> = {
-  1: 0,
-  2: 1, // Tuesday
-  3: 0, // Wednesday
-  4: 1, // Thursday
-  5: 1, // Friday
-  6: 1, // Saturday
+// Day name to JS getDay() index mapping (Sunday=0, Monday=1, ..., Saturday=6)
+const DAY_NAME_TO_INDEX: Record<string, number> = {
+  sunday: 0,
+  sun: 0,
+  monday: 1,
+  mon: 1,
+  tuesday: 2,
+  tue: 2,
+  wednesday: 3,
+  wed: 3,
+  thursday: 4,
+  thu: 4,
+  friday: 5,
+  fri: 5,
+  saturday: 6,
+  sat: 6,
 }
 
-// Helper to verify if an appointment date is available
+// Exported for compatibility with components like EditAppointmentPanel
 export const isAppointmentDayEnabled = (date: Date): boolean => {
-  const jsDay = date.getDay()
+  return date.getDay() !== 0
+}
 
-  // Sunday is always disabled
-  if (jsDay === 0) {
-    return false
+// Convert Date or date string to DD-MM-YYYY format matching API response format
+export const formatToDDMMYYYY = (date: Date | string): string => {
+  if (!date) return ''
+  if (typeof date === 'string') {
+    const trimmed = date.trim()
+    if (/^\d{2}-\d{2}-\d{4}$/.test(trimmed)) {
+      return trimmed
+    }
+    const ymdMatch = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)
+    if (ymdMatch) {
+      const year = ymdMatch[1]
+      const month = ymdMatch[2].padStart(2, '0')
+      const day = ymdMatch[3].padStart(2, '0')
+      return `${day}-${month}-${year}`
+    }
+    const parsed = new Date(trimmed)
+    if (!isNaN(parsed.getTime())) {
+      const day = String(parsed.getDate()).padStart(2, '0')
+      const month = String(parsed.getMonth() + 1).padStart(2, '0')
+      const year = parsed.getFullYear()
+      return `${day}-${month}-${year}`
+    }
+    return trimmed
   }
-
-  return appointmentDayConfig[jsDay] === 1
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  return `${day}-${month}-${year}`
 }
 
 // Skeleton Loader Component for Dropdowns
@@ -60,6 +98,8 @@ const DropdownSkeleton: React.FC = () => {
 }
 
 export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
+  currentPatient,
+  patientId: patientIdProp,
   bookDate,
   setBookDate,
   selectedSlot,
@@ -87,16 +127,20 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   maxDate.setDate(maxDate.getDate() + 90)
   maxDate.setHours(23, 59, 59, 999)
 
-  // Initialize date as undefined (no auto-selection on page load)
-  const [dateValue, setDateValue] = useState<Date | undefined>(() => {
-    if (bookDate) {
-      const date = new Date(bookDate)
-      if (!isNaN(date.getTime()) && date >= tomorrow && date <= maxDate && isAppointmentDayEnabled(date)) {
-        return date
-      }
+  // Resolve numeric PatientID
+  const numericPatientId = useMemo(() => {
+    if (patientIdProp) return Number(patientIdProp)
+    if (currentPatient?.PatientID) return Number(currentPatient.PatientID)
+    if (currentPatient?.id) {
+      const parsed = Number(String(currentPatient.id).replace(/\D/g, ''))
+      if (!isNaN(parsed) && parsed > 0) return parsed
     }
+    const storedActive = localStorage.getItem('srm_patient_active_id')
+    if (storedActive && /^\d+$/.test(storedActive)) return Number(storedActive)
+    const storedUid = localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')
+    if (storedUid && /^\d+$/.test(storedUid)) return Number(storedUid)
     return undefined
-  })
+  }, [patientIdProp, currentPatient])
 
   const [internalDeptId, setInternalDeptId] = useState<string>('')
   const [internalTimeSlotId, setInternalTimeSlotId] = useState<string>('')
@@ -112,22 +156,143 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   // API Data: Departments
   const { data: departmentsList = [], isLoading: isLoadingDepartments } = useDepartmentsQuery()
 
-  // API Data: Time Slot Hours from GET /api/timeslothours
-  const { data: timeSlotHoursList = [], isLoading: isLoadingTimeSlotHours } = useTimeSlotHoursQuery()
-
   // Auto-select department ID 18 (or first available)
+  const dept18 = departmentsList.find((d) => Number(d.DepartmentID || d.DeptID || (d as any).id) === 18)
+  const targetDept = dept18 || (departmentsList.length > 0 ? departmentsList[0] : null)
+  const defaultDeptId = targetDept
+    ? String(targetDept.DepartmentID || targetDept.DeptID || (targetDept as any).id || '18')
+    : '18'
+  const defaultDeptName = targetDept
+    ? (targetDept.DepartmentName || targetDept.DeptName || (targetDept as any).name || 'Gynecology')
+    : 'Gynecology'
+
+  const effectiveDeptId = selectedDepartmentId || defaultDeptId || '18'
+
   useEffect(() => {
     if (departmentsList.length > 0) {
-      const dept18 = departmentsList.find((d) => Number(d.DepartmentID || d.DeptID || (d as any).id) === 18)
-      const targetDept = dept18 || departmentsList[0]
-      const targetDeptId = String(targetDept.DepartmentID || targetDept.DeptID || (targetDept as any).id || '18')
-      if (!selectedDepartmentId || selectedDepartmentId !== targetDeptId) {
-        setSelectedDepartmentId(targetDeptId)
+      if (!selectedDepartmentId || selectedDepartmentId !== defaultDeptId) {
+        setSelectedDepartmentId(defaultDeptId)
       }
     } else if (!selectedDepartmentId) {
       setSelectedDepartmentId('18')
     }
-  }, [departmentsList, selectedDepartmentId, setSelectedDepartmentId])
+  }, [departmentsList, selectedDepartmentId, setSelectedDepartmentId, defaultDeptId])
+
+  // API Data: Call GET /api/appointmentdays?PatientID={PatientID}&DepartmentID={DepartmentID}
+  const {
+    data: appointmentDaysData = { AvailableDays: [], AppointmentDates: [] },
+    isLoading: isLoadingAppointmentDays,
+  } = useAppointmentDaysQuery(numericPatientId, effectiveDeptId, {
+    enabled: !!numericPatientId && !!effectiveDeptId,
+  })
+
+  const availableDays = appointmentDaysData.AvailableDays || []
+  const appointmentDatesList = appointmentDaysData.AppointmentDates || []
+
+  // Compute allowed weekday indices from AvailableDays
+  const enabledDayIndices = useMemo(() => {
+    if (!availableDays || availableDays.length === 0) {
+      return new Set<number>()
+    }
+    const set = new Set<number>()
+    availableDays.forEach((item) => {
+      if (item.DayName) {
+        const idx = DAY_NAME_TO_INDEX[item.DayName.trim().toLowerCase()]
+        if (idx !== undefined) {
+          set.add(idx)
+        }
+      } else if (item.DayID !== undefined && item.DayID !== null) {
+        const id = Number(item.DayID)
+        if (id >= 1 && id <= 6) set.add(id)
+        else if (id === 7 || id === 0) set.add(0)
+      }
+    })
+    return set
+  }, [availableDays])
+
+  // Helper to verify if an appointment date is available
+  const isAppointmentDayAvailable = (date: Date): boolean => {
+    if (date < tomorrow || date > maxDate) {
+      return false
+    }
+    // If AvailableDays returned from API, strictly enforce them
+    if (enabledDayIndices.size > 0) {
+      return enabledDayIndices.has(date.getDay())
+    }
+    // While loading available days, disable
+    if (isLoadingAppointmentDays) {
+      return false
+    }
+    // Default fallback (exclude Sunday)
+    return date.getDay() !== 0
+  }
+
+  // Initialize date as undefined (no auto-selection on page load)
+  const [dateValue, setDateValue] = useState<Date | undefined>(() => {
+    if (bookDate) {
+      const date = new Date(bookDate)
+      if (!isNaN(date.getTime()) && date >= tomorrow && date <= maxDate && isAppointmentDayAvailable(date)) {
+        return date
+      }
+    }
+    return undefined
+  })
+
+  // Auto-validate dateValue whenever enabledDayIndices updates
+  useEffect(() => {
+    if (dateValue && enabledDayIndices.size > 0 && !enabledDayIndices.has(dateValue.getDay())) {
+      setDateValue(undefined)
+      setBookDate('')
+      setSelectedSlot('')
+      setSelectedTimeSlotId('')
+    }
+  }, [enabledDayIndices, dateValue, setBookDate, setSelectedSlot, setSelectedTimeSlotId])
+
+  // Collect all booked time slot IDs for the selected appointment date from AppointmentDates
+  const bookedSlotIdsForSelectedDate = useMemo(() => {
+    const targetDate = dateValue || bookDate
+    if (!targetDate) return new Set<number>()
+
+    const selectedDDMMYYYY = formatToDDMMYYYY(targetDate)
+    if (!selectedDDMMYYYY) return new Set<number>()
+
+    const set = new Set<number>()
+    appointmentDatesList.forEach((item: BookedAppointmentDate | Record<string, unknown>) => {
+      const rawDateStr = String(
+        item.AppointmentDates ||
+        (item as any).appointmentDates ||
+        (item as any).AppointmentDate ||
+        (item as any).appointmentDate ||
+        ''
+      ).trim()
+
+      const itemDDMMYYYY = formatToDDMMYYYY(rawDateStr)
+      if (itemDDMMYYYY === selectedDDMMYYYY) {
+        const slotId = Number(
+          item.BookedTimeSlotId ??
+          (item as any).bookedTimeSlotId ??
+          (item as any).TimeSlotID ??
+          (item as any).timeSlotId
+        )
+        if (!isNaN(slotId) && slotId > 0) {
+          set.add(slotId)
+        }
+      }
+    })
+    return set
+  }, [dateValue, bookDate, appointmentDatesList])
+
+  // If currently selected slot is already booked on the selected date, clear it
+  useEffect(() => {
+    if (selectedTimeSlotId && bookedSlotIdsForSelectedDate.has(Number(selectedTimeSlotId))) {
+      setSelectedSlot('')
+      setSelectedTimeSlotId('')
+    }
+  }, [bookedSlotIdsForSelectedDate, selectedTimeSlotId, setSelectedSlot, setSelectedTimeSlotId])
+
+  // API Data: Time Slot Hours from GET /api/timeslothours
+  const { data: timeSlotHoursList = [], isLoading: isLoadingTimeSlotHours } = useTimeSlotHoursQuery()
+
 
   // Options for Time Slot Hours Dropdown
   const hourRangeOptions = useMemo(() => {
@@ -166,7 +331,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     setSelectedSlot('')
     setSelectedTimeSlotId('')
     if (date) {
-      if (!isAppointmentDayEnabled(date)) {
+      if (!isAppointmentDayAvailable(date)) {
         setLocalErrors((prev) => ({ ...prev, date: 'Appointments are not available on this day' }))
         return
       }
@@ -191,21 +356,15 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     setLocalErrors((prev) => ({ ...prev, slot: '' }))
   }
 
-  // Handle selecting a specific available time slot
+  // Handle selecting a specific available time slot (prevent selecting booked slots)
   const handleTimeSlotSelect = (slotId: string, slotText: string) => {
+    if (bookedSlotIdsForSelectedDate.has(Number(slotId))) {
+      return
+    }
     setSelectedTimeSlotId(slotId)
     setSelectedSlot(slotText)
     setLocalErrors((prev) => ({ ...prev, slot: '' }))
   }
-
-  const dept18 = departmentsList.find((d) => Number(d.DepartmentID || d.DeptID || (d as any).id) === 18)
-  const targetDept = dept18 || (departmentsList.length > 0 ? departmentsList[0] : null)
-  const defaultDeptId = targetDept
-    ? String(targetDept.DepartmentID || targetDept.DeptID || (targetDept as any).id || '18')
-    : '18'
-  const defaultDeptName = targetDept
-    ? (targetDept.DepartmentName || targetDept.DeptName || (targetDept as any).name || 'Gynecology')
-    : 'Gynecology'
 
   const validateAndConfirm = () => {
     if (isConfirming) return
@@ -216,15 +375,15 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       errors.date = 'Please select an appointment date'
     } else {
       const selectedDate = new Date(bookDate)
-      if (!isAppointmentDayEnabled(selectedDate)) {
+      if (!isAppointmentDayAvailable(selectedDate)) {
         errors.date = 'Appointments are not available on this day'
       }
     }
 
-    const effectiveDeptId = selectedDepartmentId || defaultDeptId || '18'
-
     if (!selectedTimeSlotId && !selectedSlot) {
       errors.slot = 'Please select an available time slot'
+    } else if (selectedTimeSlotId && bookedSlotIdsForSelectedDate.has(Number(selectedTimeSlotId))) {
+      errors.slot = 'The selected time slot is already booked. Please choose another slot.'
     }
 
     if (Object.keys(errors).length > 0) {
@@ -264,12 +423,29 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-5">
-            {/* Department - Auto-selected First Available & Disabled / Read-only */}
+            {/* Department */}
             <div>
               <FieldLabel required>Department</FieldLabel>
               <div className="relative">
                 {isLoadingDepartments ? (
                   <DropdownSkeleton />
+                ) : departmentsList.length > 1 ? (
+                  <SelectField
+                    options={departmentsList.map((d) => {
+                      const id = String(d.DepartmentID || d.DeptID || (d as any).id || '')
+                      const name = d.DepartmentName || d.DeptName || (d as any).name || `Department ${id}`
+                      return { value: id, label: name }
+                    })}
+                    placeholder="Select Department"
+                    value={selectedDepartmentId || defaultDeptId}
+                    onChange={(val) => {
+                      setSelectedDepartmentId(val)
+                      setBookDate('')
+                      setDateValue(undefined)
+                      setSelectedSlot('')
+                      setSelectedTimeSlotId('')
+                    }}
+                  />
                 ) : (
                   <TextField
                     value={defaultDeptName}
@@ -293,10 +469,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 defaultLabel="Select date"
                 fromMonth={tomorrow}
                 toMonth={maxDate}
-                disabled={(date) => {
-                  if (date < tomorrow || date > maxDate) return true
-                  return !isAppointmentDayEnabled(date)
-                }}
+                disabled={(date) => !isAppointmentDayAvailable(date)}
               />
               {(bookErrors.date || localErrors.date) && (
                 <p className="text-xs text-rose-600 mt-1">{bookErrors.date || localErrors.date}</p>
@@ -351,10 +524,25 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
                     {timeSlotsList.map((slot) => {
-                      const slotId = String(slot.TimeSlotID || slot.timeSlotID || '')
-                      const slotLabel = String(slot.Timeslot || slot.TimeSlot || slot.Slot || slot.slot || '')
-                      const isSelected =
-                        selectedTimeSlotId === slotId || selectedSlot === slotLabel
+                      const slotIdNum = Number(slot.TimeSlotID || (slot as any).timeSlotID || (slot as any).id || 0)
+                      const slotId = String(slotIdNum || slot.TimeSlotID || (slot as any).timeSlotID || '')
+                      const slotLabel = String(slot.Timeslot || slot.TimeSlot || (slot as any).Slot || (slot as any).slot || '')
+                      const isBooked = slotIdNum > 0 && bookedSlotIdsForSelectedDate.has(slotIdNum)
+                      const isSelected = !isBooked && (selectedTimeSlotId === slotId || selectedSlot === slotLabel)
+
+                      if (isBooked) {
+                        return (
+                          <button
+                            key={slotId || `booked-${slotLabel}`}
+                            type="button"
+                            disabled={true}
+                            className="px-3 py-2.5 text-center text-xs font-semibold rounded-lg border-2 bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-800 cursor-not-allowed select-none opacity-80 flex items-center justify-center"
+                            title="This time slot is already booked"
+                          >
+                            Already Booked !
+                          </button>
+                        )
+                      }
 
                       return (
                         <button
@@ -379,12 +567,16 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                   {/* Legend */}
                   <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-slate-200 dark:border-slate-700">
                     <span className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                      <span className="w-3.5 h-3.5 rounded border-2 border-slate-300 bg-white inline-block" />
+                      <span className="w-3.5 h-3.5 rounded border-2 border-slate-300 bg-white dark:bg-slate-900 inline-block" />
                       Available
                     </span>
                     <span className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                       <span className="w-3.5 h-3.5 rounded bg-blue-600 border-2 border-blue-600 inline-block" />
                       Selected
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                      <span className="w-3.5 h-3.5 rounded border-2 border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/60 inline-block" />
+                      Already Booked !
                     </span>
                   </div>
                 </>
@@ -411,7 +603,14 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
 
           <Button
             onClick={validateAndConfirm}
-            disabled={!selectedTimeSlotId || !selectedSlot || !bookDate || isConfirming || isLoadingTimeSlots}
+            disabled={
+              !selectedTimeSlotId ||
+              !selectedSlot ||
+              !bookDate ||
+              isConfirming ||
+              isLoadingTimeSlots ||
+              bookedSlotIdsForSelectedDate.has(Number(selectedTimeSlotId))
+            }
             className="w-full sm:w-auto text-white cursor-pointer font-semibold px-6 py-2.5 flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
           >

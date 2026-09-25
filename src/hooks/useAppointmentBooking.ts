@@ -312,13 +312,60 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       if (pendingBookingPayload) {
         saveRes = (await saveAppointment(pendingBookingPayload)) as Record<string, unknown>
       }
+      console.log('📥 saveAppointment response:', saveRes)
+
+      // Extract AppointmentID directly from saveappointment response e.g. { AppointmentID: 390 }
+      const extractAppointmentId = (res: unknown): number | undefined => {
+        if (!res) return undefined
+        if (typeof res === 'number' && !isNaN(res)) return res
+        if (typeof res === 'string' && /^\d+$/.test(res.trim())) return Number(res.trim())
+        if (Array.isArray(res) && res.length > 0) return extractAppointmentId(res[0])
+        if (typeof res === 'object') {
+          const r = res as Record<string, unknown>
+          const raw =
+            r.AppointmentID ??
+            r.AppointmentId ??
+            r.appointmentID ??
+            r.appointmentId ??
+            r.id ??
+            (r.data as Record<string, unknown> | undefined)?.AppointmentID ??
+            (r.data as Record<string, unknown> | undefined)?.AppointmentId ??
+            (r.result as Record<string, unknown> | undefined)?.AppointmentID
+          if (raw !== undefined && raw !== null && !isNaN(Number(raw))) {
+            return Number(raw)
+          }
+        }
+        return undefined
+      }
+
+      const directSavedApptId = extractAppointmentId(saveRes)
+      console.log('🎯 Extracted AppointmentID directly from saveappointment response:', directSavedApptId)
+
+      // 3. Immediately send Booking Confirmation SMS notification using TemplateID 2 and ReferenceID=AppointmentID
+      let smsSent = false
+      if (directSavedApptId) {
+        try {
+          console.log(`📱 Sending booking confirmation SMS right after save: TemplateID=${SmsTemplateId.BOOKING_APPOINTMENT} (2), ReferenceID=${directSavedApptId}`)
+          await sendSmsRequest({
+            referenceID: directSavedApptId,
+            templateID: SmsTemplateId.BOOKING_APPOINTMENT, // 2
+            smsNotify: true,
+          })
+          smsSent = true
+        } catch (smsErr) {
+          console.warn('Booking confirmation SMS notification error (non-blocking):', smsErr)
+        }
+      }
 
       setShowBookOtpModal(false)
 
       const selectedDoctorName = bookDoctor && bookDoctor !== '--Select--' ? bookDoctor : 'Specialist Consultation'
-      const apptNoVal = String(saveRes?.AppointmentNo || saveRes?.appointmentNo || genApptNo())
+      const apptNoVal = directSavedApptId
+        ? `APT-${directSavedApptId}`
+        : String(saveRes?.AppointmentNo || saveRes?.appointmentNo || genApptNo())
       const newAppt: Appointment = {
-        AppointmentID: saveRes?.AppointmentID ? Number(saveRes.AppointmentID) : undefined,
+        AppointmentID: directSavedApptId,
+        AppointmentId: directSavedApptId,
         apptNo: apptNoVal,
         AppointmentNo: apptNoVal,
         date: bookDate,
@@ -357,12 +404,12 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
         if (Array.isArray(freshList) && freshList.length > 0) {
           // Find the exact matching upcoming appointment from backend
-          const savedApptId = saveRes?.AppointmentID ?? (saveRes as any)?.AppointmentId ?? (saveRes as any)?.appointmentId
           const savedApptNo = saveRes?.AppointmentNo ?? (saveRes as any)?.appointmentNo
 
           const matched =
-            (savedApptId ? freshList.find((a) => a.AppointmentID === Number(savedApptId) || a.AppointmentId === Number(savedApptId)) : undefined) ||
+            (directSavedApptId ? freshList.find((a) => a.AppointmentID === directSavedApptId || a.AppointmentId === directSavedApptId) : undefined) ||
             (savedApptNo ? freshList.find((a) => a.AppointmentNo === String(savedApptNo) || a.apptNo === String(savedApptNo)) : undefined) ||
+
             freshList.find(
               (a) =>
                 (a.date === bookDate || a.AppointmentDate === bookDate) &&
@@ -375,6 +422,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
             confirmedAppt = {
               ...newAppt,
               ...matched,
+              AppointmentID: directSavedApptId || matched.AppointmentID || newAppt.AppointmentID,
+              AppointmentId: directSavedApptId || matched.AppointmentId || newAppt.AppointmentId,
               apptNo: matched.apptNo || matched.AppointmentNo || newAppt.apptNo,
               AppointmentNo: matched.AppointmentNo || matched.apptNo || newAppt.AppointmentNo,
             }
@@ -382,29 +431,25 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         }
       }
 
-      // Extract AppointmentId from the fetched appointments or confirmedAppt / saveRes
-      const appointmentIdToSend =
-        confirmedAppt.AppointmentID ??
-        confirmedAppt.AppointmentId ??
-        saveRes?.AppointmentID ??
-        (saveRes as any)?.AppointmentId ??
-        (saveRes as any)?.appointmentId ??
-        (bookReferenceId !== null ? bookReferenceId : undefined)
+      // Fallback: If SMS was not sent yet (e.g. directSavedApptId was undefined), send with confirmedAppt ID
+      if (!smsSent) {
+        const fallbackApptId =
+          confirmedAppt.AppointmentID ??
+          confirmedAppt.AppointmentId ??
+          (bookReferenceId !== null ? bookReferenceId : undefined)
 
-      // 3. Send Booking Confirmation SMS notification using TemplateID 2 and AppointmentId BEFORE showing success modal
-      try {
-        console.log(`📱 Sending booking confirmation SMS: TemplateID=${SmsTemplateId.BOOKING_APPOINTMENT} (2), ReferenceID=${appointmentIdToSend}`)
-        if (appointmentIdToSend) {
-          await sendSmsRequest({
-            referenceID: appointmentIdToSend,
-            templateID: SmsTemplateId.BOOKING_APPOINTMENT, // 2
-            smsNotify: true,
-          })
-        } else {
-          console.warn('Could not find AppointmentId to send booking SMS')
+        if (fallbackApptId) {
+          try {
+            console.log(`📱 Sending booking confirmation SMS (fallback): TemplateID=${SmsTemplateId.BOOKING_APPOINTMENT} (2), ReferenceID=${fallbackApptId}`)
+            await sendSmsRequest({
+              referenceID: fallbackApptId,
+              templateID: SmsTemplateId.BOOKING_APPOINTMENT, // 2
+              smsNotify: true,
+            })
+          } catch (smsErr) {
+            console.warn('Booking confirmation SMS notification error (non-blocking):', smsErr)
+          }
         }
-      } catch (smsErr) {
-        console.warn('Booking confirmation SMS notification error (non-blocking):', smsErr)
       }
 
       setLastBookedAppt(confirmedAppt)
