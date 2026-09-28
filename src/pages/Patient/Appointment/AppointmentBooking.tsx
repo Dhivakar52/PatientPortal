@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { CalendarPlus, CalendarCheck, Loader2 } from 'lucide-react'
+import { CalendarPlus, CalendarCheck, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FieldLabel, DateField, SelectField, TextField } from '@/components/FormPrimitives'
 import {
@@ -9,6 +9,8 @@ import {
   useAppointmentDaysQuery,
   type BookedAppointmentDate,
 } from '@/hooks/queries/useMasterDataQueries'
+import { useAppointmentsQuery } from '@/hooks/queries/useAppointmentsQuery'
+import { useAuthStore } from '@/stores/authStore'
 import { type Patient } from '@/types/patient.types'
 
 interface AppointmentBookingProps {
@@ -200,6 +202,15 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
   const availableDays = appointmentDaysData.AvailableDays || []
   const appointmentDatesList = appointmentDaysData.AppointmentDates || []
 
+  // TanStack Query: Patient's existing appointments to enforce "1 Patient + 1 Date = 1 Appointment" rule
+  const authUserId = useAuthStore((s) => s.userId)
+  const { data: patientAppointments = [] } = useAppointmentsQuery(
+    authUserId,
+    numericPatientId || null,
+    undefined,
+    { enabled: !!numericPatientId }
+  )
+
   // Compute allowed weekday indices from AvailableDays
   const enabledDayIndices = useMemo(() => {
     if (!availableDays || availableDays.length === 0) {
@@ -273,6 +284,27 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       setSelectedTimeSlotId('')
     }
   }, [enabledDayIndices, dateValue, setBookDate, setSelectedSlot, setSelectedTimeSlotId])
+
+  // Check if patient already has an active appointment on the selected date
+  const existingAppointmentOnSelectedDate = useMemo(() => {
+    const targetDate = dateValue || bookDate
+    if (!targetDate || !numericPatientId) return null
+    const selectedDDMMYYYY = formatToDDMMYYYY(targetDate)
+    if (!selectedDDMMYYYY) return null
+
+    return (
+      patientAppointments.find((appt) => {
+        const status = String(appt.AppointmentStatus || appt.status || '').toLowerCase()
+        const isCancelled = status === 'cancelled' || appt.StatusID === 2 || (appt as any).statusID === 2
+        if (isCancelled) return false
+
+        const apptDateStr = String(appt.AppointmentDate || appt.date || '')
+        return formatToDDMMYYYY(apptDateStr) === selectedDDMMYYYY
+      }) || null
+    )
+  }, [dateValue, bookDate, numericPatientId, patientAppointments])
+
+  const hasAppointmentOnSelectedDate = !!existingAppointmentOnSelectedDate
 
   // Collect all booked time slot IDs for the selected appointment date from AppointmentDates
   const bookedSlotIdsForSelectedDate = useMemo(() => {
@@ -406,6 +438,14 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
       }
     }
 
+    if (hasAppointmentOnSelectedDate) {
+      setLocalErrors((prev) => ({
+        ...prev,
+        date: 'You already have an appointment scheduled on this date. Only one appointment per day is allowed.',
+      }))
+      return
+    }
+
     if (!selectedTimeSlotId && !selectedSlot) {
       errors.slot = 'Please select an available time slot'
     } else if (selectedTimeSlotId && bookedSlotIdsForSelectedDate.has(Number(selectedTimeSlotId))) {
@@ -445,6 +485,23 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           {bookErrors.form && (
             <div className="mb-5 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 text-xs font-medium">
               {bookErrors.form}
+            </div>
+          )}
+
+          {/* 1 Patient + 1 Date = 1 Appointment Rule Warning */}
+          {hasAppointmentOnSelectedDate && (
+            <div className="mb-5 p-3.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs flex items-start gap-2.5 animate-in fade-in-50">
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-[13px] text-amber-800 dark:text-amber-300 mb-0.5">
+                  One Appointment Per Day Limit
+                </div>
+                <div className="leading-relaxed">
+                  You already have an appointment scheduled on <strong>{formatToDDMMYYYY(dateValue || bookDate)}</strong>
+                  {existingAppointmentOnSelectedDate?.slot ? ` (${existingAppointmentOnSelectedDate.slot})` : ''}.
+                  A patient can have only one appointment per day. If you wish to change your time, please reschedule your existing appointment from the <strong>Visits</strong> tab.
+                </div>
+              </div>
             </div>
           )}
 
@@ -541,7 +598,17 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
                 )}
               </div>
 
-              {isLoadingTimeSlots ? (
+              {hasAppointmentOnSelectedDate ? (
+                <div className="py-6 px-4 flex flex-col items-center justify-center gap-2 border border-dashed border-amber-300 dark:border-amber-800/60 rounded-lg bg-amber-50/40 dark:bg-amber-950/20 text-center">
+                  <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                    Time slots disabled: One appointment per day limit
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 max-w-md">
+                    You already have an appointment scheduled on this date. Please choose another date or reschedule your existing appointment from Visits.
+                  </span>
+                </div>
+              ) : isLoadingTimeSlots ? (
                 <div className="py-6 flex flex-col items-center justify-center gap-2 border border-dashed border-blue-200 dark:border-blue-900/50 rounded-lg bg-blue-50/30 dark:bg-blue-950/20">
                   <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
                   <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Loading available time slots...</span>
@@ -620,6 +687,10 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
           <div className="text-xs text-slate-500 dark:text-slate-400">
             {!bookDate ? (
               <span>Please select an appointment date</span>
+            ) : hasAppointmentOnSelectedDate ? (
+              <span className="text-amber-600 dark:text-amber-400 font-medium">
+                Already booked on this date ({formatToDDMMYYYY(dateValue || bookDate)})
+              </span>
             ) : !selectedTimeSlotId || !selectedSlot ? (
               <span>Please select a time slot to enable booking</span>
             ) : (
@@ -635,6 +706,7 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
               !bookDate ||
               isConfirming ||
               isLoadingTimeSlots ||
+              hasAppointmentOnSelectedDate ||
               bookedSlotIdsForSelectedDate.has(Number(selectedTimeSlotId))
             }
             className="w-full sm:w-auto text-white cursor-pointer font-semibold px-6 py-2.5 flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"

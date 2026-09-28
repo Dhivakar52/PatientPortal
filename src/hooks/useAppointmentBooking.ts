@@ -8,6 +8,7 @@ import { queryClient } from '@/lib/queryClient'
 import { useAuthStore } from '@/stores/authStore'
 import { appointmentsQueryKeys } from './queries/useAppointmentsQuery'
 import { dashboardQueryKeys } from './queries/useDashboardQuery'
+import { formatToDDMMYYYY } from '@/pages/Patient/Appointment/AppointmentBooking'
 
 export function useAppointmentBooking(currentPatient: Patient | null) {
   const [appointmentsDB, setAppointmentsDB] = useState<Record<string, Appointment[]>>(() => {
@@ -267,6 +268,26 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       const restrictionMsg = 'Appointment booking is not available for Male patients.'
       toast.error(restrictionMsg)
       setBookErrors((prev) => ({ ...prev, form: restrictionMsg }))
+      return
+    }
+
+    // 1 Patient + 1 Date = 1 Appointment Rule: check if patient already has an appointment on bookDate
+    const numericPatientId = currentPatient?.PatientID
+      ? Number(currentPatient.PatientID)
+      : (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
+    const targetDDMMYYYY = formatToDDMMYYYY(bookDate)
+    const existingAppointments = appointmentsDB[String(numericPatientId)] || []
+    const hasSameDateAppt = existingAppointments.some((a) => {
+      const status = String(a.AppointmentStatus || a.status || '').toLowerCase()
+      const isCancelled = status === 'cancelled' || a.StatusID === 2 || (a as any).statusID === 2
+      if (isCancelled) return false
+      return formatToDDMMYYYY(String(a.AppointmentDate || a.date || '')) === targetDDMMYYYY
+    })
+
+    if (hasSameDateAppt) {
+      const msg = `You already have an appointment scheduled on ${targetDDMMYYYY}. A patient can have only one appointment per day. Please select another date or reschedule your existing appointment.`
+      toast.error(msg)
+      setBookErrors((prev) => ({ ...prev, date: msg, form: msg }))
       return
     }
 

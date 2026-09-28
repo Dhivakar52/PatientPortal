@@ -205,6 +205,15 @@ select option {
   color: var(--blue-text-color) !important;
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ==========================================
    Global Responsive & Print Styles
    ========================================== */

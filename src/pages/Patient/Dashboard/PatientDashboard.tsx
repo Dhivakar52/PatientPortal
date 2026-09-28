@@ -104,14 +104,13 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const authUserId = useAuthStore((s) => s.userId)
   const patientNumericId = currentPatient?.PatientID || (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
 
-  // TanStack Query with user and patient specific query key (only when on home or visits tab)
-  const isAppointmentsNeeded = activeTab === 'home' || activeTab === 'visits'
+  // TanStack Query with user and patient specific query key
   const {
     data: fetchedAppointments = [],
     isLoading: isLoadingAppointments,
     refetch: refetchAppointments,
   } = useAppointmentsQuery(authUserId, patientNumericId || null, undefined, {
-    enabled: Boolean(patientNumericId && isAppointmentsNeeded),
+    enabled: Boolean(patientNumericId),
   })
 
   const [isFabExpanded, setIsFabExpanded] = useState<boolean>(false)
@@ -297,7 +296,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
       <div className="px-4 py-6 max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-5 items-start">
           {/* Left Profile Side Card (Desktop View: visible on lg+; Mobile View: accessed via Header Dropdown -> Profile -> /profile) */}
-          <div className="hidden lg:block w-72 shrink-0">
+          <div className="hidden lg:block w-72 shrink-0 sticky top-20 self-start max-h-[calc(100vh-5.5rem)] overflow-y-auto no-scrollbar">
             <PatientProfileCard
               currentPatient={currentPatient}
               isLoadingPatient={isLoadingPatient}
