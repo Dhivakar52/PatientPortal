@@ -296,7 +296,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
       <div className="px-4 py-6 max-w-7xl mx-auto">
         <div className="flex flex-col lg:flex-row gap-5 items-start">
           {/* Left Profile Side Card (Desktop View: visible on lg+; Mobile View: accessed via Header Dropdown -> Profile -> /profile) */}
-          <div className="hidden lg:block w-72 shrink-0 sticky top-20 self-start max-h-[calc(100vh-5.5rem)] overflow-y-auto no-scrollbar">
+          <div className="hidden lg:block w-72 shrink-0">
             <PatientProfileCard
               currentPatient={currentPatient}
               isLoadingPatient={isLoadingPatient}
