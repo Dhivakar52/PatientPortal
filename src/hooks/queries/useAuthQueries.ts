@@ -17,6 +17,7 @@ export interface ValidateOtpMutationParams {
   phoneNo: string
   otp: string
   patientID?: number
+  isLogin?: boolean
 }
 
 /**
@@ -45,12 +46,12 @@ export function useSendSmsMutation() {
 
 /**
  * TanStack Query Mutation to Validate OTP (Step 3)
- * GET /api/validateotp?PhoneNo={PhoneNo}&otp={otp}&PatientID={PatientID}
+ * GET /api/validateotp?PhoneNo={PhoneNo}&otp={otp}&PatientID={PatientID}&isLogin={isLogin}
  */
 export function useValidateOtpMutation() {
   return useMutation<ValidateOtpResponse, Error, ValidateOtpMutationParams>({
-    mutationFn: async ({ phoneNo, otp, patientID }) => {
-      return validateOtp(phoneNo, otp, patientID)
+    mutationFn: async ({ phoneNo, otp, patientID, isLogin }) => {
+      return validateOtp(phoneNo, otp, patientID, isLogin !== undefined ? isLogin : true)
     },
   })
 }

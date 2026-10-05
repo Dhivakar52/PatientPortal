@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/stores/authStore'
 import {
   getDepartments,
   getDoctors,
@@ -84,25 +85,29 @@ export function useTimeSlotsQuery(params?: GetTimeSlotsParams | number, options?
 }
 
 export function useStatesQuery(options?: { enabled?: boolean }) {
+  const token = useAuthStore((s) => s.authToken)
+  const hasToken = Boolean(token || (typeof window !== 'undefined' && localStorage.getItem('authToken')))
   return useQuery<StateOption[]>({
-    queryKey: masterDataQueryKeys.states,
+    queryKey: [...masterDataQueryKeys.states, token || 'no-token'],
     queryFn: async () => {
       const res = await getStates()
       return Array.isArray(res) ? res : []
     },
-    enabled: options?.enabled !== false,
+    enabled: options?.enabled !== false && hasToken,
     staleTime: 1000 * 60 * 60, // 1 hour
   })
 }
 
 export function useCitiesQuery(stateId?: number | string, options?: { enabled?: boolean }) {
+  const token = useAuthStore((s) => s.authToken)
+  const hasToken = Boolean(token || (typeof window !== 'undefined' && localStorage.getItem('authToken')))
   return useQuery<CityOption[]>({
-    queryKey: masterDataQueryKeys.cities(stateId),
+    queryKey: [...masterDataQueryKeys.cities(stateId), token || 'no-token'],
     queryFn: async () => {
       const res = await getCities(stateId)
       return Array.isArray(res) ? res : []
     },
-    enabled: options?.enabled !== false,
+    enabled: options?.enabled !== false && hasToken && Boolean(stateId),
     staleTime: 1000 * 60 * 30, // 30 minutes
   })
 }

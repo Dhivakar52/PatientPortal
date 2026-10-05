@@ -36,7 +36,7 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   const displayState = matchedState ? matchedState.StateName : (String(rawState).match(/^\d+$/) ? '—' : (String(rawState) || '—'))
 
   const stateIdForCity = matchedState ? String(matchedState.StateID) : (String(rawState).match(/^\d+$/) ? String(rawState) : '')
-  const { data: rawCities } = useCitiesQuery(stateIdForCity)
+  const { data: rawCities } = useCitiesQuery(stateIdForCity, { enabled: Boolean(stateIdForCity) })
   const citiesList = Array.isArray(rawCities) ? rawCities : []
   const rawCity = currentPatient?.CityID ?? currentPatient?.cityID ?? currentPatient?.City ?? currentPatient?.city ?? ''
   const matchedCity = citiesList.find(
