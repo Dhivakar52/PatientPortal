@@ -732,6 +732,7 @@ export function usePatientAuth() {
       const response = await validateOtpMutation.mutateAsync({
         phoneNo: targetMobile,
         otp: loginOtpInput,
+        isLogin: true,
       })
       console.log('Validate OTP response:', response)
 
@@ -747,7 +748,12 @@ export function usePatientAuth() {
 
       if (isSuccess) {
         setLoginOtpErr('')
-        const { UserID, ExistUser } = response
+        const { UserID, ExistUser, token } = response
+
+        // Store returned Bearer Token
+        if (token) {
+          useAuthStore.getState().setAuth({ authToken: token })
+        }
 
         // Store UserID as the ONLY ID carried forward from OTP validation
         if (UserID != null) {
@@ -863,6 +869,7 @@ export function usePatientAuth() {
               userId: effectiveUserId,
               activePhone: targetMobile,
               activePatientId: primaryPatient?.PatientID ? String(primaryPatient.PatientID) : null,
+              authToken: token || useAuthStore.getState().authToken || undefined,
             })
 
             setUsersDB((prev) => ({
@@ -895,6 +902,13 @@ export function usePatientAuth() {
             setCurrentUserId(UserID)
             localStorage.setItem('userID', String(UserID))
             localStorage.setItem('srm_patient_user_id', String(UserID))
+          }
+          if (token) {
+            useAuthStore.getState().setAuth({
+              userId: UserID,
+              activePhone: targetMobile,
+              authToken: token,
+            })
           }
           setShowLoginOtpBlock(false)
           setLoginMobileInput('')

@@ -12,15 +12,53 @@ const axiosInstance = axios.create({
     },
 });
 
-// 2. Request Interceptor: Always reads the latest token from Zustand
+const excludedApis = [
+    '/api/generateotp',
+    '/api/sendsmsrequest',
+    '/api/validateotp'
+];
+
+function isExcludedUrl(url?: string): boolean {
+    if (!url) return false;
+    const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
+    return excludedApis.some((excluded) => {
+        const norm = excluded.toLowerCase();
+        const withoutSlash = norm.startsWith('/') ? norm.slice(1) : norm;
+        return (
+            cleanUrl === norm ||
+            cleanUrl.endsWith(norm) ||
+            cleanUrl === withoutSlash ||
+            cleanUrl.endsWith(`/${withoutSlash}`)
+        );
+    });
+}
+
+// 2. Request Interceptor: Excludes auth headers for OTP/SMS endpoints, adds Bearer Token for authenticated APIs
 axiosInstance.interceptors.request.use(
     (config) => {
-        const storeToken = useAuthStore.getState().authToken;
-        const fallbackToken = localStorage.getItem('authToken');
-        const token = storeToken || fallbackToken;
+        if (isExcludedUrl(config.url)) {
+            if (config.headers) {
+                if (typeof config.headers.delete === 'function') {
+                    config.headers.delete('Authorization');
+                    config.headers.delete('authorization');
+                } else {
+                    delete config.headers['Authorization'];
+                    delete config.headers['authorization'];
+                }
+            }
+        } else {
+            const storeToken = useAuthStore.getState().authToken;
+            const fallbackToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+            const token = storeToken || fallbackToken;
 
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            if (token && typeof token === 'string' && token.trim() !== '') {
+                const bearer = `Bearer ${token.trim()}`;
+                if (typeof config.headers.set === 'function') {
+                    config.headers.set('Authorization', bearer);
+                } else {
+                    config.headers.Authorization = bearer;
+                }
+            }
         }
         return config;
     },
@@ -37,7 +75,9 @@ axiosInstance.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             useAuthStore.getState().logout();
-            window.location.href = '/patient/login';
+            if (typeof window !== 'undefined' && window.location.pathname !== '/patient/login' && window.location.pathname !== '/') {
+                window.location.href = '/patient/login';
+            }
         }
         return Promise.reject(error);
     }

@@ -317,15 +317,27 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       : (currentPatient.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
 
     try {
-      // 1. Validate OTP first
-      const otpRes = await validateOtp(targetMobile, bookOtpInput)
+      // 1. Validate OTP first (isLogin = false for Booking flow)
+      const otpRes = await validateOtp(
+        targetMobile,
+        bookOtpInput,
+        numericPatientId > 0 ? numericPatientId : undefined,
+        false
+      )
       const isSuccess =
         otpRes?.Result &&
-        otpRes.Result.toLowerCase().trim() === 'otp successfully validated'
+        (otpRes.Result.toLowerCase().trim() === 'otp successfully validated' ||
+         otpRes.Result.toLowerCase().trim().includes('successfully validated') ||
+         otpRes.Result.toLowerCase().trim() === 'success')
 
       if (!isSuccess) {
         setBookOtpErr(otpRes?.Result || 'Incorrect OTP. Please try again.')
         return
+      }
+
+      // Store returned Bearer Token
+      if (otpRes.token) {
+        useAuthStore.getState().setAuth({ authToken: otpRes.token })
       }
 
       // 2. Save appointment ONLY after successful OTP verification
@@ -644,11 +656,17 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setCancelOtpErr('')
 
     try {
-      console.log(`🔐 Validating OTP for cancel: GET /api/validateotp?PhoneNo=${targetMobile}&PatientID=${patientId}&otp=${cancelOtpInput}`)
-      const validateRes = await validateOtp(targetMobile, cancelOtpInput, patientId)
+      console.log(`🔐 Validating OTP for cancel: GET /api/validateotp?PhoneNo=${targetMobile}&PatientID=${patientId}&otp=${cancelOtpInput}&isLogin=false`)
+      const validateRes = await validateOtp(
+        targetMobile,
+        cancelOtpInput,
+        patientId > 0 ? patientId : undefined,
+        false
+      )
 
       const isOtpValid =
         validateRes.Result?.toLowerCase().trim() === 'otp successfully validated' ||
+        validateRes.Result?.toLowerCase().trim().includes('successfully validated') ||
         validateRes.Result?.toLowerCase().trim() === 'success' ||
         validateRes.Result?.toLowerCase().trim() === 'valid' ||
         Number(validateRes.UserID) > 0
@@ -657,6 +675,11 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         setCancelOtpErr('Invalid OTP. Please enter the correct OTP.')
         setIsVerifyingCancelOtp(false)
         return
+      }
+
+      // Store returned Bearer Token
+      if (validateRes.token) {
+        useAuthStore.getState().setAuth({ authToken: validateRes.token })
       }
 
       // Strictly execute cancel API only after valid OTP

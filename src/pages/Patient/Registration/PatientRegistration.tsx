@@ -74,7 +74,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
     return found ? String(found.StateID) : regState
   }, [regState, statesList])
 
-  const { data: rawCities } = useCitiesQuery(resolvedStateId)
+  const { data: rawCities } = useCitiesQuery(resolvedStateId, { enabled: Boolean(resolvedStateId) })
   const citiesList = Array.isArray(rawCities) ? rawCities : []
 
   // Resolve City ID for areas query in case regCity is a name or ID

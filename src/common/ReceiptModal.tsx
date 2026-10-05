@@ -27,7 +27,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   appt,
   patient,
 }) => {
-  const { data: rawStates } = useStatesQuery()
+  const { data: rawStates } = useStatesQuery({ enabled: isOpen })
   const statesList = Array.isArray(rawStates) ? rawStates : []
   const rawState = patient?.StateID ?? patient?.stateID ?? patient?.PatientState ?? patient?.State ?? patient?.state ?? ''
   const matchedState = statesList.find(
@@ -36,7 +36,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   const resolvedStateId = matchedState?.StateID ? String(matchedState.StateID) : (String(rawState).match(/^\d+$/) ? String(rawState) : undefined)
   const stateDisplayName = matchedState?.StateName || (String(rawState).match(/^\d+$/) ? '—' : (String(rawState) || '—'))
 
-  const { data: rawCities } = useCitiesQuery(resolvedStateId)
+  const { data: rawCities } = useCitiesQuery(resolvedStateId, { enabled: isOpen && Boolean(resolvedStateId) })
   const citiesList = Array.isArray(rawCities) ? rawCities : []
   const rawCity = patient?.CityID ?? patient?.cityID ?? patient?.City ?? patient?.city ?? ''
   const matchedCity = citiesList.find(

@@ -1,12 +1,18 @@
 import axiosInstance from './axiosService';
+import { useAuthStore } from '@/stores/authStore';
 import { type Patient } from '@/types/patient.types';
 
 export { type Patient };
 
 export interface ValidateOtpResponse {
+    token?: string;
+    phoneNo?: string;
+    result?: string | Record<string, unknown>;
     Result: string;
     UserID: number;
     ExistUser: boolean;
+    ValidationStatus?: number;
+    [key: string]: unknown;
 }
 
 export interface RegisterPatientRequest {
@@ -157,6 +163,9 @@ export interface SendSmsRequestParams {
     templateID?: SmsTemplateId | number;
     referenceID: number | string;
     smsNotify?: boolean;
+    appNotify?: boolean;
+    whatsAppNotify?: boolean;
+    emailNotify?: boolean;
 }
 
 export interface SendSmsResponse {
@@ -176,7 +185,7 @@ export const generateOtp = async (phoneNo: string, patientID?: number): Promise<
         const response = await axiosInstance.post('/api/generateotp', null, {
             params: {
                 PhoneNo: phoneNo,
-                ...(patientID !== undefined && { PatientID: patientID }),
+                ...(patientID !== undefined && patientID !== null && !isNaN(Number(patientID)) && Number(patientID) > 0 && { PatientID: Number(patientID) }),
             },
         });
         console.log("Generate OTP Response (ReferenceID):", response.data);
@@ -198,6 +207,9 @@ export const sendSmsRequest = async (params: SendSmsRequestParams): Promise<Send
                 TemplateID: params.templateID ?? SmsTemplateId.LOGIN_OTP,
                 ReferenceID: params.referenceID,
                 SMSNotify: params.smsNotify ?? true,
+                ...(params.appNotify !== undefined && { AppNotify: params.appNotify }),
+                ...(params.whatsAppNotify !== undefined && { WhatsAppNotify: params.whatsAppNotify }),
+                ...(params.emailNotify !== undefined && { EmailNotify: params.emailNotify }),
             },
         });
         console.log("Send SMS Response:", response.data);
@@ -233,20 +245,106 @@ export const saveAppointment = async (data: SaveAppointmentRequest) => {
 };
 
 /**
- * Validate OTP for the given phone number and OTP code
- * Calls GET /api/validateotp?PhoneNo={phoneNo}&otp={otp}&PatientID={patientID}
+ * Validate OTP for the given phone number, OTP code, optional patient ID, and flow indicator (isLogin)
+ * Calls GET /api/validateotp?PhoneNo={phoneNo}&otp={otp}&PatientID={patientID}&isLogin={isLogin}
+ * Without Bearer Token.
+ * On success, extracts response.token and stores it into authStore.
  */
-export const validateOtp = async (phoneNo: string, otp: string, patientID?: number): Promise<ValidateOtpResponse> => {
+export const validateOtp = async (
+    phoneNo: string,
+    otp: string,
+    patientID?: number | boolean,
+    isLogin?: boolean
+): Promise<ValidateOtpResponse> => {
+    let resolvedPatientID: number | undefined;
+    let resolvedIsLogin: boolean | undefined = isLogin;
+
+    if (typeof patientID === 'boolean') {
+        resolvedIsLogin = patientID;
+        resolvedPatientID = undefined;
+    } else if (typeof patientID === 'number') {
+        resolvedPatientID = patientID;
+    }
+
     try {
-        const response = await axiosInstance.get<ValidateOtpResponse>('/api/validateotp', {
-            params: {
-                PhoneNo: phoneNo,
-                otp: otp,
-                ...(patientID !== undefined && { PatientID: patientID }),
-            },
+        const queryParams: Record<string, unknown> = {
+            PhoneNo: phoneNo,
+            otp: otp,
+        };
+        if (resolvedPatientID !== undefined && resolvedPatientID !== null && !isNaN(resolvedPatientID) && resolvedPatientID > 0) {
+            queryParams.PatientID = resolvedPatientID;
+        }
+        if (resolvedIsLogin !== undefined) {
+            queryParams.isLogin = resolvedIsLogin;
+        }
+
+        const response = await axiosInstance.get('/api/validateotp', {
+            params: queryParams,
         });
         console.log("Validate OTP Response:", response.data);
-        return response.data;
+
+        const rawData = response.data;
+        let nestedResult: Record<string, unknown> = {};
+
+        if (typeof rawData?.result === 'string') {
+            try {
+                nestedResult = JSON.parse(rawData.result);
+            } catch {
+                nestedResult = { Result: rawData.result };
+            }
+        } else if (typeof rawData?.result === 'object' && rawData.result !== null) {
+            nestedResult = rawData.result as Record<string, unknown>;
+        }
+
+        const resolvedResult = String(
+            nestedResult.Result || nestedResult.result || rawData?.Result || rawData?.result || ''
+        );
+        const resolvedUserId = Number(
+            nestedResult.UserID ?? nestedResult.userId ?? rawData?.UserID ?? rawData?.userId ?? 0
+        );
+        const resolvedExistUser = Boolean(
+            nestedResult.ExistUser ?? nestedResult.existUser ?? rawData?.ExistUser ?? rawData?.existUser ?? false
+        );
+        const resolvedValidationStatus = Number(
+            nestedResult.ValidationStatus ?? nestedResult.validationStatus ?? rawData?.ValidationStatus ?? 0
+        );
+
+        const token: string | undefined =
+            (typeof rawData?.token === 'string' ? rawData.token : undefined) ||
+            (typeof rawData?.Token === 'string' ? rawData.Token : undefined) ||
+            (typeof rawData?.accessToken === 'string' ? rawData.accessToken : undefined) ||
+            (typeof rawData?.jwt === 'string' ? rawData.jwt : undefined) ||
+            (typeof nestedResult?.token === 'string' ? (nestedResult.token as string) : undefined) ||
+            (typeof nestedResult?.Token === 'string' ? (nestedResult.Token as string) : undefined);
+
+        const normalizedResponse: ValidateOtpResponse = {
+            ...rawData,
+            ...nestedResult,
+            token,
+            phoneNo: rawData?.phoneNo || phoneNo,
+            Result: resolvedResult,
+            UserID: resolvedUserId,
+            ExistUser: resolvedExistUser,
+            ValidationStatus: resolvedValidationStatus,
+        };
+
+        const resultLower = resolvedResult.toLowerCase().trim();
+        const isSuccess =
+            Boolean(token && token.trim()) ||
+            resultLower === 'otp successfully validated' ||
+            resultLower.includes('successfully validated') ||
+            resultLower === 'success' ||
+            resolvedValidationStatus === 1;
+
+        if (isSuccess && token && typeof token === 'string' && token.trim() !== '') {
+            const cleanToken = token.trim();
+            useAuthStore.getState().setAuth({ authToken: cleanToken });
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('authToken', cleanToken);
+            }
+        }
+
+        return normalizedResponse;
     } catch (error) {
         console.error('Validate OTP Error:', error);
         throw error;
@@ -458,8 +556,21 @@ export const getDoctors = async (departmentId?: number, doctorId?: number): Prom
  * Calls GET /api/states
  */
 export const getStates = async (): Promise<StateOption[]> => {
+    const storeToken = useAuthStore.getState().authToken;
+    const fallbackToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    const token = storeToken || fallbackToken;
+
+    if (!token || typeof token !== 'string' || !token.trim()) {
+        console.warn('getStates: No valid auth token found. Skipping request until authenticated.');
+        return [];
+    }
+
     try {
-        const response = await axiosInstance.get<unknown>('/api/states');
+        const response = await axiosInstance.get<unknown>('/api/states', {
+            headers: {
+                Authorization: `Bearer ${token.trim()}`,
+            },
+        });
         console.log("States response:", response.data);
         const data = response.data;
         if (Array.isArray(data)) return data;
@@ -480,10 +591,22 @@ export const getStates = async (): Promise<StateOption[]> => {
  * Calls GET /api/cities
  */
 export const getCities = async (stateId?: number | string): Promise<CityOption[]> => {
+    const storeToken = useAuthStore.getState().authToken;
+    const fallbackToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    const token = storeToken || fallbackToken;
+
+    if (!token || typeof token !== 'string' || !token.trim()) {
+        console.warn('getCities: No valid auth token found. Skipping request until authenticated.');
+        return [];
+    }
+
     try {
         const response = await axiosInstance.get<unknown>('/api/cities', {
             params: {
                 ...(stateId !== undefined && stateId !== '' && { StateID: stateId }),
+            },
+            headers: {
+                Authorization: `Bearer ${token.trim()}`,
             },
         });
         console.log("Cities response:", response.data);
