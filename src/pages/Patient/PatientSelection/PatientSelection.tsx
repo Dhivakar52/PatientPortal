@@ -19,6 +19,8 @@ interface PatientSelectionProps {
   currentUserId?: number | null
   isLoading?: boolean
   isContinuing?: boolean
+  allowEdit?: boolean
+  allowDelete?: boolean
 }
 
 export const PatientSelection: React.FC<PatientSelectionProps> = ({
@@ -32,6 +34,8 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
   currentUserId,
   isLoading = false,
   isContinuing = false,
+  allowEdit = false,
+  allowDelete = false,
 }) => {
   // State for Edit Patient Modal
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
@@ -44,18 +48,20 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
 
   const handleOpenEdit = (p: Patient, e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!allowEdit) return
     setEditingPatient(p)
     setIsEditModalOpen(true)
   }
 
   const handleOpenDelete = (p: Patient, e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!allowDelete) return
     setDeletingPatient(p)
     setIsDeleteDialogOpen(true)
   }
 
   const handleConfirmDelete = async () => {
-    if (!deletingPatient || !onDeletePatient) return
+    if (!allowDelete || !deletingPatient || !onDeletePatient) return
     const pid = deletingPatient.PatientID || deletingPatient.id
     if (!pid) return
 
@@ -141,27 +147,24 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                   <div
                     key={pId}
                     onClick={() => setSpSelectedId(pId)}
-                    className={`flex items-center gap-3 px-6 py-4 cursor-pointer transition-all duration-200 group ${
-                      isActive
+                    className={`flex items-center gap-3 px-6 py-4 cursor-pointer transition-all duration-200 group ${isActive
                         ? 'bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-600'
                         : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                    }`}
+                      }`}
                   >
                     <div
-                      className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all duration-200 ${
-                        isActive
+                      className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all duration-200 ${isActive
                           ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700'
-                      }`}
+                        }`}
                     >
                       {initials(pRawName)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`font-bold text-sm truncate ${
-                            isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
-                          }`}
+                          className={`font-bold text-sm truncate ${isActive ? 'text-blue-700 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
+                            }`}
                         >
                           {capitalizeName(pRawName)}
                         </span>
@@ -186,23 +189,32 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
 
                     {/* Action buttons: Edit, Delete, Selected Checkmark */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Edit Button */}
+                      {/* Edit Button - Disabled when allowEdit is false */}
                       <button
                         type="button"
+                        disabled={!allowEdit}
                         onClick={(e) => handleOpenEdit(p, e)}
-                        title="Edit Patient"
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
+                        title={allowEdit ? "Edit Patient" : "Edit not allowed"}
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          allowEdit
+                            ? "text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 cursor-pointer"
+                            : "text-slate-300 dark:text-slate-600 opacity-40 cursor-not-allowed pointer-events-none"
+                        }`}
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
 
-                      {/* Delete Button */}
+                      {/* Delete Button - Disabled when allowDelete is false */}
                       {onDeletePatient && (
                         <button
                           type="button"
+                          disabled={!allowDelete}
                           onClick={(e) => handleOpenDelete(p, e)}
-                          title="Delete Patient"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                          title={allowDelete ? "Delete Patient" : "Delete not allowed"}
+                          className={`p-1.5 rounded-lg transition-colors ${allowDelete
+                              ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer"
+                              : "text-slate-300 dark:text-slate-600 opacity-40 cursor-not-allowed pointer-events-none"
+                            }`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -266,30 +278,34 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
       </div>
 
       {/* Edit Patient Modal */}
-      <EditPatientModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false)
-          setEditingPatient(null)
-        }}
-        patient={editingPatient}
-        currentUserId={currentUserId}
-        onSuccess={(updated) => {
-          onEditSuccess?.(updated)
-        }}
-      />
+      {allowEdit && (
+        <EditPatientModal
+          isOpen={isEditModalOpen && allowEdit}
+          onClose={() => {
+            setIsEditModalOpen(false)
+            setEditingPatient(null)
+          }}
+          patient={editingPatient}
+          currentUserId={currentUserId}
+          onSuccess={(updated) => {
+            onEditSuccess?.(updated)
+          }}
+        />
+      )}
 
       {/* Delete Patient Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleConfirmDelete}
-        title="Delete Patient Profile"
-        description="Are you sure you want to delete this patient profile? This action cannot be undone."
-        itemName={deletingPatient?.PatientName || deletingPatient?.name}
-        confirmLabel="Delete Patient"
-        isDeleting={isDeleting}
-      />
+      {allowDelete && (
+        <DeleteConfirmationDialog
+          isOpen={isDeleteDialogOpen && allowDelete}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={handleConfirmDelete}
+          title="Delete Patient Profile"
+          description="Are you sure you want to delete this patient profile? This action cannot be undone."
+          itemName={deletingPatient?.PatientName || deletingPatient?.name}
+          confirmLabel="Delete Patient"
+          isDeleting={isDeleting}
+        />
+      )}
     </div>
   )
 }
