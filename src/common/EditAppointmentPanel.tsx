@@ -10,7 +10,7 @@ import {
 } from '@/hooks/queries/useMasterDataQueries'
 import { updateAppointment, type UpdateAppointmentRequest } from '@/services/apiService'
 import { type Appointment, type Patient } from '@/types/patient.types'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { useAuthStore } from '@/stores/authStore'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAppointmentsQuery, appointmentsQueryKeys } from '@/hooks/queries/useAppointmentsQuery'
@@ -547,7 +547,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
     try {
       console.log(`📝 Rescheduling Appointment ID ${appointmentId} (PUT /api/updateappointment/${appointmentId}) with payload:`, payload)
       await updateAppointment(appointmentId, payload)
-      toast.success('Appointment rescheduled successfully.')
+      toast.success('Appointment updated successfully.')
 
       // Immediately update current booked slot state with the new selection so UI reflects it instantly without page refresh
       const newSlotIdNum = Number(selectedTimeSlotId)

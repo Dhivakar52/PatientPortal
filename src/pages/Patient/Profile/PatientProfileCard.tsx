@@ -64,7 +64,11 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   const displayAddress = currentPatient?.Address || currentPatient?.PatientAddress || currentPatient?.address || '—'
   const displayArea = currentPatient?.area || (currentPatient as any)?.Area || '—'
   const displayPinCode = currentPatient?.PinCode || currentPatient?.pincode || '—'
-  const displayUhid = currentPatient?.UHID || '—'
+  const rawUhid = currentPatient?.UHID ?? (currentPatient as any)?.uhid ?? (currentPatient as any)?.Uhid
+  const trimmedUhid = rawUhid !== undefined && rawUhid !== null ? String(rawUhid).trim() : ''
+  const hasUhid = Boolean(trimmedUhid && trimmedUhid !== '—' && trimmedUhid.toLowerCase() !== 'null' && trimmedUhid.toLowerCase() !== 'undefined')
+  const isEditAllowed = !hasUhid
+  const displayUhid = hasUhid ? trimmedUhid : '—'
   const displayAbhaId = currentPatient?.AbhaID || '—'
 
   const getGenderIcon = () => {
@@ -98,9 +102,17 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
           {currentPatient && (
             <button
               type="button"
-              onClick={() => setIsEditModalOpen(true)}
-              title="Edit Patient Profile"
-              className="absolute right-0 top-0 p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-semibold"
+              disabled={!isEditAllowed}
+              onClick={() => {
+                if (!isEditAllowed) return
+                setIsEditModalOpen(true)
+              }}
+              title={isEditAllowed ? "Edit Patient Profile" : "Profile editing is not allowed once UHID is assigned"}
+              className={`absolute right-0 top-0 p-1.5 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-semibold ${
+                isEditAllowed
+                  ? "text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 cursor-pointer"
+                  : "text-slate-300 dark:text-slate-600 opacity-50 cursor-not-allowed pointer-events-none"
+              }`}
             >
               <Edit3 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Edit</span>
@@ -230,7 +242,7 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
 
       {/* Edit Patient Modal */}
       <EditPatientModal
-        isOpen={isEditModalOpen}
+        isOpen={isEditModalOpen && isEditAllowed}
         onClose={() => setIsEditModalOpen(false)}
         patient={currentPatient}
         currentUserId={currentUserId}

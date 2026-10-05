@@ -56,7 +56,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           modalContent.scrollLeft = 0;
         }
         const printContainers = document.querySelectorAll(
-          '.print-receipt-standalone, .receipt-print, #printable-receipt'
+          '.print-receipt-portal, .print-receipt-standalone, .receipt-print, #printable-receipt'
         );
         printContainers.forEach((el) => {
           el.scrollTop = 0;
@@ -80,7 +80,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       modalContent.scrollLeft = 0;
     }
     const printContainers = document.querySelectorAll(
-      '.print-receipt-standalone, .receipt-print, #printable-receipt'
+      '.print-receipt-portal, .print-receipt-standalone, .receipt-print, #printable-receipt'
     );
     printContainers.forEach((el) => {
       el.scrollTop = 0;
@@ -121,49 +121,79 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   return (
     <>
-      {/* Print CSS isolation: ensures only .print-receipt-standalone renders on print */}
+      {/* Print CSS isolation & page layout: ensures Preview and Print have identical appearance with repeating header & footer */}
       <style>{`
         @media screen {
-          .print-receipt-standalone {
+          .print-receipt-portal {
             display: none !important;
           }
         }
         @media print {
-          body * {
-            visibility: hidden !important;
-          }
-          .print-receipt-standalone,
-          .print-receipt-standalone * {
-            visibility: visible !important;
-          }
-          .print-receipt-standalone {
-            display: block !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 8mm 12mm !important;
-            box-shadow: none !important;
-            border: none !important;
-            background: #ffffff !important;
-          }
-          [data-radix-dialog-overlay],
-          [data-radix-dialog-content],
-          [role="dialog"] {
-            position: static !important;
-            transform: none !important;
-            inset: auto !important;
-            max-width: none !important;
-            max-height: none !important;
-            overflow: visible !important;
-            background: none !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
           @page {
             size: A4 portrait;
-            margin: 0;
+            margin: 10mm;
+          }
+          html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          /* Hide everything except the print receipt portal */
+          body > *:not(.print-receipt-portal) {
+            display: none !important;
+          }
+          #root,
+          [data-radix-portal],
+          [data-radix-dialog-overlay],
+          [data-radix-dialog-content],
+          [role="dialog"],
+          .print\\:hidden {
+            display: none !important;
+          }
+          /* In normal document flow, allows clean multi-page pagination */
+          .print-receipt-portal {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+          .receipt-print-container {
+            width: 100% !important;
+            max-width: 210mm !important;
+            margin: 0 auto !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            border: 1px solid #000000 !important;
+            box-decoration-break: clone !important;
+            -webkit-box-decoration-break: clone !important;
+          }
+          thead {
+            display: table-header-group !important;
+          }
+          tfoot {
+            display: table-footer-group !important;
+          }
+          tbody {
+            display: table-row-group !important;
+          }
+          tr, td {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
         }
       `}</style>
@@ -216,7 +246,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
       {/* Standalone Print-Only Portal attached directly to document.body */}
       {isOpen &&
         createPortal(
-          <div className="print-receipt-standalone">
+          <div className="print-receipt-portal">
             <ReceiptDocument data={receiptData} />
           </div>,
           document.body

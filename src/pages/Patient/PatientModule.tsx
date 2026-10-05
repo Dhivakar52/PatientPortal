@@ -120,8 +120,8 @@ const PatientModule: React.FC = () => {
                         setSpSelectedId={auth.setSpSelectedId}
                         onAddPatient={() => auth.openRegisterForm(auth.currentMobile, 'addPatient')}
                         onContinue={auth.handleSelectPatientContinue}
-                        onEditSuccess={auth.handleUpdatePatientSuccess}
-                        onDeletePatient={auth.handleDeletePatient}
+                        allowEdit={false}
+                        allowDelete={false}
                         currentUserId={auth.currentUserId}
                         isLoading={auth.isLoadingPatient}
                         isContinuing={auth.isContinuing}
