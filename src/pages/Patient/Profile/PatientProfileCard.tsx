@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { User, Venus, Mars, Edit3 } from 'lucide-react'
-import { type Patient } from '@/types/patient.types'
+import { type Patient, type Appointment } from '@/types/patient.types'
 import { initials, capitalizeName, formatDateLong, calcAge } from '@/utils/patient.utils'
 import { useStatesQuery, useCitiesQuery } from '@/hooks/queries/useMasterDataQueries'
+import { useAppointmentsQuery } from '@/hooks/queries/useAppointmentsQuery'
+import { useAuthStore } from '@/stores/authStore'
 import { EditPatientModal } from './EditPatientModal'
 import { PageLoader } from '@/components/PageLoader'
 
@@ -13,6 +15,7 @@ interface PatientProfileCardProps {
   className?: string
   lastVisitedDate?: string
   currentUserId?: number | null
+  appointments?: Appointment[]
   onEditSuccess?: (updatedPatient: Patient) => void
 }
 
@@ -23,9 +26,18 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   className = '',
   lastVisitedDate,
   currentUserId,
+  appointments,
   onEditSuccess,
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const cardRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (cardRef.current?.parentElement) {
+      cardRef.current.parentElement.style.alignSelf = 'stretch'
+    }
+  }, [isLoadingPatient, patientError, currentPatient])
+
   const { data: rawStates } = useStatesQuery()
   const statesList = Array.isArray(rawStates) ? rawStates : []
 
@@ -69,7 +81,67 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   const hasUhid = Boolean(trimmedUhid && trimmedUhid !== '—' && trimmedUhid.toLowerCase() !== 'null' && trimmedUhid.toLowerCase() !== 'undefined')
   const isEditAllowed = !hasUhid
   const displayUhid = hasUhid ? trimmedUhid : '—'
-  const displayAbhaId = currentPatient?.AbhaID || '—'
+  const authUserId = useAuthStore((s) => s.userId)
+  const effectiveUserId = currentUserId ?? authUserId ?? null
+  const patientNumericId = currentPatient?.PatientID !== undefined && currentPatient?.PatientID !== null
+    ? Number(currentPatient.PatientID)
+    : (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || currentPatient.id : undefined)
+
+  const { data: cachedAppointments } = useAppointmentsQuery(
+    effectiveUserId,
+    patientNumericId ? Number(patientNumericId) : null,
+    undefined,
+    { enabled: Boolean(!appointments && patientNumericId) }
+  )
+
+  const appointmentsList = appointments || cachedAppointments || []
+
+  const currentPatientId = currentPatient?.PatientID !== undefined && currentPatient?.PatientID !== null
+    ? Number(currentPatient.PatientID)
+    : (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) : undefined)
+
+  const isValidValue = (val: unknown): val is string => {
+    if (val === null || val === undefined) return false
+    const s = String(val).trim()
+    return s !== '' && s.toLowerCase() !== 'null' && s.toLowerCase() !== 'undefined' && s !== '—'
+  }
+
+  // Match appointment data with the current patient using PatientID
+  const matchedAppointment = appointmentsList.find((appt) => {
+    const apptPatientId = appt.PatientID !== undefined && appt.PatientID !== null
+      ? Number(appt.PatientID)
+      : undefined
+    const hasAbha = isValidValue(appt.AbhaID) || isValidValue((appt as any)?.abhaID)
+    return apptPatientId !== undefined && currentPatientId !== undefined && apptPatientId === currentPatientId && hasAbha
+  }) || appointmentsList.find((appt) => {
+    const apptPatientId = appt.PatientID !== undefined && appt.PatientID !== null
+      ? Number(appt.PatientID)
+      : undefined
+    return apptPatientId !== undefined && currentPatientId !== undefined && apptPatientId === currentPatientId
+  })
+
+  const apptAbhaId = isValidValue(matchedAppointment?.AbhaID)
+    ? String(matchedAppointment.AbhaID).trim()
+    : (isValidValue((matchedAppointment as any)?.abhaID) ? String((matchedAppointment as any).abhaID).trim() : '')
+
+  const profileAbhaId = isValidValue(currentPatient?.AbhaID)
+    ? String(currentPatient.AbhaID).trim()
+    : (isValidValue((currentPatient as any)?.abhaID) ? String((currentPatient as any).abhaID).trim() : '')
+
+  const effectiveAbhaId = apptAbhaId || profileAbhaId
+  const displayAbhaId = effectiveAbhaId || '—'
+
+  const apptAbhaAddress = isValidValue(matchedAppointment?.AbhaAddress)
+    ? String(matchedAppointment.AbhaAddress).trim()
+    : (isValidValue((matchedAppointment as any)?.abhaAddress) ? String((matchedAppointment as any).abhaAddress).trim() : (isValidValue((matchedAppointment as any)?.ABHAAddress) ? String((matchedAppointment as any).ABHAAddress).trim() : ''))
+
+  const profileAbhaAddress = isValidValue(currentPatient?.AbhaAddress)
+    ? String(currentPatient.AbhaAddress).trim()
+    : (isValidValue((currentPatient as any)?.abhaAddress) ? String((currentPatient as any).abhaAddress).trim() : (isValidValue((currentPatient as any)?.ABHAAddress) ? String((currentPatient as any).ABHAAddress).trim() : ''))
+
+  const effectiveAbhaAddress = apptAbhaAddress || profileAbhaAddress
+  const hasAbhaAddress = Boolean(effectiveAbhaAddress)
+  const displayAbhaAddress = effectiveAbhaAddress
 
   const getGenderIcon = () => {
     if (gender.toLowerCase() === 'female') return <Venus className="w-3.5 h-3.5 text-pink-500" />
@@ -79,7 +151,11 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
 
   if (isLoadingPatient && !currentPatient) {
     return (
-      <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shrink-0 shadow-sm ${className}`}>
+      <div
+        ref={cardRef}
+        className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shrink-0 shadow-sm sticky top-20 z-0 ${className}`}
+        style={{ zIndex: 0 }}
+      >
         <PageLoader fullScreen={false} size="sm" message="Loading Profile..." subMessage="Fetching patient records" />
       </div>
     )
@@ -87,7 +163,11 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
 
   if (patientError && !currentPatient) {
     return (
-      <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shrink-0 shadow-sm text-center py-8 ${className}`}>
+      <div
+        ref={cardRef}
+        className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shrink-0 shadow-sm text-center py-8 sticky top-20 z-0 ${className}`}
+        style={{ zIndex: 0 }}
+      >
         <p className="text-xs text-rose-500">{patientError}</p>
       </div>
     )
@@ -95,7 +175,11 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
 
   return (
     <>
-      <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shrink-0 shadow-sm relative ${className}`}>
+      <div
+        ref={cardRef}
+        className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shrink-0 shadow-sm sticky top-20 z-0 ${className}`}
+        style={{ zIndex: 0 }}
+      >
         {/* Header Info */}
         <div className="text-center relative">
           {/* Edit Profile Button */}
@@ -108,11 +192,10 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
                 setIsEditModalOpen(true)
               }}
               title={isEditAllowed ? "Edit Patient Profile" : "Profile editing is not allowed once UHID is assigned"}
-              className={`absolute right-0 top-0 p-1.5 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-semibold ${
-                isEditAllowed
-                  ? "text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 cursor-pointer"
-                  : "text-slate-300 dark:text-slate-600 opacity-50 cursor-not-allowed pointer-events-none"
-              }`}
+              className={`absolute right-0 top-0 p-1.5 rounded-lg transition-colors flex items-center gap-1 text-[11px] font-semibold ${isEditAllowed
+                ? "text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 cursor-pointer"
+                : "text-slate-300 dark:text-slate-600 opacity-50 cursor-not-allowed pointer-events-none"
+                }`}
             >
               <Edit3 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Edit</span>
@@ -233,7 +316,10 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
             <div className="flex justify-between items-start gap-2">
               <span className="text-slate-500 dark:text-slate-400 shrink-0 font-medium">ABHA ID</span>
               <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 text-right">
-                {displayAbhaId}
+                <div>{displayAbhaId}</div>
+                {hasAbhaAddress && (
+                  <div>({displayAbhaAddress})</div>
+                )}
               </span>
             </div>
           </div>

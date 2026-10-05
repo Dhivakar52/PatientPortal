@@ -63,6 +63,7 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
         className="receipt-table w-full border-collapse"
         style={{
           width: "100%",
+          tableLayout: "fixed",
           borderCollapse: "collapse",
           borderSpacing: 0,
         }}
@@ -71,8 +72,11 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
           <tr>
             <td style={{ padding: 0, border: "none" }}>
               {/* 1. HOSPITAL HEADER */}
-              <div className="flex items-center justify-between pb-2 border-b border-black mb-1 avoid-break">
-                <div className="w-24 flex items-center justify-start shrink-0">
+              <div
+                className="flex items-center justify-between pb-2 border-b border-black mb-1 avoid-break"
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}
+              >
+                <div className="w-24 flex items-center justify-start shrink-0" style={{ width: "6rem", flexShrink: 0 }}>
                   <img
                     src={srmLogo}
                     alt="SRM Hospital Logo"
@@ -80,7 +84,7 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
                   />
                 </div>
 
-                <div className="text-center flex-1 px-2">
+                <div className="text-center flex-1 px-2" style={{ flex: "1 1 0%" }}>
                   <h1 className="text-[15px] font-bold uppercase tracking-tight text-black leading-snug m-0">
                     SRM MEDICAL COLLEGE HOSPITAL &amp; RESEARCH CENTRE
                   </h1>
@@ -92,7 +96,7 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
                   </p>
                 </div>
 
-                <div className="w-24 shrink-0" />
+                <div className="w-24 shrink-0" style={{ width: "6rem", flexShrink: 0 }} />
               </div>
 
               {/* 2. RECEIPT TITLE */}
@@ -109,64 +113,73 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
           <tr>
             <td style={{ padding: 0, border: "none" }}>
               {/* 3. PATIENT INFORMATION */}
-              <div className="grid grid-cols-2 gap-x-6 text-[13px] leading-tight mb-2 border-b border-black pb-2 avoid-break">
+              <div
+                className="patient-info-grid grid grid-cols-2 gap-x-6 text-[13px] leading-tight mb-2 border-b border-black pb-2 avoid-break"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  columnGap: "24px",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+              >
                 {/* LEFT COLUMN */}
-                <div className="space-y-1">
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-28 shrink-0">Patient Name:</span>
+                <div className="space-y-1" style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-28 shrink-0" style={{ width: "7rem", flexShrink: 0 }}>Patient Name:</span>
                     <span className="font-normal">{patientName}</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-28 shrink-0">Gender:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-28 shrink-0" style={{ width: "7rem", flexShrink: 0 }}>Gender:</span>
                     <span className="font-normal">{gender}</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-28 shrink-0">Age:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-28 shrink-0" style={{ width: "7rem", flexShrink: 0 }}>Age:</span>
                     <span className="font-normal">{age} Yrs</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-28 shrink-0">Mobile:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-28 shrink-0" style={{ width: "7rem", flexShrink: 0 }}>Mobile:</span>
                     <span className="font-normal">+91 {mobile}</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-28 shrink-0">Email Address:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-28 shrink-0" style={{ width: "7rem", flexShrink: 0 }}>Email Address:</span>
                     <span className="font-normal">{email && email !== '—' ? email : '—'}</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-28 shrink-0">State:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-28 shrink-0" style={{ width: "7rem", flexShrink: 0 }}>State:</span>
                     <span className="font-normal">{state}</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-28 shrink-0">City:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-28 shrink-0" style={{ width: "7rem", flexShrink: 0 }}>City:</span>
                     <span className="font-normal">{city}</span>
                   </div>
                 </div>
 
                 {/* RIGHT COLUMN */}
-                <div className="space-y-1">
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-32 shrink-0">Appointment No:</span>
+                <div className="space-y-1" style={{ minWidth: 0, width: "100%", boxSizing: "border-box" }}>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-32 shrink-0" style={{ width: "8rem", flexShrink: 0 }}>Appointment No:</span>
                     <span className="font-normal">{apptNo}</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-32 shrink-0">Status:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-32 shrink-0" style={{ width: "8rem", flexShrink: 0 }}>Status:</span>
                     <span className="font-normal">{status}</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-32 shrink-0">Booked On:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-32 shrink-0" style={{ width: "8rem", flexShrink: 0 }}>Booked On:</span>
                     <span className="font-normal">{bookedOn}</span>
                   </div>
 
-                  <div className="flex items-baseline">
-                    <span className="font-bold w-32 shrink-0">Appt. Date:</span>
+                  <div className="flex items-baseline" style={{ display: "flex", alignItems: "baseline" }}>
+                    <span className="font-bold w-32 shrink-0" style={{ width: "8rem", flexShrink: 0 }}>Appt. Date:</span>
                     <span className="font-normal">{appointmentDate}</span>
                   </div>
                 </div>
@@ -179,7 +192,14 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
                 </h3>
               </div>
 
-              <table className="diagnosis-table w-full border-collapse text-[12.5px] mb-3 border border-gray-600 avoid-break">
+              <table
+                className="diagnosis-table w-full border-collapse text-[12.5px] mb-3 border border-gray-600 avoid-break"
+                style={{
+                  width: "100%",
+                  tableLayout: "fixed",
+                  borderCollapse: "collapse",
+                }}
+              >
                 <thead>
                   <tr className="border-b border-gray-600 bg-white">
                     <th className="border border-gray-600 px-2 py-1 text-left font-bold" style={{ width: "25%" }}>
@@ -208,7 +228,15 @@ export const ReceiptDocument: React.FC<ReceiptDocumentProps> = ({
 
               {/* 5. SIGNATURE SECTION */}
               <div className="signature-section pt-6 mt-6 border-t border-black avoid-break">
-                <div className="flex justify-between items-end text-[12.5px] text-black">
+                <div
+                  className="flex justify-between items-end text-[12.5px] text-black"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-end",
+                    width: "100%",
+                  }}
+                >
                   {/* Left: Issued By */}
                   <div className="w-1/2 pr-4 space-y-1.5">
                     <p className="font-bold m-0 mb-3">Issued By</p>

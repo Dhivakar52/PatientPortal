@@ -87,6 +87,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
             BookedOn: bookedOn,
             date: apptDate,
             room: String(item.Room || item.room || 'OPD-101'),
+            AbhaID: (item.AbhaID ?? item.abhaID ?? item.AbhaId ?? null) as string | null,
+            AbhaAddress: (item.AbhaAddress ?? item.abhaAddress ?? item.ABHAAddress ?? null) as string | null,
+            abhaID: (item.AbhaID ?? item.abhaID ?? item.AbhaId ?? null) as string | null,
+            abhaAddress: (item.AbhaAddress ?? item.abhaAddress ?? item.ABHAAddress ?? null) as string | null,
           }
         })
         const patientKey = String(pId)

@@ -758,6 +758,8 @@ export const fetchPatient = async (params?: FetchPatientParams): Promise<Patient
                 UHID: uhid,
                 RegisterNo: registerNo,
                 AbhaID: abhaId,
+                AbhaAddress: p.AbhaAddress != null ? String(p.AbhaAddress) : (p.abhaAddress != null ? String(p.abhaAddress) : null),
+                abhaAddress: p.AbhaAddress != null ? String(p.AbhaAddress) : (p.abhaAddress != null ? String(p.abhaAddress) : null),
                 DOB: dob,
                 Age: age,
                 GenderID: genderId,

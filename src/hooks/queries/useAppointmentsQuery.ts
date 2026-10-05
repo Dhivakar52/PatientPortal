@@ -45,6 +45,14 @@ export function useAppointmentsQuery(
         const cleanDoctor = (rawDoctor === '--Select--' || !rawDoctor.trim() || item.DoctorID === 0) ? (deptName ? `${deptName} Specialist` : 'Doctor') : rawDoctor
         const timeSlot = String(item.TimeSlot || item.Timeslot || item.timeslot || item.slot || '')
         const bookedOn = String(item.CreatedAt || item.BookedOn || item.bookedOn || new Date().toISOString())
+        const rawAbhaId = item.AbhaID ?? item.abhaID ?? item.AbhaId ?? null
+        const mappedAbhaId = rawAbhaId !== undefined && rawAbhaId !== null && String(rawAbhaId).trim() !== '' && String(rawAbhaId).trim().toLowerCase() !== 'null' && String(rawAbhaId).trim().toLowerCase() !== 'undefined'
+          ? String(rawAbhaId).trim()
+          : undefined
+        const rawAbhaAddress = item.AbhaAddress ?? item.abhaAddress ?? item.ABHAAddress ?? null
+        const mappedAbhaAddress = rawAbhaAddress !== undefined && rawAbhaAddress !== null && String(rawAbhaAddress).trim() !== '' && String(rawAbhaAddress).trim().toLowerCase() !== 'null' && String(rawAbhaAddress).trim().toLowerCase() !== 'undefined'
+          ? String(rawAbhaAddress).trim()
+          : undefined
 
         return {
           AppointmentID: apptId,
@@ -79,6 +87,10 @@ export function useAppointmentsQuery(
           bookedMode: String(item.BookedMode || item.bookedMode || item.BookingMode || item.bookingMode || item.AppointmentType || 'Online'),
           date: apptDate,
           room: String(item.Room || item.room || ''),
+          AbhaID: mappedAbhaId,
+          AbhaAddress: mappedAbhaAddress,
+          abhaID: mappedAbhaId,
+          abhaAddress: mappedAbhaAddress,
         }
       })
 

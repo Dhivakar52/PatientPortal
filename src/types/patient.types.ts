@@ -6,6 +6,8 @@ export interface Patient {
   UHID?: string | null
   RegisterNo?: string | null
   AbhaID?: string | null
+  AbhaAddress?: string | null
+  abhaAddress?: string | null
   DOB?: string
   Age?: number
   GenderID?: number
@@ -85,6 +87,10 @@ export interface Appointment {
   AppointmentNo?: string
   BookedOn?: string
   BookedMode?: string
+  AbhaID?: string | null
+  AbhaAddress?: string | null
+  abhaID?: string | null
+  abhaAddress?: string | null
 
   // UI mapping fields
   apptNo: string

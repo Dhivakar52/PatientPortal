@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { HOSPITAL_NAME } from '@/constants/patient.constants'
-import { todayStr } from '@/utils/patient.utils'
+import { getEffectiveAppointmentStatus, hasAppointmentDateTimePassed } from '@/utils/patient.utils'
 import { DeleteConfirmationDialog } from '@/common/DeleteConfirmationDialog'
 import {
   DropdownMenu,
@@ -21,7 +21,6 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
-import { parseStandardDate } from '@/common/SearchAndFilter'
 
 interface VisitCardProps {
   appointment: Appointment
@@ -112,35 +111,27 @@ export const VisitCard: React.FC<VisitCardProps> = ({
   const [isCancelling, setIsCancelling] = useState(false)
 
   const { dayMonth, year, dayName } = formatVisitDate(appointment.date)
-  const today = todayStr()
 
-  // Compute status directly from API response or fallback
-  const rawStatus =
-    appointment.AppointmentStatus ||
-    appointment.status ||
-    appointment.Status ||
-    (appointment as unknown as Record<string, unknown>).AppointmentStatus ||
-    (appointment as unknown as Record<string, unknown>).status
-  const computedStatus = rawStatus ? String(rawStatus) : (appointment.date < today ? 'Completed' : '')
+  // Compute effective status using date-based validation and business rules
+  const effectiveStatus = getEffectiveAppointmentStatus(appointment)
+  const computedStatus = effectiveStatus
+  const isCancelled = effectiveStatus === 'Cancelled'
+  const isVisited = effectiveStatus === 'Visited'
+  const isNotVisited = effectiveStatus === 'Not Visited'
 
-  // Check if appointment is strictly in the future (greater than today's date)
-  const apptDateObj = parseStandardDate(appointment.date)
-  const isFutureDate = (() => {
-    if (!apptDateObj) {
-      return appointment.date > today
-    }
-    const todayObj = new Date()
-    todayObj.setHours(0, 0, 0, 0)
-    const targetObj = new Date(apptDateObj)
-    targetObj.setHours(0, 0, 0, 0)
-    return targetObj.getTime() > todayObj.getTime()
-  })()
+  // Appointment is future if scheduled date/time has not passed and is not cancelled/visited
+  const isPassed = hasAppointmentDateTimePassed(appointment)
+  const isFuture = !isPassed && !isCancelled && !isVisited && !isNotVisited
 
-  const isCancelled = computedStatus.toLowerCase() === 'cancelled'
   // Reschedule and Cancel are strictly allowed ONLY for future appointments (hidden for today & past)
-  const isEditable = isFutureDate && !isCancelled && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited'
-  const isCancellable = isFutureDate && showCancel && !isCancelled && computedStatus.toLowerCase() !== 'completed' && computedStatus.toLowerCase() !== 'visited'
-  const hasMenuItems = !isCancelled && ((showDownload && !!onDownloadReceipt) || !!onView || isCancellable || (isEditable && !!onEditAppointment))
+  const isEditable = isFuture && !isCancelled && !isVisited
+  const isCancellable = isFuture && showCancel && !isCancelled && !isVisited
+
+  // Download Visit Summary is strictly available ONLY for 'Visited' records
+  const canDownloadSummary = isVisited
+  const isDownloadVisible = showDownload && canDownloadSummary
+
+  const hasMenuItems = !isCancelled && ((isDownloadVisible && !!onDownloadReceipt) || !!onView || isCancellable || (isEditable && !!onEditAppointment))
 
   const departmentName = appointment.department || appointment.DeptName || appointment.Department || ''
   const displayDoctor = appointment.doctor && appointment.doctor !== '--Select--' ? appointment.doctor : ('Specialist Consultation')
@@ -159,11 +150,14 @@ export const VisitCard: React.FC<VisitCardProps> = ({
     'Online'
   const bookingMode = String(rawBookingMode).replace(/booking/i, '').trim() || 'Online'
 
-  const handleDownload = () => {
+  const handleDownload = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation()
+    }
     if (onDownloadReceipt) {
       onDownloadReceipt(appointment)
     } else {
-      toast.success(`Downloading Visit Summary for ${displayDoctor}`)
+      toast.success(`Downloading Visit Summary for ${appointment.apptNo || appointment.AppointmentNo || displayDoctor}`)
     }
   }
 
@@ -256,6 +250,18 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                 {computedStatus}
               </span>
 
+              {isDownloadVisible && (
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  title="Download Visit Summary"
+                  aria-label="Download Visit Summary"
+                  className="p-1 rounded-md text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer outline-none"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </button>
+              )}
+
               {hasMenuItems && (
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -270,7 +276,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                     }
                   />
                   <DropdownMenuContent align="end" className="w-48 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg z-[100] text-xs">
-                    {showDownload && !!onDownloadReceipt && (
+                    {isDownloadVisible && !!onDownloadReceipt && (
                       <DropdownMenuItem
                         onClick={handleDownload}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-md text-xs"
@@ -383,6 +389,17 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                     </span>
                   </div>
                 )}
+                {isDownloadVisible && (
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    title="Download Visit Summary"
+                    aria-label="Download Visit Summary"
+                    className="px-[7px] py-[2px] rounded-md text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/50 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer outline-none shadow-xs"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -410,7 +427,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                     }
                   />
                   <DropdownMenuContent align="end" className="w-52 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-lg z-[100] text-xs">
-                    {showDownload && !!onDownloadReceipt && (
+                    {/* {showDownload && !!onDownloadReceipt && (
                       <DropdownMenuItem
                         onClick={handleDownload}
                         className="flex items-center gap-2 px-3 py-2 cursor-pointer text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium rounded-md text-xs"
@@ -418,7 +435,7 @@ export const VisitCard: React.FC<VisitCardProps> = ({
                         <Download className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                         <span>Download Visit Summary</span>
                       </DropdownMenuItem>
-                    )}
+                    )} */}
 
                     {onView && (
                       <DropdownMenuItem
