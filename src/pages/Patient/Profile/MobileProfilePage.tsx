@@ -33,7 +33,7 @@ export const MobileProfilePage: React.FC<MobileProfilePageProps> = ({
   const navigate = useNavigate()
 
   const handleBack = () => {
-    navigate('/patient/dashboard')
+    navigate('/home')
   }
 
   return (

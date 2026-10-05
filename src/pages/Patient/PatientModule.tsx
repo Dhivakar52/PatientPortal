@@ -21,7 +21,7 @@ const MaleConfirmModal = lazy(() => import('./Appointment/MaleConfirmModal').the
 const PatientModule: React.FC = () => {
     const navigate = useNavigate()
     const location = useLocation()
-    const isProfileRoute = location.pathname === '/profile' || location.pathname === '/patient/profile'
+    const isProfileRoute = location.pathname === '/profile'
     // 1. Auth & Patient Flow Hook
     const auth = usePatientAuth()
 
@@ -222,7 +222,7 @@ const PatientModule: React.FC = () => {
                     lastBookedAppt={booking.lastBookedAppt}
                     onClose={() => booking.handleSuccessClose(() => {
                         auth.setScreen('app')
-                        navigate('/patient/home')
+                        navigate('/home')
                     })}
                 />
 

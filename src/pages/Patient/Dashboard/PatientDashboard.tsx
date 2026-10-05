@@ -94,9 +94,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
 
   const getTabFromPath = (path: string): ActiveTab => {
     if (path.includes('visit')) return 'visits'
+    if (path.includes('book')) return 'book'
     if (path.includes('lab')) return 'lab'
     if (path.includes('bill')) return 'bills'
-    if (path.includes('book')) return 'book'
     return 'home'
   }
 
@@ -132,12 +132,20 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
   const setActiveTab = (tab: ActiveTab) => {
     setActiveTabState(tab)
     setIsFabExpanded(false)
-    if (tab === 'home' && location.pathname !== '/patient/dashboard') navigate('/patient/dashboard')
-    else if (tab === 'visits' && location.pathname !== '/patient/visits') navigate('/patient/visits')
-    // else if (tab === 'lab' && location.pathname !== '/patient/lab') navigate('/patient/lab')
-    // else if (tab === 'bills' && location.pathname !== '/patient/bills') navigate('/patient/bills')
-    else if (tab === 'book' && location.pathname !== '/patient/book') navigate('/patient/book')
+    if (tab === 'home' && location.pathname !== '/home') navigate('/home')
+    else if (tab === 'visits' && location.pathname !== '/visit-appointments') navigate('/visit-appointments')
+    // else if (tab === 'lab' && location.pathname !== '/lab') navigate('/lab')
+    // else if (tab === 'bills' && location.pathname !== '/bills') navigate('/bills')
+    else if (tab === 'book' && location.pathname !== '/book-appointments') navigate('/book-appointments')
   }
+
+  useEffect(() => {
+    if (location.pathname === '/book') {
+      navigate('/book-appointments', { replace: true })
+    } else if (location.pathname === '/visit' || location.pathname === '/visits') {
+      navigate('/visit-appointments', { replace: true })
+    }
+  }, [location.pathname, navigate])
 
   useEffect(() => {
     const t = getTabFromPath(location.pathname)

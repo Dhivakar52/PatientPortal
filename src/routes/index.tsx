@@ -70,9 +70,9 @@ export const AppRoutes = () => {
           path="*"
           element={
             isAuthenticated ? (
-              <Navigate to="/dashboard" replace />
+              <Navigate to="/home" replace />
             ) : (
-              <Navigate to="/" replace />
+              <Navigate to="/login" replace />
             )
           }
         />

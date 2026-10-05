@@ -85,8 +85,8 @@ axiosInstance.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             useAuthStore.getState().logout();
-            if (typeof window !== 'undefined' && window.location.pathname !== '/patient/login' && window.location.pathname !== '/') {
-                window.location.href = '/patient/login';
+            if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/') {
+                window.location.href = '/login';
             }
         }
         return Promise.reject(error);

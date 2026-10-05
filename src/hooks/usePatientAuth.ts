@@ -14,23 +14,21 @@ import {
 } from './queries/useAuthQueries'
 
 const getScreenFromPath = (path: string): FlowScreen => {
-  if (path === '/patient/register') return 'register'
-  if (path === '/patient/select') return 'select'
+  if (path === '/registration' || path === '/register') return 'register'
+  if (path === '/select-profile' || path === '/select') return 'select'
   if (
-    path === '/patient/dashboard' ||
     path === '/home' ||
-    path === '/patient/home' ||
+    path === '/dashboard' ||
     path === '/profile' ||
-    path === '/patient/profile' ||
+    path === '/appointments' ||
+    path === '/appointment' ||
+    path === '/visit-appointments' ||
     path === '/visit' ||
     path === '/visits' ||
-    path === '/patient/visits' ||
-    path === '/lab' ||
-    path === '/patient/lab' ||
-    path === '/bills' ||
-    path === '/patient/bills' ||
+    path === '/book-appointments' ||
     path === '/book' ||
-    path === '/patient/book'
+    path === '/lab' ||
+    path === '/bills'
   ) return 'app'
   return 'login'
 }
@@ -356,14 +354,20 @@ export function usePatientAuth() {
 
   const setScreen = (newScreen: FlowScreen) => {
     setScreenState(newScreen)
-    if (newScreen === 'login' && location.pathname !== '/patient/login' && location.pathname !== '/') {
-      navigate('/patient/login')
-    } else if (newScreen === 'register' && location.pathname !== '/patient/register') {
-      navigate('/patient/register', { state: currentUserId != null ? { userID: currentUserId } : undefined })
-    } else if (newScreen === 'select' && location.pathname !== '/patient/select') {
-      navigate('/patient/select', { state: currentUserId != null ? { userID: currentUserId } : undefined })
-    } else if (newScreen === 'app' && location.pathname !== '/patient/dashboard') {
-      navigate('/patient/dashboard')
+    if (newScreen === 'login' && location.pathname !== '/login' && location.pathname !== '/') {
+      navigate('/login')
+    } else if (newScreen === 'register' && location.pathname !== '/registration') {
+      navigate('/registration', { state: currentUserId != null ? { userID: currentUserId } : undefined })
+    } else if (newScreen === 'select' && location.pathname !== '/select-profile') {
+      navigate('/select-profile', { state: currentUserId != null ? { userID: currentUserId } : undefined })
+    } else if (
+      newScreen === 'app' &&
+      location.pathname !== '/home' &&
+      location.pathname !== '/appointments' &&
+      location.pathname !== '/visit-appointments' &&
+      location.pathname !== '/book-appointments'
+    ) {
+      navigate('/home')
     }
   }
 
@@ -885,7 +889,7 @@ export function usePatientAuth() {
             setLoginMobileInput('')
             setLoginOtpInput('')
 
-            navigate('/patient/select', {
+            navigate('/select-profile', {
               state: {
                 userID: effectiveUserId,
               },
@@ -915,7 +919,7 @@ export function usePatientAuth() {
           setLoginOtpInput('')
           setPendingMobile(targetMobile)
           setRegisterContext('newAccount')
-          navigate('/patient/register', {
+          navigate('/registration', {
             state: {
               userID: UserID,
             },
@@ -948,7 +952,7 @@ export function usePatientAuth() {
   const openRegisterForm = (mobile: string, context: RegisterContext) => {
     setRegisterContext(context)
     setPendingMobile(mobile)
-    navigate('/patient/register', {
+    navigate('/registration', {
       state: currentUserId != null ? { userID: currentUserId } : undefined,
     })
     setScreenState('register')
@@ -992,7 +996,7 @@ export function usePatientAuth() {
     queryClient.invalidateQueries({ queryKey: appointmentsQueryKeys.all })
     queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all })
 
-    navigate('/patient/home')
+    navigate('/home')
     setScreenState('app')
     setIsContinuing(false)
   }
@@ -1165,7 +1169,7 @@ export function usePatientAuth() {
     // Reset Zustand auth store and clear storage
     useAuthStore.getState().logout()
 
-    navigate('/patient/login')
+    navigate('/login')
     setScreenState('login')
   }
 
