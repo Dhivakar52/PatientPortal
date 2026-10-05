@@ -126,37 +126,43 @@ export const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
             Upcoming Appointments
           </h3>
-          <Badge variant="secondary" className="text-xs font-semibold">
-            {filteredAppointments.length} {filteredAppointments.length === 1 ? 'Appointment' : 'Appointments'}
-          </Badge>
+          {appointments.length > 0 && (
+            <Badge variant="secondary" className="text-xs font-semibold">
+              {filteredAppointments.length} {filteredAppointments.length === 1 ? 'Appointment' : 'Appointments'}
+            </Badge>
+          )}
         </div>
 
         {/* Reusable Search & Filter Controls */}
-        <SearchAndFilterControls
-          searchTerm={searchTerm}
-          onSearchChange={(v) => {
-            setSearchTerm(v)
-            setPageIndex(0)
-          }}
-          isSearchOpen={isSearchOpen}
-          setIsSearchOpen={setIsSearchOpen}
-          onOpenFilterPanel={handleOpenFilterPanel}
-          isFiltered={isFiltered}
-          isFilterPanelOpen={isFilterPanelOpen}
-          searchPlaceholder="Search doctor, dept, ID..."
-          searchTitle="Search upcoming appointments"
-          filterTitle="Filter by date range"
-        />
+        {appointments.length > 0 && (
+          <SearchAndFilterControls
+            searchTerm={searchTerm}
+            onSearchChange={(v) => {
+              setSearchTerm(v)
+              setPageIndex(0)
+            }}
+            isSearchOpen={isSearchOpen}
+            setIsSearchOpen={setIsSearchOpen}
+            onOpenFilterPanel={handleOpenFilterPanel}
+            isFiltered={isFiltered}
+            isFilterPanelOpen={isFilterPanelOpen}
+            searchPlaceholder="Search doctor, dept, ID..."
+            searchTitle="Search upcoming appointments"
+            filterTitle="Filter by date range"
+          />
+        )}
       </div>
 
       {/* Filtered Sub-counter */}
-      <FilterSummary
-        isFiltered={isFiltered}
-        filteredCount={filteredAppointments.length}
-        totalCount={appointments.length}
-        unitName="appointment"
-        onClearFilters={clearFilters}
-      />
+      {appointments.length > 0 && (
+        <FilterSummary
+          isFiltered={isFiltered}
+          filteredCount={filteredAppointments.length}
+          totalCount={appointments.length}
+          unitName="appointment"
+          onClearFilters={clearFilters}
+        />
+      )}
 
       {/* Appointments List (Max 5 per page) */}
       {paginatedData.length > 0 ? (
@@ -181,7 +187,7 @@ export const UpcomingAppointments: React.FC<UpcomingAppointmentsProps> = ({
             <CalendarX className="w-5 h-5" />
           </div>
           <p className="font-semibold text-slate-700 dark:text-slate-300">
-            {isFiltered ? 'No upcoming appointments match your filter criteria.' : 'No Upcoming Appointments Found!'}
+            {isFiltered ? 'No upcoming appointments match your filter criteria.' : 'No Upcoming Visits '}
           </p>
           {isFiltered && (
             <Button

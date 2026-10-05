@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import Pagination from '@/common/Pagination'
 import { VisitCard } from '../Visits/VisitCard'
 import { type Appointment, type Patient } from '@/types/patient.types'
+import { getEffectiveAppointmentStatus } from '@/utils/patient.utils'
 import {
   useSearchAndFilter,
   SearchAndFilterControls,
@@ -57,21 +58,13 @@ export const PastVisits: React.FC<PastVisitsProps> = ({
   const filteredAppointments = useMemo(() => {
     return appointments
       .filter((appt) => {
-        const rawStatus = (
-          appt.AppointmentStatus ||
-          appt.status ||
-          appt.Status ||
-          (appt as any).appointmentStatus ||
-          ''
-        ).toLowerCase()
+        const effectiveStatus = getEffectiveAppointmentStatus(appt)
 
         // Status Filter
         if (statusFilter !== 'all') {
-          if (statusFilter === 'visited') {
-            if (rawStatus !== 'visited' && rawStatus !== 'completed') return false
-          } else if (rawStatus !== statusFilter.toLowerCase()) {
-            return false
-          }
+          if (statusFilter === 'visited' && effectiveStatus !== 'Visited') return false
+          if (statusFilter === 'not visited' && effectiveStatus !== 'Not Visited') return false
+          if (statusFilter === 'cancelled' && effectiveStatus !== 'Cancelled') return false
         }
 
         // Date Filter
@@ -179,7 +172,7 @@ export const PastVisits: React.FC<PastVisitsProps> = ({
               currentPatient={currentPatient}
               onView={onView}
               onDownloadReceipt={onViewReceipt}
-              showDownload={true}
+              showDownload={false}
               showCancel={false}
             />
           ))}
@@ -229,7 +222,7 @@ export const PastVisits: React.FC<PastVisitsProps> = ({
         setTempStatusFilter={setTempStatusFilter}
         statusOptions={[
           { value: 'all', label: 'All Statuses' },
-          { value: 'visited', label: 'Visited / Completed' },
+          { value: 'visited', label: 'Visited' },
           { value: 'not visited', label: 'Not Visited' },
           { value: 'cancelled', label: 'Cancelled' },
         ]}

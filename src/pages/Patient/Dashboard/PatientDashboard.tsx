@@ -23,6 +23,7 @@ import { DashboardSkeleton } from './DashboardSkeleton'
 import { type Patient, type Appointment, type ActiveTab } from '@/types/patient.types'
 import { useAuthStore } from '@/stores/authStore'
 import { useAppointmentsQuery } from '@/hooks/queries/useAppointmentsQuery'
+import { getEffectiveAppointmentStatus, hasAppointmentDateTimePassed } from '@/utils/patient.utils'
 
 interface PatientDashboardProps {
   currentPatient: Patient | null
@@ -191,50 +192,6 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     return isNaN(parsed.getTime()) ? new Date(0) : parsed
   }
 
-  const isUpcomingDate = (dateString: string): boolean => {
-    if (!dateString) return false
-    const d = parseAppointmentDate(dateString)
-    if (isNaN(d.getTime()) || d.getTime() === 0) return false
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const apptDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate())
-    return apptDateOnly.getTime() >= today.getTime()
-  }
-
-  const isPastDate = (dateString: string): boolean => {
-    if (!dateString) return false
-    const d = parseAppointmentDate(dateString)
-    if (isNaN(d.getTime()) || d.getTime() === 0) return false
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const apptDateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate())
-    return apptDateOnly.getTime() < today.getTime()
-  }
-
-  const isCancelledAppt = (a: Appointment) => {
-    const s = String(a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase().trim()
-    return s === 'cancelled' || s === 'canceled'
-  }
-
-  const isUpcomingAppt = (a: Appointment) => {
-    if (isCancelledAppt(a)) return false
-    const s = String(a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase().trim()
-    if (s === 'visited' || s === 'completed') return false
-    if (s === 'upcoming' || s === 'scheduled' || s === 'confirmed' || s === 'pending') {
-      const dStr = a.date || a.AppointmentDate || ''
-      if (dStr) return isUpcomingDate(dStr)
-      return true
-    }
-    return isUpcomingDate(a.date || a.AppointmentDate || '')
-  }
-
-  const isPastAppt = (a: Appointment) => {
-    const s = String(a.AppointmentStatus || a.status || a.Status || (a as any).appointmentStatus || '').toLowerCase().trim()
-    if (s === 'visited' || s === 'completed') return true
-    if (isUpcomingAppt(a)) return false
-    return isPastDate(a.date || a.AppointmentDate || '') || isCancelledAppt(a)
-  }
-
   // Deduplicate unique appointments strictly by AppointmentID
   const uniqueAppointments = React.useMemo(() => {
     if (!Array.isArray(fetchedAppointments) || fetchedAppointments.length === 0) return []
@@ -256,10 +213,14 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     )
   }, [fetchedAppointments])
 
-  // Sort Upcoming Appointments: Date ASC -> TimeSlot ASC (excluding Cancelled & Completed)
+  // Sort Upcoming Appointments: Date ASC -> TimeSlot ASC (strictly future, excluding Cancelled, Visited, and Not Visited)
   const upcomingAppointments = React.useMemo(() => {
     return uniqueAppointments
-      .filter(isUpcomingAppt)
+      .filter((a) => {
+        const status = getEffectiveAppointmentStatus(a)
+        if (status === 'Cancelled' || status === 'Visited' || status === 'Not Visited') return false
+        return !hasAppointmentDateTimePassed(a)
+      })
       .sort((a, b) => {
         const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
         const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')
@@ -272,10 +233,29 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
       })
   }, [uniqueAppointments])
 
-  // Sort Past Visits: Date DESC
+  // Sort Past Visits: Date DESC (all past visits: Visited, Not Visited, and Cancelled)
   const pastAppointments = React.useMemo(() => {
     return uniqueAppointments
-      .filter(isPastAppt)
+      .filter((a) => {
+        const status = getEffectiveAppointmentStatus(a)
+        return (
+          status === 'Visited' ||
+          status === 'Not Visited' ||
+          status === 'Cancelled' ||
+          hasAppointmentDateTimePassed(a)
+        )
+      })
+      .sort((a, b) => {
+        const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
+        const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')
+        return dateB.getTime() - dateA.getTime()
+      })
+  }, [uniqueAppointments])
+
+  // Visited Appointments: Date DESC (used for lastVisitedDate on PatientProfileCard)
+  const visitedAppointments = React.useMemo(() => {
+    return uniqueAppointments
+      .filter((a) => getEffectiveAppointmentStatus(a) === 'Visited')
       .sort((a, b) => {
         const dateA = parseAppointmentDate(a.date || a.AppointmentDate || '')
         const dateB = parseAppointmentDate(b.date || b.AppointmentDate || '')
@@ -309,8 +289,9 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
               currentPatient={currentPatient}
               isLoadingPatient={isLoadingPatient}
               patientError={patientError}
-              lastVisitedDate={pastAppointments[0]?.date || ''}
+              lastVisitedDate={visitedAppointments[0]?.date || ''}
               currentUserId={currentUserId}
+              appointments={uniqueAppointments}
               onEditSuccess={onEditSuccess}
               className="w-full"
             />
@@ -379,21 +360,19 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                   ) : (
                     <>
                       {/* Upcoming Appointments */}
-                      {upcomingAppointments.length > 0 && (
-                        <div>
-                          <UpcomingAppointments
-                            appointments={upcomingAppointments}
-                            currentPatient={currentPatient}
-                            onView={handleViewHomeAppointment}
-                            onViewReceipt={onViewReceipt}
-                            onCancelAppointment={handleCancelAppointmentAndRefresh}
-                            onEditAppointment={handleEditAppointment}
-                          />
-                        </div>
-                      )}
+                      <div>
+                        <UpcomingAppointments
+                          appointments={upcomingAppointments}
+                          currentPatient={currentPatient}
+                          onView={handleViewHomeAppointment}
+                          onViewReceipt={onViewReceipt}
+                          onCancelAppointment={handleCancelAppointmentAndRefresh}
+                          onEditAppointment={handleEditAppointment}
+                        />
+                      </div>
 
                       {/* Past Visits */}
-                      {pastAppointments.length > 0 && (
+                      {true && pastAppointments.length > 0 && (
                         <div>
                           <PastVisits
                             appointments={pastAppointments}

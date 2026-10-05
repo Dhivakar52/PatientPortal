@@ -121,7 +121,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
   return (
     <>
-      {/* Print CSS isolation & page layout: ensures Preview and Print have identical appearance with repeating header & footer */}
+      {/* Print CSS isolation & page layout: ensures Preview and Print have identical appearance with 1:1 layout matching */}
       <style>{`
         @media screen {
           .print-receipt-portal {
@@ -133,6 +133,11 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             size: A4 portrait;
             margin: 10mm;
           }
+          *, *::before, *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
           html, body {
             background: #ffffff !important;
             color: #000000 !important;
@@ -141,8 +146,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             width: 100% !important;
             height: auto !important;
             overflow: visible !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
           }
           /* Hide everything except the print receipt portal */
           body > *:not(.print-receipt-portal) {
@@ -153,15 +156,19 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           [data-radix-dialog-overlay],
           [data-radix-dialog-content],
           [role="dialog"],
+          nav,
+          header,
+          aside,
+          button,
           .print\\:hidden {
             display: none !important;
           }
-          /* In normal document flow, allows clean multi-page pagination */
+          /* In normal document flow, allows clean 1:1 preview representation */
           .print-receipt-portal {
             display: block !important;
             position: static !important;
             width: 100% !important;
-            max-width: 100% !important;
+            max-width: 190mm !important;
             margin: 0 auto !important;
             padding: 0 !important;
             background: #ffffff !important;
@@ -170,13 +177,76 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
           }
           .receipt-print-container {
             width: 100% !important;
-            max-width: 210mm !important;
+            max-width: 190mm !important;
             margin: 0 auto !important;
+            padding: 16px !important;
             box-shadow: none !important;
             background: #ffffff !important;
             border: 1px solid #000000 !important;
+            box-sizing: border-box !important;
             box-decoration-break: clone !important;
             -webkit-box-decoration-break: clone !important;
+          }
+          .receipt-table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+          }
+          .receipt-table td {
+            padding: 0 !important;
+            border: none !important;
+          }
+          /* Enforce exact 1:1 grid layout in print matching preview */
+          .patient-info-grid,
+          .receipt-print-container .grid.grid-cols-2,
+          .print-receipt-portal .grid.grid-cols-2,
+          .grid.grid-cols-2 {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            column-gap: 24px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          .patient-info-grid > div,
+          .receipt-print-container .grid.grid-cols-2 > div,
+          .print-receipt-portal .grid.grid-cols-2 > div {
+            min-width: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+          }
+          /* Enforce flex layout and alignment in print matching preview */
+          .flex {
+            display: flex !important;
+          }
+          .items-center {
+            align-items: center !important;
+          }
+          .items-baseline {
+            align-items: baseline !important;
+          }
+          .items-end {
+            align-items: flex-end !important;
+          }
+          .justify-between {
+            justify-content: space-between !important;
+          }
+          .shrink-0 {
+            flex-shrink: 0 !important;
+          }
+          .flex-1 {
+            flex: 1 1 0% !important;
+          }
+          /* Appointment Information table formatting */
+          .diagnosis-table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+            border: 1px solid #4b5563 !important;
+          }
+          .diagnosis-table th,
+          .diagnosis-table td {
+            border: 1px solid #4b5563 !important;
+            padding: 4px 8px !important;
           }
           thead {
             display: table-header-group !important;
