@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Edit3, Trash2, Phone, Loader2 } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Trash2, Phone, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PatientHeader } from '@/common/PatientHeader'
 import { DeleteConfirmationDialog } from '@/common/DeleteConfirmationDialog'
@@ -46,12 +46,12 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const handleOpenEdit = (p: Patient, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!allowEdit) return
-    setEditingPatient(p)
-    setIsEditModalOpen(true)
-  }
+  // const handleOpenEdit = (p: Patient, e: React.MouseEvent) => {
+  //   e.stopPropagation()
+  //   if (!allowEdit) return
+  //   setEditingPatient(p)
+  //   setIsEditModalOpen(true)
+  // }
 
   const handleOpenDelete = (p: Patient, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -148,14 +148,14 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                     key={pId}
                     onClick={() => setSpSelectedId(pId)}
                     className={`flex items-center gap-3 px-6 py-4 cursor-pointer transition-all duration-200 group ${isActive
-                        ? 'bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-600'
-                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-l-4 border-blue-600'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
                       }`}
                   >
                     <div
                       className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-all duration-200 ${isActive
-                          ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700'
+                        ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-2 border-slate-200 dark:border-slate-700'
                         }`}
                     >
                       {initials(pRawName)}
@@ -190,7 +190,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                     {/* Action buttons: Edit, Delete, Selected Checkmark */}
                     <div className="flex items-center gap-1.5 shrink-0">
                       {/* Edit Button - Disabled when allowEdit is false */}
-                      <button
+                      {/* <button
                         type="button"
                         disabled={!allowEdit}
                         onClick={(e) => handleOpenEdit(p, e)}
@@ -202,7 +202,7 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                         }`}
                       >
                         <Edit3 className="w-4 h-4" />
-                      </button>
+                      </button> */}
 
                       {/* Delete Button - Disabled when allowDelete is false */}
                       {onDeletePatient && (
@@ -212,8 +212,8 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                           onClick={(e) => handleOpenDelete(p, e)}
                           title={allowDelete ? "Delete Patient" : "Delete not allowed"}
                           className={`p-1.5 rounded-lg transition-colors ${allowDelete
-                              ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer"
-                              : "text-slate-300 dark:text-slate-600 opacity-40 cursor-not-allowed pointer-events-none"
+                            ? "text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 cursor-pointer"
+                            : "text-slate-300 dark:text-slate-600 opacity-40 cursor-not-allowed pointer-events-none"
                             }`}
                         >
                           <Trash2 className="w-4 h-4" />

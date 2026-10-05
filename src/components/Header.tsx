@@ -139,11 +139,11 @@ export function Header({
   const handleLogout = () => {
     logout()
     toast.success('Logged out successfully')
-    navigate('/')
+    navigate('/login')
   }
 
   const profileMenuItems = [
-    { label: "Home", icon: Home, url: "/dashboard" },
+    { label: "Home", icon: Home, url: "/home" },
     { label: "Profile", icon: UserPlus, url: "/profile" },
   ]
 

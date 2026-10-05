@@ -14,7 +14,7 @@ interface ProtectedRoutesProps {
 const ProtectedRoutes = ({
   children,
   isAuthenticated = false,
-  redirectTo = "/",
+  redirectTo = "/login",
   requiredRoles = [],
   loadingComponent,
 }: ProtectedRoutesProps) => {
@@ -47,7 +47,7 @@ const ProtectedRoutes = ({
   }
 
   if (!hasRequiredRole) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/home" replace />
   }
 
   if (loadingComponent) {
