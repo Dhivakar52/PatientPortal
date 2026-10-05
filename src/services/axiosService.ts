@@ -1,16 +1,21 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/authStore';
-
-const apiUrl = import.meta.env.VITE_API_URL;
+import { getApiUrl } from '@/config/appConfig';
 
 // 1. Axios Instance (Base URL + Headers)
 const axiosInstance = axios.create({
-    baseURL: apiUrl,
     timeout: 30000,
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
+/**
+ * Initializes the Axios instance baseURL from the loaded runtime config
+ */
+export function initializeApiConfig(apiUrl: string) {
+    axiosInstance.defaults.baseURL = apiUrl;
+}
 
 const excludedApis = [
     '/api/generateotp',
@@ -36,6 +41,11 @@ function isExcludedUrl(url?: string): boolean {
 // 2. Request Interceptor: Excludes auth headers for OTP/SMS endpoints, adds Bearer Token for authenticated APIs
 axiosInstance.interceptors.request.use(
     (config) => {
+        // Dynamically ensure baseURL from runtime configuration
+        if (!config.baseURL) {
+            config.baseURL = getApiUrl();
+        }
+
         if (isExcludedUrl(config.url)) {
             if (config.headers) {
                 if (typeof config.headers.delete === 'function') {
