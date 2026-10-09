@@ -20,6 +20,7 @@ interface EditAppointmentPanelProps {
   isOpen: boolean
   appointment: Appointment | null
   currentPatient?: Patient | null
+  existingAppointments?: Appointment[]
   onClose: () => void
   onSuccess?: () => void
 }
@@ -85,6 +86,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
   isOpen,
   appointment,
   currentPatient,
+  existingAppointments,
   onClose,
   onSuccess,
 }) => {
@@ -231,27 +233,110 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
   }, [appointment, isOpen])
 
   // Query: All patient appointments to enforce "1 Patient + 1 Date = 1 Appointment" rule
-  const { data: allPatientAppointments = [] } = useAppointmentsQuery(
+  const { data: queryAppointments = [] } = useAppointmentsQuery(
     authUserId,
     numericPatientId || null,
     undefined,
     { enabled: !!numericPatientId && isOpen }
   )
 
+  const appointmentsList = useMemo(() => {
+    if (existingAppointments && existingAppointments.length > 0) {
+      return existingAppointments
+    }
+    return queryAppointments
+  }, [existingAppointments, queryAppointments])
+
+  // Current appointment identifiers for strict exclusion from conflicting checks
+  const currentReschedulingApptId = useMemo(() => {
+    if (!appointment) return 0
+    return Number(
+      appointment.AppointmentID ??
+      appointment.AppointmentId ??
+      (appointment as any).appointmentId ??
+      (appointment as any).id ??
+      (typeof appointment.apptNo === 'string' && appointment.apptNo.startsWith('APT-')
+        ? Number(appointment.apptNo.replace(/\D/g, '')) || 0
+        : Number(appointment.apptNo) || 0)
+    )
+  }, [appointment])
+
+  const currentReschedulingApptNo = useMemo(() => {
+    if (!appointment) return ''
+    return String(appointment.AppointmentNo || appointment.apptNo || '').trim().toLowerCase()
+  }, [appointment])
+
+  // Helper to normalize any date into DD-MM-YYYY format matching API response format
+  const normalizeToDDMMYYYY = (date: Date | string | undefined): string => {
+    if (!date) return ''
+    if (date instanceof Date) {
+      return formatToDDMMYYYY(date)
+    }
+    const parsed = parseDateToDateObject(date)
+    if (parsed) {
+      return formatToDDMMYYYY(parsed)
+    }
+    return formatToDDMMYYYY(date)
+  }
+
+  // Identify dates on which the same patient already has another valid, active appointment
+  const conflictingAppointmentDatesMap = useMemo(() => {
+    const map = new Map<string, Appointment>()
+    if (!appointmentsList || appointmentsList.length === 0) return map
+
+    appointmentsList.forEach((a) => {
+      // 1. Exclude the appointment currently being rescheduled (by ID or AppointmentNo)
+      const aId = Number(
+        a.AppointmentID ??
+        a.AppointmentId ??
+        (a as any).appointmentId ??
+        (a as any).id ??
+        (typeof a.apptNo === 'string' && a.apptNo.startsWith('APT-')
+          ? Number(a.apptNo.replace(/\D/g, '')) || 0
+          : Number(a.apptNo) || 0)
+      )
+      const aNo = String(a.AppointmentNo || a.apptNo || '').trim().toLowerCase()
+      const isCurrentAppt =
+        (currentReschedulingApptId > 0 && aId > 0 && aId === currentReschedulingApptId) ||
+        (currentReschedulingApptNo && aNo && aNo === currentReschedulingApptNo)
+      if (isCurrentAppt) return
+
+      // 2. Exclude cancelled appointments
+      const status = String(a.AppointmentStatus || a.status || (a as any).Status || '').trim().toLowerCase()
+      const statusId = Number(a.StatusID ?? (a as any).statusID ?? 0)
+      const isCancelled =
+        status === 'cancelled' ||
+        status === 'canceled' ||
+        status.includes('cancel') ||
+        statusId === 2
+      if (isCancelled) return
+
+      // 3. Ensure appointment belongs to the same patient
+      const aPatientId = Number(a.PatientID ?? (a as any).patientId ?? 0)
+      if (numericPatientId && aPatientId > 0 && aPatientId !== numericPatientId) return
+
+      // 4. Map the conflicting date in normalized DD-MM-YYYY format
+      const rawDate = a.AppointmentDate || a.date || (a as any).Date || ''
+      const dateDDMMYYYY = normalizeToDDMMYYYY(rawDate)
+      if (dateDDMMYYYY) {
+        map.set(dateDDMMYYYY, a)
+      }
+    })
+
+    return map
+  }, [appointmentsList, currentReschedulingApptId, currentReschedulingApptNo, numericPatientId])
+
+  const conflictingDatesSet = useMemo(() => {
+    return new Set<string>(conflictingAppointmentDatesMap.keys())
+  }, [conflictingAppointmentDatesMap])
+
   // Sync with refetched patient appointments if updated
   useEffect(() => {
-    if (appointment && allPatientAppointments.length > 0) {
-      const apptId = Number(
-        appointment.AppointmentID ??
-        appointment.AppointmentId ??
-        (appointment as any).appointmentId ??
-        (appointment as any).id ??
-        (typeof appointment.apptNo === 'string' ? appointment.apptNo.replace(/\D/g, '') : appointment.apptNo) ??
-        0
-      )
-      const apptNo = String(appointment.AppointmentNo || appointment.apptNo || '').trim()
+    if (appointment && appointmentsList.length > 0) {
+      const apptId = currentReschedulingApptId
+      const apptNo = currentReschedulingApptNo
 
-      const latest = allPatientAppointments.find((a) => {
+      const latest = appointmentsList.find((a) => {
         const aId = Number(
           a.AppointmentID ??
           a.AppointmentId ??
@@ -260,7 +345,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
           (typeof a.apptNo === 'string' ? a.apptNo.replace(/\D/g, '') : a.apptNo) ??
           0
         )
-        const aNo = String(a.AppointmentNo || a.apptNo || '').trim()
+        const aNo = String(a.AppointmentNo || a.apptNo || '').trim().toLowerCase()
         return (apptId > 0 && aId > 0 && apptId === aId) || (apptNo && aNo && apptNo === aNo)
       })
 
@@ -278,7 +363,7 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
         if (latestDateStr) setCurrentApptDateStr(latestDateStr)
       }
     }
-  }, [appointment, allPatientAppointments])
+  }, [appointment, appointmentsList, currentReschedulingApptId, currentReschedulingApptNo])
 
   // API Data: Time Slot Hours
   const { data: timeSlotHoursList = [], isLoading: isLoadingHours } = useTimeSlotHoursQuery()
@@ -385,6 +470,18 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
     setSelectedTimeSlotId('')
     setSelectedSlotText('')
     if (date) {
+      const dateDDMMYYYY = normalizeToDDMMYYYY(date)
+      if (conflictingDatesSet.has(dateDDMMYYYY)) {
+        const conflictingAppt = conflictingAppointmentDatesMap.get(dateDDMMYYYY)
+        const apptRef = conflictingAppt?.apptNo || conflictingAppt?.AppointmentNo
+          ? ` (${conflictingAppt.apptNo || conflictingAppt.AppointmentNo})`
+          : ''
+        setErrorMsg(`You already have an appointment scheduled on ${dateDDMMYYYY}${apptRef}. A patient can have only one appointment per day. Please select another date.`)
+        setSelectedDate(undefined)
+        setSelectedDateStr('')
+        return
+      }
+
       if (!isAppointmentDayAvailable(date)) {
         setErrorMsg('Appointments are not available on this day')
         return
@@ -439,12 +536,21 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
       return
     }
 
+    const selectedDDMMYYYY = normalizeToDDMMYYYY(selectedDateStr)
+    if (selectedDDMMYYYY && conflictingDatesSet.has(selectedDDMMYYYY)) {
+      const conflictingAppt = conflictingAppointmentDatesMap.get(selectedDDMMYYYY)
+      const apptRef = conflictingAppt?.apptNo || conflictingAppt?.AppointmentNo
+        ? ` (${conflictingAppt.apptNo || conflictingAppt.AppointmentNo})`
+        : ''
+      setErrorMsg(`You already have an active appointment scheduled on ${selectedDDMMYYYY}${apptRef}. Please choose another date.`)
+      return
+    }
+
     if (!selectedTimeSlotId) {
       setErrorMsg('Please select an available time slot.')
       return
     }
 
-    const selectedDDMMYYYY = formatToDDMMYYYY(selectedDateStr)
     const currentApptDDMMYYYY = formatToDDMMYYYY(currentApptDateStr || originalDateDDMMYYYY)
     const isSameDateAsCurrentAppt = Boolean(
       !currentApptDDMMYYYY ||
@@ -610,12 +716,17 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
     )
   )
 
+  const isSelectedDateConflicting = Boolean(
+    selectedDateStr && conflictingDatesSet.has(normalizeToDDMMYYYY(selectedDateStr))
+  )
+
   const isUpdateDisabled =
     !selectedDateStr ||
     !selectedTimeSlotId ||
     isUpdating ||
     isLoadingTimeSlots ||
-    isSelectedSlotCurrentBooked
+    isSelectedSlotCurrentBooked ||
+    isSelectedDateConflicting
 
   return (
     <CustomPanel
@@ -719,8 +830,17 @@ export const EditAppointmentPanel: React.FC<EditAppointmentPanelProps> = ({
             fromMonth={parsedApptDate && parsedApptDate < tomorrow ? parsedApptDate : tomorrow}
             toMonth={maxDate}
             disabled={(date) => {
+              const dateDDMMYYYY = normalizeToDDMMYYYY(date)
+              // Rule: If patient already has another active appointment on this date, disable it!
+              if (conflictingDatesSet.has(dateDDMMYYYY)) return true
+
+              // Rule: Exclude the current appointment's original date from blocking itself
               if (parsedApptDate && isSameDay(date, parsedApptDate)) return false
+
+              // Outside allowable booking window
               if (date < tomorrow || date > maxDate) return true
+
+              // Weekday must be available for department
               return !isAppointmentDayAvailable(date)
             }}
           />

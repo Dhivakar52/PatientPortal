@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Trash2, Phone, Loader2 } from 'lucide-react'
+import { Plus, CheckCircle2, Users, ArrowRight, User, Calendar, Shield, Trash2, Phone, Loader2, IdCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PatientHeader } from '@/common/PatientHeader'
 import { DeleteConfirmationDialog } from '@/common/DeleteConfirmationDialog'
@@ -143,6 +143,17 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                 const pMobile = p.PhoneNo || p.phoneNo || p.mobile || ''
                 const age = p.Age !== undefined ? p.Age : (pDob ? calcAge(pDob) : '')
                 const isActive = pId === spSelectedId
+
+                const rawUhid = p.UHID ?? (p as any)?.uhid ?? (p as any)?.Uhid
+                const trimmedUhid = rawUhid !== undefined && rawUhid !== null ? String(rawUhid).trim() : ''
+                const isInvalidUhidString =
+                  !trimmedUhid ||
+                  trimmedUhid === '—' ||
+                  trimmedUhid.toLowerCase() === 'null' ||
+                  trimmedUhid.toLowerCase() === 'undefined'
+                const numUhid = Number(trimmedUhid)
+                const hasValidUhid = !isInvalidUhidString && (!isNaN(numUhid) ? numUhid > 0 : trimmedUhid !== '0')
+
                 return (
                   <div
                     key={pId}
@@ -184,6 +195,12 @@ export const PatientSelection: React.FC<PatientSelectionProps> = ({
                           <User className="w-3 h-3 text-slate-400 shrink-0" />
                           {pGender}
                         </span>
+                        {hasValidUhid && (
+                          <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300">
+                            <IdCard className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span>UHID - {trimmedUhid}</span>
+                          </span>
+                        )}
                       </div>
                     </div>
 

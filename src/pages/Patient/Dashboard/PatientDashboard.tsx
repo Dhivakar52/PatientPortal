@@ -511,6 +511,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
         isOpen={isEditPanelOpen}
         appointment={selectedEditAppointment}
         currentPatient={currentPatient}
+        existingAppointments={uniqueAppointments}
         onClose={() => {
           setIsEditPanelOpen(false)
           setSelectedEditAppointment(null)
