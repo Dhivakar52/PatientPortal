@@ -1,5 +1,5 @@
-import React from 'react'
-import { ShieldCheck, X } from 'lucide-react'
+import React, { useRef, useEffect } from 'react'
+import { ShieldCheck, X, LoaderCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { digitsOnly } from '@/utils/patient.utils'
 
@@ -10,6 +10,7 @@ interface BookingOtpModalProps {
   bookOtpInput: string
   setBookOtpInput: (v: string) => void
   bookOtpErr: string
+  isVerifying?: boolean
   onVerify: () => void
   onResend: () => void
 }
@@ -21,17 +22,37 @@ export const BookingOtpModal: React.FC<BookingOtpModalProps> = ({
   bookOtpInput,
   setBookOtpInput,
   bookOtpErr,
+  isVerifying = false,
   onVerify,
   onResend,
 }) => {
+  const isSubmittingRef = useRef(false)
+
+  // Reset immediate submission guard whenever modal is reopened or verifying concludes
+  useEffect(() => {
+    if (!isOpen || !isVerifying) {
+      isSubmittingRef.current = false
+    }
+  }, [isOpen, isVerifying])
+
   if (!isOpen) return null
+
+  const handleVerifyClick = () => {
+    // Immediate duplicate-submission guard (ref) to prevent multiple booking requests from rapid clicks
+    if (isSubmittingRef.current || isVerifying || bookOtpInput.length !== 4) {
+      return
+    }
+    isSubmittingRef.current = true
+    onVerify()
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm w-full p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+          disabled={isVerifying}
+          className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <X className="w-5 h-5" />
         </button>
@@ -51,11 +72,12 @@ export const BookingOtpModal: React.FC<BookingOtpModalProps> = ({
             <input
               type="tel"
               inputMode="numeric"
+              disabled={isVerifying}
               value={bookOtpInput}
               onChange={(e) => setBookOtpInput(digitsOnly(e.target.value, 4))}
-              onKeyDown={(e) => e.key === 'Enter' && bookOtpInput.length === 4 && onVerify()}
+              onKeyDown={(e) => e.key === 'Enter' && bookOtpInput.length === 4 && !isVerifying && handleVerifyClick()}
               placeholder="• • • •"
-              className="w-full text-center tracking-[8px] text-xl font-bold border-2 border-slate-200 dark:border-slate-700 rounded-lg p-2.5 outline-none focus:border-blue-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600"
+              className="w-full text-center tracking-[8px] text-xl font-bold border-2 border-slate-200 dark:border-slate-700 rounded-lg p-2.5 outline-none focus:border-blue-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 disabled:opacity-60"
               maxLength={4}
               autoFocus
             />
@@ -63,19 +85,28 @@ export const BookingOtpModal: React.FC<BookingOtpModalProps> = ({
           </div>
 
           <Button
-            onClick={onVerify}
-            disabled={bookOtpInput.length !== 4}
-            className="w-full text-white font-semibold cursor-pointer py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            onClick={handleVerifyClick}
+            disabled={bookOtpInput.length !== 4 || isVerifying}
+            className="w-full text-white font-semibold cursor-pointer py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ background: 'var(--blue-btn)', borderRadius: '4px' }}
           >
-            Verify OTP
+            {isVerifying ? (
+              <>
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                <span>Verifying...</span>
+              </>
+            ) : (
+              'Verify OTP'
+            )}
           </Button>
 
           <div className="text-center">
             <button
               type="button"
               onClick={onResend}
-              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+              disabled={isVerifying}
+              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Resend OTP
             </button>

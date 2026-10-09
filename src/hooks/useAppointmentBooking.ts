@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { type Appointment, type Patient } from '@/types/patient.types'
 import { genApptNo } from '@/utils/patient.utils'
 import { saveAppointment, generateOtp, sendSmsRequest, validateOtp, cancelAppointment, fetchAppointments, SmsTemplateId, type SaveAppointmentRequest } from '@/services/apiService'
@@ -129,6 +129,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const [showBookOtpModal, setShowBookOtpModal] = useState(false)
   const [bookOtpInput, setBookOtpInput] = useState('')
   const [bookOtpErr, setBookOtpErr] = useState('')
+  const [isVerifyingBookOtp, setIsVerifyingBookOtp] = useState(false)
+  const isVerifyingBookOtpRef = useRef(false)
 
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [lastBookedAppt, setLastBookedAppt] = useState<Appointment | null>(null)
@@ -173,6 +175,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setShowBookOtpModal(false)
     setBookOtpInput('')
     setBookOtpErr('')
+    setIsVerifyingBookOtp(false)
+    isVerifyingBookOtpRef.current = false
     setPendingBookingPayload(null)
 
     setShowMaleConfirmModal(false)
@@ -307,13 +311,21 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   }
 
   const handleVerifyBookOtp = async (onSuccess: () => void) => {
+    if (isVerifyingBookOtpRef.current) return
     if (bookOtpInput.length !== 4) {
       setBookOtpErr('Enter the 4-digit OTP to continue.')
       return
     }
+
+    isVerifyingBookOtpRef.current = true
+    setIsVerifyingBookOtp(true)
     setBookOtpErr('')
 
-    if (!currentPatient) return
+    if (!currentPatient) {
+      isVerifyingBookOtpRef.current = false
+      setIsVerifyingBookOtp(false)
+      return
+    }
 
     const targetMobile = currentPatient.PhoneNo || currentPatient.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
     const numericPatientId = currentPatient.PatientID
@@ -505,6 +517,9 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         message = error.message
       }
       setBookOtpErr(message)
+    } finally {
+      isVerifyingBookOtpRef.current = false
+      setIsVerifyingBookOtp(false)
     }
   }
 
@@ -809,6 +824,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     bookOtpInput,
     setBookOtpInput,
     bookOtpErr,
+    isVerifyingBookOtp,
 
     showSuccessModal,
     lastBookedAppt,

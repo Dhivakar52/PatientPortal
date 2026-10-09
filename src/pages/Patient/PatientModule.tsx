@@ -192,6 +192,7 @@ const PatientModule: React.FC = () => {
                     bookOtpInput={booking.bookOtpInput}
                     setBookOtpInput={booking.setBookOtpInput}
                     bookOtpErr={booking.bookOtpErr}
+                    isVerifying={booking.isVerifyingBookOtp}
                     onVerify={() => booking.handleVerifyBookOtp(() => { })}
                     onResend={booking.handleResendBookOtp}
                 />
