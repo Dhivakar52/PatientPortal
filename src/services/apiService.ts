@@ -556,21 +556,8 @@ export const getDoctors = async (departmentId?: number, doctorId?: number): Prom
  * Calls GET /api/states
  */
 export const getStates = async (): Promise<StateOption[]> => {
-    const storeToken = useAuthStore.getState().authToken;
-    const fallbackToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    const token = storeToken || fallbackToken;
-
-    if (!token || typeof token !== 'string' || !token.trim()) {
-        console.warn('getStates: No valid auth token found. Skipping request until authenticated.');
-        return [];
-    }
-
     try {
-        const response = await axiosInstance.get<unknown>('/api/states', {
-            headers: {
-                Authorization: `Bearer ${token.trim()}`,
-            },
-        });
+        const response = await axiosInstance.get<unknown>('/api/states');
         console.log("States response:", response.data);
         const data = response.data;
         if (Array.isArray(data)) return data;
@@ -591,22 +578,10 @@ export const getStates = async (): Promise<StateOption[]> => {
  * Calls GET /api/cities
  */
 export const getCities = async (stateId?: number | string): Promise<CityOption[]> => {
-    const storeToken = useAuthStore.getState().authToken;
-    const fallbackToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    const token = storeToken || fallbackToken;
-
-    if (!token || typeof token !== 'string' || !token.trim()) {
-        console.warn('getCities: No valid auth token found. Skipping request until authenticated.');
-        return [];
-    }
-
     try {
         const response = await axiosInstance.get<unknown>('/api/cities', {
             params: {
                 ...(stateId !== undefined && stateId !== '' && { StateID: stateId }),
-            },
-            headers: {
-                Authorization: `Bearer ${token.trim()}`,
             },
         });
         console.log("Cities response:", response.data);
