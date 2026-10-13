@@ -21,6 +21,7 @@ export interface Patient {
   CountryID?: number
   countryID?: number
   City?: string
+  PatientCity?: string
   State?: string
   PatientState?: string
   PinCode?: string
