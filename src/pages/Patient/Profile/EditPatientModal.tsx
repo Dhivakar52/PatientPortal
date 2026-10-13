@@ -129,13 +129,21 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
         ''
       setMobileNo(registeredMobile)
       setEmail(patient.Email || patient.email || (patient as any).EmailID || (patient as any).emailID || (patient as any).emailId || '')
-      setAddress(patient.Address || patient.PatientAddress || patient.address || '')
+      setAddress(patient.PatientAddress || patient.Address || patient.address || '')
       
-      const existingStateId = patient.StateID ?? patient.stateID ?? ''
-      setStateId(existingStateId ? String(existingStateId) : '')
+      let resolvedStateId = patient.StateID ?? patient.stateID ?? ''
+      if (!resolvedStateId && (patient.PatientState || patient.State)) {
+        const found = statesList.find((s) => s.StateName?.toLowerCase() === (patient.PatientState || patient.State)?.toLowerCase())
+        if (found) resolvedStateId = String(found.StateID)
+      }
+      setStateId(resolvedStateId ? String(resolvedStateId) : '')
 
-      const existingCityId = patient.CityID ?? patient.cityID ?? ''
-      setCityId(existingCityId ? String(existingCityId) : '')
+      let resolvedCityId = patient.CityID ?? patient.cityID ?? ''
+      if (!resolvedCityId && (patient.PatientCity || patient.City)) {
+        const found = citiesList.find((c) => c.CityName?.toLowerCase() === (patient.PatientCity || patient.City)?.toLowerCase())
+        if (found) resolvedCityId = String(found.CityID)
+      }
+      setCityId(resolvedCityId ? String(resolvedCityId) : '')
 
       setPinCode(patient.PinCode || patient.pincode || '')
       setArea((patient as unknown as Record<string, unknown>).area ? String((patient as unknown as Record<string, unknown>).area) : '')

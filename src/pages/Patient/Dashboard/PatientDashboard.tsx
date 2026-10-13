@@ -129,6 +129,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     setSelectedEditAppointment(appt)
     setIsEditPanelOpen(true)
   }
+  console.log("Dummy", currentPatient)
 
   const setActiveTab = (tab: ActiveTab) => {
     setActiveTabState(tab)

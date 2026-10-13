@@ -41,20 +41,46 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   const { data: rawStates } = useStatesQuery()
   const statesList = Array.isArray(rawStates) ? rawStates : []
 
-  const rawState = currentPatient?.StateID ?? currentPatient?.stateID ?? currentPatient?.State ?? currentPatient?.PatientState ?? currentPatient?.state ?? ''
-  const matchedState = statesList.find(
-    (s) => String(s?.StateID) === String(rawState) || s?.StateName?.toLowerCase() === String(rawState).toLowerCase()
-  )
-  const displayState = matchedState ? matchedState.StateName : (String(rawState).match(/^\d+$/) ? '—' : (String(rawState) || '—'))
+  // Resolve State: Prioritize PatientState (text name from API), NEVER show numeric StateID
+  const candidateState = currentPatient?.PatientState || currentPatient?.State || currentPatient?.state || ''
+  const isCandidateStateNumeric = Boolean(candidateState && /^\d+$/.test(String(candidateState).trim()))
+  let resolvedState = ''
+  if (candidateState && !isCandidateStateNumeric) {
+    resolvedState = String(candidateState).trim()
+  } else {
+    const numericStateId = isCandidateStateNumeric ? candidateState : (currentPatient?.StateID ?? currentPatient?.stateID ?? '')
+    const matchedState = statesList.find(
+      (s) => String(s?.StateID) === String(numericStateId)
+    )
+    if (matchedState?.StateName) {
+      resolvedState = matchedState.StateName
+    }
+  }
+  const displayState = resolvedState || '—'
 
-  const stateIdForCity = matchedState ? String(matchedState.StateID) : (String(rawState).match(/^\d+$/) ? String(rawState) : '')
-  const { data: rawCities } = useCitiesQuery(stateIdForCity, { enabled: Boolean(stateIdForCity) })
+  // Resolve City: Prioritize PatientCity (text name from API), NEVER show numeric CityID
+  const candidateCity = currentPatient?.PatientCity || currentPatient?.City || currentPatient?.city || ''
+  const isCandidateCityNumeric = Boolean(candidateCity && /^\d+$/.test(String(candidateCity).trim()))
+
+  const stateIdForCity = currentPatient?.StateID ?? currentPatient?.stateID ?? ''
+  const { data: rawCities } = useCitiesQuery(stateIdForCity ? String(stateIdForCity) : undefined, {
+    enabled: Boolean(stateIdForCity && (!candidateCity || isCandidateCityNumeric)),
+  })
   const citiesList = Array.isArray(rawCities) ? rawCities : []
-  const rawCity = currentPatient?.CityID ?? currentPatient?.cityID ?? currentPatient?.City ?? currentPatient?.city ?? ''
-  const matchedCity = citiesList.find(
-    (c) => String(c?.CityID) === String(rawCity) || c?.CityName?.toLowerCase() === String(rawCity).toLowerCase()
-  )
-  const displayCity = matchedCity ? matchedCity.CityName : (String(rawCity).match(/^\d+$/) ? '—' : (String(rawCity) || '—'))
+
+  let resolvedCity = ''
+  if (candidateCity && !isCandidateCityNumeric) {
+    resolvedCity = String(candidateCity).trim()
+  } else {
+    const numericCityId = isCandidateCityNumeric ? candidateCity : (currentPatient?.CityID ?? currentPatient?.cityID ?? '')
+    const matchedCity = citiesList.find(
+      (c) => String(c?.CityID) === String(numericCityId)
+    )
+    if (matchedCity?.CityName) {
+      resolvedCity = matchedCity.CityName
+    }
+  }
+  const displayCity = resolvedCity || '—'
 
   const displayLastVisited = lastVisitedDate || (currentPatient as any)?.LastVisitedDate || (currentPatient as any)?.lastVisitedDate || (currentPatient as any)?.LastVisitDate
   // Dynamic values directly from API response
@@ -73,7 +99,7 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
 
   const displayPhone = currentPatient?.PhoneNo || currentPatient?.phoneNo || currentPatient?.mobile || '—'
   const displayEmail = currentPatient?.Email || currentPatient?.email || (currentPatient as any)?.EmailID || (currentPatient as any)?.emailID || (currentPatient as any)?.emailId || '—'
-  const displayAddress = currentPatient?.Address || currentPatient?.PatientAddress || currentPatient?.address || '—'
+  const displayAddress = currentPatient?.PatientAddress || currentPatient?.Address || currentPatient?.address || '—'
   const displayArea = currentPatient?.area || (currentPatient as any)?.Area || '—'
   const displayPinCode = currentPatient?.PinCode || currentPatient?.pincode || '—'
   const rawUhid = currentPatient?.UHID ?? (currentPatient as any)?.uhid ?? (currentPatient as any)?.Uhid

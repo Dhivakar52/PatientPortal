@@ -91,6 +91,7 @@ export function useStatesQuery(options?: { enabled?: boolean }) {
     queryKey: [...masterDataQueryKeys.states, token || 'no-token'],
     queryFn: async () => {
       const res = await getStates()
+      console.log("States", res)
       return Array.isArray(res) ? res : []
     },
     enabled: options?.enabled !== false && hasToken,
