@@ -91,7 +91,7 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   const defaultSalutation = gender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
   const salutation = cleanTitle || defaultSalutation
   const firstName = rawName ? capitalizeName(rawName.trim().split(/\s+/)[0] || rawName) : ''
-  const displayName = rawName ? `${salutation} ${firstName}` : '—'
+  const displayName = rawName ? ` ${firstName}` : '—'
   const fullPatientName = rawName ? capitalizeName(rawName) : '—'
 
   const displayDob = currentPatient?.DOB || (currentPatient?.dob ? formatDateLong(currentPatient.dob) : '—')
@@ -234,7 +234,9 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
             {initials(rawName)}
           </div>
           <div className="font-bold text-base text-slate-900 dark:text-slate-100 leading-snug">
-            {displayName}
+            <span style={{
+              color: 'var( --blue-text-color)'
+            }}>{salutation}</span>   {displayName}
           </div>
           <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full">

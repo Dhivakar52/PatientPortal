@@ -115,7 +115,7 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                   const pRawName = p.PatientName || p.name || `Patient #${pId}`
                   const pGender = p.Gender || p.gender || ''
                   const pSalutation = pGender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
-                  const pName = `${pSalutation} ${capitalizeName(pRawName)}`
+                  const pName = ` ${capitalizeName(pRawName)}`
                   const age = p.Age !== undefined ? p.Age : (p.dob || p.DOB ? calcAge(p.dob || p.DOB || '') : '')
 
                   return (
@@ -136,7 +136,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
                       <div className="flex-1 min-w-0">
                         <div className="truncate text-xs font-semibold text-slate-900 dark:text-slate-100">
-                          {pName}
+                          <span style={{
+                            color: 'var( --blue-text-color)'
+                          }}>{pSalutation}</span> {pName}
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                           {p.PhoneNo || p.mobile || '—'} • {age !== '' ? `${age} Years` : '—'} • {pGender || '—'}
