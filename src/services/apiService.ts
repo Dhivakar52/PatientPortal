@@ -559,7 +559,14 @@ export const getStates = async (): Promise<StateOption[]> => {
     try {
         const response = await axiosInstance.get<unknown>('/api/states');
         console.log("States response:", response.data);
-        const data = response.data;
+        let data = response.data;
+        if (typeof data === 'string' && data.trim() !== '') {
+            try {
+                data = JSON.parse(data);
+            } catch {
+                // ignore
+            }
+        }
         if (Array.isArray(data)) return data;
         if (data && typeof data === 'object') {
             if (Array.isArray((data as any).data)) return (data as any).data;
@@ -585,7 +592,14 @@ export const getCities = async (stateId?: number | string): Promise<CityOption[]
             },
         });
         console.log("Cities response:", response.data);
-        const data = response.data;
+        let data = response.data;
+        if (typeof data === 'string' && data.trim() !== '') {
+            try {
+                data = JSON.parse(data);
+            } catch {
+                // ignore
+            }
+        }
         if (Array.isArray(data)) return data;
         if (data && typeof data === 'object') {
             if (Array.isArray((data as any).data)) return (data as any).data;
@@ -624,7 +638,14 @@ export const getAreas = async (params?: GetAreasParams | number | string): Promi
             params: queryParams,
         });
         console.log("Areas response:", response.data);
-        const data = response.data;
+        let data = response.data;
+        if (typeof data === 'string' && data.trim() !== '') {
+            try {
+                data = JSON.parse(data);
+            } catch {
+                // ignore
+            }
+        }
         if (Array.isArray(data)) return data;
         if (data && typeof data === 'object') {
             if (Array.isArray((data as any).data)) return (data as any).data;
