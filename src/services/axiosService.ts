@@ -122,9 +122,20 @@ axiosInstance.interceptors.request.use(
     }
 );
 
-// 3. Response Interceptor (Error handling)
+// 3. Response Interceptor (Error handling, JSON parsing for text/plain & 401 logout)
 axiosInstance.interceptors.response.use(
     (response) => {
+        // Automatically parse text/plain responses that contain JSON arrays or objects
+        if (typeof response.data === 'string' && response.data.trim() !== '') {
+            const trimmed = response.data.trim();
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                try {
+                    response.data = JSON.parse(trimmed);
+                } catch {
+                    // Ignore parsing error, keep as raw string
+                }
+            }
+        }
         return response;
     },
     (error) => {
