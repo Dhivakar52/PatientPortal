@@ -737,6 +737,7 @@ export const fetchPatient = async (params?: FetchPatientParams): Promise<Patient
             const city = String(cityRaw);
             const cityId = typeof p.CityID === 'number' ? p.CityID : (typeof p.cityID === 'number' ? p.cityID : (Number(cityRaw) || undefined));
             const countryId = typeof p.CountryID === 'number' ? p.CountryID : (typeof p.countryID === 'number' ? p.countryID : (Number(p.CountryID || p.countryID) || 1));
+            const titleRaw = String(p.TitleName ?? p.titleName ?? p.Title ?? p.PatientTitle ?? p.title ?? '').trim();
 
             const pinCode = String(p.PinCode || p.pinCode || p.pincode || '');
             const phoneNo = String(p.PhoneNo || p.phoneNo || p.mobile || '');
@@ -766,6 +767,8 @@ export const fetchPatient = async (params?: FetchPatientParams): Promise<Patient
                 stateID: stateId,
                 CityID: cityId,
                 cityID: cityId,
+                TitleName: titleRaw || null,
+                titleName: titleRaw || null,
                 CountryID: countryId,
                 countryID: countryId,
                 City: city,

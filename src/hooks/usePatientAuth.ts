@@ -150,8 +150,12 @@ export function usePatientAuth() {
             const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? p.emailId ?? p.EmailId ?? null
             const email = emailRaw != null && String(emailRaw).trim() !== '' ? String(emailRaw).trim() : null
 
+            const titleRaw = String(p.TitleName ?? p.titleName ?? p.Title ?? p.PatientTitle ?? p.title ?? '').trim()
+
             userPatients.push({
               ...p,
+              TitleName: titleRaw || null,
+              titleName: titleRaw || null,
               PatientID: patientId,
               PatientName: patientName,
               UHID: p.UHID != null ? String(p.UHID) : null,
@@ -271,6 +275,9 @@ export function usePatientAuth() {
         }
         if (fetchPatientReqRef.current === targetId) {
           setApiPatient(matched)
+          setApiPatientsList((prev) =>
+            prev.map((p) => (String(p.PatientID || p.id) === String(matched.PatientID || targetId) ? { ...p, ...matched } : p))
+          )
         }
         return matched
       } else {
@@ -454,8 +461,11 @@ export function usePatientAuth() {
         : apiPatientsList[0]
       if (matched) {
         const email = matched.Email || matched.email || (matched as any).EmailID || (matched as any).emailID || (matched as any).emailId || (matched as any).EmailId || null
+        const titleRaw = String(matched.TitleName ?? (matched as any).titleName ?? (matched as any).Title ?? '').trim()
         return {
           ...matched,
+          TitleName: titleRaw || null,
+          titleName: titleRaw || null,
           id: String(matched.PatientID || matched.id),
           name: matched.PatientName || matched.name,
           mobile: matched.PhoneNo || matched.mobile || matched.phoneNo,
@@ -805,8 +815,12 @@ export function usePatientAuth() {
                 const emailRaw = p.Email ?? p.email ?? p.EmailID ?? p.emailID ?? null
                 const email = emailRaw != null && String(emailRaw).trim() !== '' ? String(emailRaw).trim() : null
 
+                const titleRaw = String(p.TitleName ?? p.titleName ?? p.Title ?? p.PatientTitle ?? p.title ?? '').trim()
+
                 userPatients.push({
                   ...p,
+                  TitleName: titleRaw || null,
+                  titleName: titleRaw || null,
                   PatientID: patientId,
                   PatientName: patientName,
                   UHID: p.UHID != null ? String(p.UHID) : null,
@@ -857,6 +871,9 @@ export function usePatientAuth() {
                 const fullPatientList = await fetchPatient({ patientID: initialPatientId })
                 if (Array.isArray(fullPatientList) && fullPatientList.length > 0) {
                   setApiPatient(fullPatientList[0])
+                  setApiPatientsList((prev) =>
+                    prev.map((p) => (Number(p.PatientID || p.id) === initialPatientId ? { ...p, ...fullPatientList[0] } : p))
+                  )
                 } else {
                   setApiPatient(userPatients[0])
                 }
@@ -976,6 +993,9 @@ export function usePatientAuth() {
       if (Array.isArray(fullPatientList) && fullPatientList.length > 0) {
         const matched = fullPatientList.find((p) => Number(p.PatientID) === targetPatientId) || fullPatientList[0]
         setApiPatient(matched)
+        setApiPatientsList((prev) =>
+          prev.map((p) => (Number(p.PatientID || p.id) === targetPatientId ? { ...p, ...matched } : p))
+        )
       } else {
         const fallback = apiPatientsList.find((p) => Number(p.PatientID) === targetPatientId)
         if (fallback) setApiPatient(fallback)

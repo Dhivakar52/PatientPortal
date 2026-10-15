@@ -41,7 +41,10 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
 
   const rawName = currentPatient?.PatientName || currentPatient?.name || ''
   const gender = currentPatient?.Gender || currentPatient?.gender || ''
-  const salutation = gender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
+  const rawTitle = (currentPatient?.TitleName ?? (currentPatient as any)?.titleName ?? (currentPatient as any)?.Title ?? '')?.toString().trim().replace(/\.+$/, '')
+  const defaultSalutation = gender.toLowerCase() === 'female' ? 'Ms' : 'Mr'
+  const salutationBase = rawTitle || defaultSalutation
+  const salutation = salutationBase.toLowerCase() === 'miss' ? salutationBase : `${salutationBase}.`
   const displayName = rawName
     ? `${salutation} ${capitalizeName(rawName.trim().split(/\s+/)[0] || rawName)}`
     : '—'
@@ -114,7 +117,9 @@ export const PatientHeader: React.FC<PatientHeaderProps> = ({
                   const isActive = pId === currentId
                   const pRawName = p.PatientName || p.name || `Patient #${pId}`
                   const pGender = p.Gender || p.gender || ''
-                  const pSalutation = pGender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
+                  const pRawTitle = (p.TitleName ?? (p as any)?.titleName ?? (p as any)?.Title ?? '')?.toString().trim().replace(/\.+$/, '')
+                  const pSalutationBase = pRawTitle || (pGender.toLowerCase() === 'female' ? 'Ms' : 'Mr')
+                  const pSalutation = pSalutationBase.toLowerCase() === 'miss' ? pSalutationBase : `${pSalutationBase}.`
                   const pName = ` ${capitalizeName(pRawName)}`
                   const age = p.Age !== undefined ? p.Age : (p.dob || p.DOB ? calcAge(p.dob || p.DOB || '') : '')
 
