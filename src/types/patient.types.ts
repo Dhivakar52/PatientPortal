@@ -3,6 +3,8 @@ export interface Patient {
   TotalCount?: number
   PatientID: number
   PatientName: string
+  TitleName?: string | null
+  titleName?: string | null
   UHID?: string | null
   RegisterNo?: string | null
   AbhaID?: string | null

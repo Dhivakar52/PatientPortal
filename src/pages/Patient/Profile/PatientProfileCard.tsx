@@ -86,10 +86,12 @@ export const PatientProfileCard: React.FC<PatientProfileCardProps> = ({
   // Dynamic values directly from API response
   const rawName = currentPatient?.PatientName || currentPatient?.name || ''
   const gender = currentPatient?.Gender || currentPatient?.gender || '—'
-  const salutation = gender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
-  const displayName = rawName
-    ? `${salutation} ${capitalizeName(rawName.trim().split(/\s+/)[0] || rawName)}`
-    : '—'
+  const rawTitle = currentPatient?.TitleName ?? (currentPatient as any)?.titleName ?? ''
+  const cleanTitle = typeof rawTitle === 'string' ? rawTitle.trim() : ''
+  const defaultSalutation = gender.toLowerCase() === 'female' ? 'Ms.' : 'Mr.'
+  const salutation = cleanTitle || defaultSalutation
+  const firstName = rawName ? capitalizeName(rawName.trim().split(/\s+/)[0] || rawName) : ''
+  const displayName = rawName ? `${salutation} ${firstName}` : '—'
   const fullPatientName = rawName ? capitalizeName(rawName) : '—'
 
   const displayDob = currentPatient?.DOB || (currentPatient?.dob ? formatDateLong(currentPatient.dob) : '—')

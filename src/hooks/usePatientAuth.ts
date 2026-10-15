@@ -266,6 +266,8 @@ export function usePatientAuth() {
           PatientCity: rawMatched.PatientCity || rawMatched.City || existingCity || '',
           CityID: rawMatched.CityID ?? rawMatched.cityID ?? existingCityId,
           cityID: rawMatched.cityID ?? rawMatched.CityID ?? existingCityId,
+          TitleName: (rawMatched as any).TitleName ?? (rawMatched as any).titleName ?? null,
+          titleName: (rawMatched as any).TitleName ?? (rawMatched as any).titleName ?? null,
         }
         if (fetchPatientReqRef.current === targetId) {
           setApiPatient(matched)
