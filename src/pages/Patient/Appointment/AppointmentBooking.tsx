@@ -458,11 +458,14 @@ export const AppointmentBooking: React.FC<AppointmentBookingProps> = ({
     }
 
     setLocalErrors({})
+    const currentDept = departmentsList.find((d) => String(d.DepartmentID || d.DeptID || (d as any).id) === String(effectiveDeptId))
+    const currentDeptName = currentDept ? (currentDept.DepartmentName || currentDept.DeptName || (currentDept as any).name || defaultDeptName) : defaultDeptName
+
     onConfirm({
       deptID: effectiveDeptId,
       doctorID: '0',
       timeSlotID: selectedTimeSlotId || '1',
-      deptName: defaultDeptName,
+      deptName: currentDeptName,
     })
   }
 

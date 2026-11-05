@@ -12,7 +12,7 @@ const PatientRegistration = lazy(() => import('./Registration/PatientRegistratio
 const PatientSelection = lazy(() => import('./PatientSelection/PatientSelection').then(m => ({ default: m.PatientSelection })))
 const PatientDashboard = lazy(() => import('./Dashboard/PatientDashboard').then(m => ({ default: m.PatientDashboard })))
 const MobileProfilePage = lazy(() => import('./Profile/MobileProfilePage').then(m => ({ default: m.MobileProfilePage })))
-const BookingOtpModal = lazy(() => import('./Appointment/BookingOtpModal').then(m => ({ default: m.BookingOtpModal })))
+const BookingConfirmModal = lazy(() => import('./Appointment/BookingConfirmModal').then(m => ({ default: m.BookingConfirmModal })))
 const CancelOtpModal = lazy(() => import('./Appointment/CancelOtpModal').then(m => ({ default: m.CancelOtpModal })))
 const BookingSuccessModal = lazy(() => import('./Appointment/BookingSuccessModal').then(m => ({ default: m.BookingSuccessModal })))
 const ReceiptModal = lazy(() => import('@/common/ReceiptModal').then(m => ({ default: m.ReceiptModal })))
@@ -185,16 +185,16 @@ const PatientModule: React.FC = () => {
 
             {/* GLOBAL MODALS */}
             <Suspense fallback={null}>
-                <BookingOtpModal
-                    isOpen={booking.showBookOtpModal}
-                    onClose={() => booking.setShowBookOtpModal(false)}
-                    patientMobile={auth.currentPatient?.mobile}
-                    bookOtpInput={booking.bookOtpInput}
-                    setBookOtpInput={booking.setBookOtpInput}
-                    bookOtpErr={booking.bookOtpErr}
-                    isVerifying={booking.isVerifyingBookOtp}
-                    onVerify={() => booking.handleVerifyBookOtp(() => { })}
-                    onResend={booking.handleResendBookOtp}
+                <BookingConfirmModal
+                    isOpen={booking.showBookingConfirmModal}
+                    onClose={booking.handleCancelBookingConfirm}
+                    onConfirm={booking.handleConfirmBookingSubmit}
+                    isLoading={booking.isConfirming}
+                    patientName={auth.currentPatient?.PatientName || auth.currentPatient?.name}
+                    departmentName={booking.pendingBookingDeptName}
+                    doctorName={booking.bookDoctor}
+                    appointmentDate={booking.bookDate}
+                    timeSlot={booking.selectedSlot}
                 />
 
                 <CancelOtpModal
