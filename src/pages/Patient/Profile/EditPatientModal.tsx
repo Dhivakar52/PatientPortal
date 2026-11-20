@@ -477,7 +477,7 @@ export const EditPatientModal: React.FC<EditPatientModalProps> = ({
               <TextField
                 value={age || (dob ? String(calcAge(dob)) : '')}
                 onChange={handleAgeChange}
-                placeholder="e.g. 28"
+                placeholder="-"
                 type="text"
                 disabled={isSubmitting}
               />

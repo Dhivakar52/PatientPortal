@@ -254,7 +254,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                 <TextField
                   value={displayAgeValue}
                   onChange={handleAgeChange}
-                  placeholder="e.g. 28"
+                  placeholder="-"
                   disabled
                   type="text"
                 />

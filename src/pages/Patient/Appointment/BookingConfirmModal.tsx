@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { CalendarCheck, Calendar, Clock, User, Building2, Stethoscope, X, Loader2 } from 'lucide-react'
+import { Info, Calendar, Clock, User, Building2, Stethoscope, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatDateFull, capitalizeName } from '@/utils/patient.utils'
 
@@ -71,14 +71,14 @@ export const BookingConfirmModal: React.FC<BookingConfirmModalProps> = ({
         {/* Modal Header */}
         <div className="text-center mb-5">
           <div className="w-14 h-14 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3 shadow-xs">
-            <CalendarCheck className="w-7 h-7" />
+            <Info className="w-7 h-7" />
           </div>
-          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+          {/* <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
             Confirm Appointment
-          </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-300 mt-1">
+          </h3> */}
+          <h2 className="text-lg text-slate-600 dark:text-slate-300 mt-1">
             Are you sure you want to book this appointment?
-          </p>
+          </h2>
         </div>
 
         {/* Selected Appointment Details */}
@@ -175,3 +175,4 @@ export const BookingConfirmModal: React.FC<BookingConfirmModalProps> = ({
 }
 
 export default BookingConfirmModal
+
