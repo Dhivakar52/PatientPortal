@@ -255,6 +255,7 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
                   value={displayAgeValue}
                   onChange={handleAgeChange}
                   placeholder="e.g. 28"
+                  disabled
                   type="text"
                 />
                 {regErrors.age && <p className="text-xs text-rose-600 mt-1">{regErrors.age}</p>}
@@ -368,4 +369,4 @@ const PatientRegistration: React.FC<PatientRegistrationProps> = ({
   )
 }
 
-export default PatientRegistration
+export default PatientRegistration

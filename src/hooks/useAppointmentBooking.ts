@@ -126,11 +126,10 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const [isConfirming, setIsConfirming] = useState(false)
 
   // Modals State
-  const [showBookOtpModal, setShowBookOtpModal] = useState(false)
-  const [bookOtpInput, setBookOtpInput] = useState('')
-  const [bookOtpErr, setBookOtpErr] = useState('')
-  const [isVerifyingBookOtp, setIsVerifyingBookOtp] = useState(false)
-  const isVerifyingBookOtpRef = useRef(false)
+  const [showBookingConfirmModal, setShowBookingConfirmModal] = useState(false)
+  const [pendingBookingDeptName, setPendingBookingDeptName] = useState('Gynecology')
+  const [pendingBookingPayload, setPendingBookingPayload] = useState<SaveAppointmentRequest | null>(null)
+  const isSubmittingBookingRef = useRef(false)
 
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [lastBookedAppt, setLastBookedAppt] = useState<Appointment | null>(null)
@@ -150,11 +149,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
   const [isVerifyingCancelOtp, setIsVerifyingCancelOtp] = useState(false)
   const [isResendingCancelOtp, setIsResendingCancelOtp] = useState(false)
 
-  // Track OTP ReferenceID for Template 2 (Booking confirmation) and Template 3 (Cancel confirmation)
-  const [bookReferenceId, setBookReferenceId] = useState<number | string | null>(null)
+  // Track OTP ReferenceID for Template 3 (Cancel confirmation)
   const [cancelReferenceId, setCancelReferenceId] = useState<number | string | null>(null)
-
-  const [pendingBookingPayload, setPendingBookingPayload] = useState<SaveAppointmentRequest | null>(null)
 
   // Male Patient Restriction Modal State
   const [showMaleConfirmModal, setShowMaleConfirmModal] = useState(false)
@@ -172,12 +168,9 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setIsVerifyingCancelOtp(false)
     setIsResendingCancelOtp(false)
 
-    setShowBookOtpModal(false)
-    setBookOtpInput('')
-    setBookOtpErr('')
-    setIsVerifyingBookOtp(false)
-    isVerifyingBookOtpRef.current = false
+    setShowBookingConfirmModal(false)
     setPendingBookingPayload(null)
+    isSubmittingBookingRef.current = false
 
     setShowMaleConfirmModal(false)
 
@@ -188,72 +181,18 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setIsConfirming(false)
   }, [currentPatient?.PatientID, currentPatient?.id])
 
-  const executeBookingFlow = async (deptID: string, doctorID: string, timeSlotID: string) => {
-    setBookErrors({})
-    setIsConfirming(true)
-
-    const numericPatientId = currentPatient?.PatientID
-      ? Number(currentPatient.PatientID)
-      : (currentPatient?.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 1 : 1)
-    const storedUserId = localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')
-    const userId = storedUserId ? Number(storedUserId) : 0
-
-    const payload: SaveAppointmentRequest = {
-      patientID: numericPatientId,
-      appointmentDate: bookDate,
-      deptID: Number(deptID) || 18,
-      doctorID: Number(doctorID) || 0,
-      timeSlotID: Number(timeSlotID) || 1,
-      unitID: 0,
-      typeID: 4,  // 4 . Online, 5. Phone , 6. Reception.
-      statusID: 0,
-      createdBy: userId,
-      updatedBy: userId,
-      appointBookedTypeID: 0,
-      cancelledReason: '',
-    }
-
-    setPendingBookingPayload(payload)
-
-    try {
-      // 1. Generate OTP (do NOT save appointment before OTP verification)
-      const targetMobile = currentPatient?.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
-      const refId = await generateOtp(targetMobile, numericPatientId)
-      if (refId) {
-        setBookReferenceId(refId)
-        await sendSmsRequest({ referenceID: refId, templateID: SmsTemplateId.LOGIN_OTP, smsNotify: true })
-      }
-      setBookOtpInput('')
-      setBookOtpErr('')
-      setShowBookOtpModal(true)
-    } catch (otpErr: unknown) {
-      const error = otpErr as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
-      const resData = error.response?.data
-      let message = 'Failed to generate OTP. Please try again.'
-      if (typeof resData === 'string' && resData.trim()) {
-        message = resData
-      } else if (resData && typeof resData === 'object') {
-        message = resData.message || resData.Result || message
-      } else if (error.message) {
-        message = error.message
-      }
-      toast.error(message)
-      setBookErrors((prev) => ({ ...prev, form: message }))
-    } finally {
-      setIsConfirming(false)
-    }
-  }
-
-  const handleConfirmBookingClick = async (bookingData?: {
+  const handleConfirmBookingClick = (bookingData?: {
     deptID: string
     doctorID: string
     timeSlotID: string
+    deptName?: string
   }) => {
     if (isConfirming) return
 
     const deptID = bookingData?.deptID || selectedDepartmentId || '18'
     const doctorID = bookingData?.doctorID || selectedDoctorId || '0'
     const timeSlotID = bookingData?.timeSlotID || selectedTimeSlotId
+    const deptName = bookingData?.deptName || 'Gynecology'
 
     const errs: Record<string, string> = {}
     if (!currentPatient?.id && !currentPatient?.PatientID) errs.patient = 'No active patient selected.'
@@ -299,7 +238,33 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       return
     }
 
-    await executeBookingFlow(deptID, doctorID, timeSlotID || '')
+    setBookErrors({})
+
+    const storedUserId = localStorage.getItem('userID') || localStorage.getItem('srm_patient_user_id')
+    const userId = storedUserId ? Number(storedUserId) : 0
+
+    const payload: SaveAppointmentRequest = {
+      patientID: numericPatientId,
+      appointmentDate: bookDate,
+      deptID: Number(deptID) || 18,
+      doctorID: Number(doctorID) || 0,
+      timeSlotID: Number(timeSlotID) || 1,
+      unitID: 0,
+      typeID: 4,  // 4 . Online, 5. Phone , 6. Reception.
+      statusID: 0,
+      createdBy: userId,
+      updatedBy: userId,
+      appointBookedTypeID: 0,
+      cancelledReason: '',
+    }
+
+    setPendingBookingPayload(payload)
+    setPendingBookingDeptName(deptName)
+    setShowBookingConfirmModal(true)
+  }
+
+  const handleCancelBookingConfirm = () => {
+    setShowBookingConfirmModal(false)
   }
 
   const handleCancelMaleBooking = () => {
@@ -310,57 +275,19 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     setShowMaleConfirmModal(false)
   }
 
-  const handleVerifyBookOtp = async (onSuccess: () => void) => {
-    if (isVerifyingBookOtpRef.current) return
-    if (bookOtpInput.length !== 4) {
-      setBookOtpErr('Enter the 4-digit OTP to continue.')
-      return
-    }
+  const handleConfirmBookingSubmit = async () => {
+    if (isSubmittingBookingRef.current || isConfirming) return
+    if (!pendingBookingPayload) return
 
-    isVerifyingBookOtpRef.current = true
-    setIsVerifyingBookOtp(true)
-    setBookOtpErr('')
+    isSubmittingBookingRef.current = true
+    setIsConfirming(true)
+    setBookErrors({})
 
-    if (!currentPatient) {
-      isVerifyingBookOtpRef.current = false
-      setIsVerifyingBookOtp(false)
-      return
-    }
-
-    const targetMobile = currentPatient.PhoneNo || currentPatient.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
-    const numericPatientId = currentPatient.PatientID
-      ? Number(currentPatient.PatientID)
-      : (currentPatient.id ? Number(String(currentPatient.id).replace(/\D/g, '')) || 0 : 0)
+    const numericPatientId = pendingBookingPayload.patientID
 
     try {
-      // 1. Validate OTP first (isLogin = false for Booking flow)
-      const otpRes = await validateOtp(
-        targetMobile,
-        bookOtpInput,
-        numericPatientId > 0 ? numericPatientId : undefined,
-        false
-      )
-      const isSuccess =
-        otpRes?.Result &&
-        (otpRes.Result.toLowerCase().trim() === 'otp successfully validated' ||
-         otpRes.Result.toLowerCase().trim().includes('successfully validated') ||
-         otpRes.Result.toLowerCase().trim() === 'success')
-
-      if (!isSuccess) {
-        setBookOtpErr(otpRes?.Result || 'Incorrect OTP. Please try again.')
-        return
-      }
-
-      // Store returned Bearer Token
-      if (otpRes.token) {
-        useAuthStore.getState().setAuth({ authToken: otpRes.token })
-      }
-
-      // 2. Save appointment ONLY after successful OTP verification
-      let saveRes: Record<string, unknown> | null = null
-      if (pendingBookingPayload) {
-        saveRes = (await saveAppointment(pendingBookingPayload)) as Record<string, unknown>
-      }
+      // 1. Submit appointment booking API
+      const saveRes = (await saveAppointment(pendingBookingPayload)) as Record<string, unknown>
       console.log('📥 saveAppointment response:', saveRes)
 
       // Extract AppointmentID directly from saveappointment response e.g. { AppointmentID: 390 }
@@ -390,7 +317,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       const directSavedApptId = extractAppointmentId(saveRes)
       console.log('🎯 Extracted AppointmentID directly from saveappointment response:', directSavedApptId)
 
-      // 3. Immediately send Booking Confirmation SMS notification using TemplateID 2 and ReferenceID=AppointmentID
+      // 2. Immediately send Booking Confirmation SMS notification using TemplateID 2 and ReferenceID=AppointmentID
       let smsSent = false
       if (directSavedApptId) {
         try {
@@ -406,7 +333,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         }
       }
 
-      setShowBookOtpModal(false)
+      // Close confirmation modal
+      setShowBookingConfirmModal(false)
 
       const selectedDoctorName = bookDoctor && bookDoctor !== '--Select--' ? bookDoctor : 'Specialist Consultation'
       const apptNoVal = directSavedApptId
@@ -421,8 +349,8 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         AppointmentDate: bookDate,
         doctor: selectedDoctorName,
         DoctorName: selectedDoctorName,
-        department: 'Gynecology',
-        DeptName: 'Gynecology',
+        department: pendingBookingDeptName || 'Gynecology',
+        DeptName: pendingBookingDeptName || 'Gynecology',
         slot: selectedSlot || '08:00 AM - 08:10 AM',
         TimeSlot: selectedSlot || '08:00 AM - 08:10 AM',
         Timeslot: selectedSlot || '08:00 AM - 08:10 AM',
@@ -432,7 +360,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
         room: 'OPD-101',
         status: 'Confirmed',
         AppointmentStatus: 'Confirmed',
-        PatientName: currentPatient.PatientName || currentPatient.name || '',
+        PatientName: currentPatient?.PatientName || currentPatient?.name || '',
       }
 
       const patientKey = String(numericPatientId || 'current')
@@ -459,7 +387,6 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
           const matched =
             (directSavedApptId ? freshList.find((a) => a.AppointmentID === directSavedApptId || a.AppointmentId === directSavedApptId) : undefined) ||
             (savedApptNo ? freshList.find((a) => a.AppointmentNo === String(savedApptNo) || a.apptNo === String(savedApptNo)) : undefined) ||
-
             freshList.find(
               (a) =>
                 (a.date === bookDate || a.AppointmentDate === bookDate) &&
@@ -485,8 +412,7 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       if (!smsSent) {
         const fallbackApptId =
           confirmedAppt.AppointmentID ??
-          confirmedAppt.AppointmentId ??
-          (bookReferenceId !== null ? bookReferenceId : undefined)
+          confirmedAppt.AppointmentId
 
         if (fallbackApptId) {
           try {
@@ -504,11 +430,11 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
 
       setLastBookedAppt(confirmedAppt)
       setShowSuccessModal(true)
-      onSuccess()
     } catch (err: unknown) {
+      console.error('Appointment booking error:', err)
       const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
       const resData = error.response?.data
-      let message = 'OTP validation or appointment save failed. Please try again.'
+      let message = 'Failed to book appointment. Please try again.'
       if (typeof resData === 'string' && resData.trim()) {
         message = resData
       } else if (resData && typeof resData === 'object') {
@@ -516,45 +442,17 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
       } else if (error.message) {
         message = error.message
       }
-      setBookOtpErr(message)
+      toast.error(message)
+      setBookErrors((prev) => ({ ...prev, form: message }))
     } finally {
-      isVerifyingBookOtpRef.current = false
-      setIsVerifyingBookOtp(false)
-    }
-  }
-
-  const handleResendBookOtp = async () => {
-    if (!currentPatient) return
-    const numericPatientId = currentPatient.PatientID || (currentPatient.id
-      ? Number(String(currentPatient.id).replace(/\D/g, '')) || 1
-      : 1)
-    const targetMobile = currentPatient.PhoneNo || currentPatient.mobile || localStorage.getItem('srm_patient_current_mobile') || ''
-
-    try {
-      const refId = await generateOtp(targetMobile, numericPatientId)
-      if (refId) {
-        setBookReferenceId(refId)
-        await sendSmsRequest({ referenceID: refId, templateID: SmsTemplateId.LOGIN_OTP, smsNotify: true })
-      }
-      setBookOtpErr('')
-      toast.success('OTP resent successfully!')
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string; Result?: string } | string }; message?: string }
-      const resData = error.response?.data
-      let message = 'Failed to resend OTP.'
-      if (typeof resData === 'string' && resData.trim()) {
-        message = resData
-      } else if (resData && typeof resData === 'object') {
-        message = resData.message || resData.Result || message
-      } else if (error.message) {
-        message = error.message
-      }
-      setBookOtpErr(message)
+      isSubmittingBookingRef.current = false
+      setIsConfirming(false)
     }
   }
 
   const handleSuccessClose = (onClose: () => void) => {
     setShowSuccessModal(false)
+    setPendingBookingPayload(null)
     setBookDate('')
     setBookDoctor('')
     setBookUnit('')
@@ -819,12 +717,12 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     handleConfirmMaleBooking,
     handleCancelMaleBooking,
 
-    showBookOtpModal,
-    setShowBookOtpModal,
-    bookOtpInput,
-    setBookOtpInput,
-    bookOtpErr,
-    isVerifyingBookOtp,
+    // Booking Confirmation Modal
+    showBookingConfirmModal,
+    setShowBookingConfirmModal,
+    pendingBookingDeptName,
+    handleConfirmBookingSubmit,
+    handleCancelBookingConfirm,
 
     showSuccessModal,
     lastBookedAppt,
@@ -849,8 +747,6 @@ export function useAppointmentBooking(currentPatient: Patient | null) {
     isResendingCancelOtp,
 
     handleConfirmBookingClick,
-    handleVerifyBookOtp,
-    handleResendBookOtp,
     handleSuccessClose,
     handleViewReceipt,
     handleCancelAppointment: handleInitiateCancelAppointment,
