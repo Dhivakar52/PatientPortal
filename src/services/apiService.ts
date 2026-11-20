@@ -933,6 +933,7 @@ export const getDepartments = async (params?: { pageNo?: number; recordCount?: n
                 ...(params?.searchText !== undefined && { searchText: params.searchText }),
             },
         });
+     
         return response.data;
     } catch (error) {
         console.error('Get Departments Error:', error);
